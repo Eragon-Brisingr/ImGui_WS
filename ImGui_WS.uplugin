@@ -27,7 +27,7 @@
 		},
 		{
 			"Name": "ImGui_WS",
-			"Type": "Runtime",
+			"Type": "DeveloperTool",
 			"LoadingPhase": "Default"
 		}
 	]

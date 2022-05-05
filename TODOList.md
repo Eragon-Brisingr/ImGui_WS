@@ -1,6 +1,6 @@
 # TODOList
 
-[ ] 端口号适配
+[x] 端口号适配
 [ ] 复制粘贴功能
 [ ] 网页宽高适配
 [ ] ImGuiWS.setDrawData多线程化

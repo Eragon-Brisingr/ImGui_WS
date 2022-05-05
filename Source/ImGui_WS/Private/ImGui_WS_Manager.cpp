@@ -11,6 +11,30 @@
 #include "imgui-ws.h"
 #include "UnrealImGuiStat.h"
 
+FAutoConsoleCommand LaunchImGuiWeb
+{
+	TEXT("ImGui.LaunchWeb"),
+	TEXT("Open ImGui-WS Web"),
+	FConsoleCommandDelegate::CreateLambda([]
+	{
+		const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
+		FPlatformProcess::LaunchURL(*FString::Printf(TEXT("http://localhost:%d"), Manager->GetPort()), nullptr, nullptr);
+	})
+};
+
+TAutoConsoleVariable<int32> ImGui_WS_Port
+{
+	TEXT("ImGui.WS.Port"),
+	INDEX_NONE,
+	TEXT("ImGui-WS Web Port, Only Valid When Pre Game Start. Set In\n")
+	TEXT("1. Engine.ini\n [ConsoleVariables] \n ImGui.WS.Port=8890\n")
+	TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
+	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ImGui_WS_Port=%d"), ImGui_WS_Port.GetValueOnGameThread());
+	})
+};
+
 void UImGui_WS_WorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -485,8 +509,27 @@ FImGui_WS_Context* UImGui_WS_Manager::GetImGuiEditorContext()
 
 int32 UImGui_WS_Manager::GetPort() const
 {
-	// TODO：从启动参数中读取端口号
-	return 5000;
+	// Console Variable
+	const int32 CustomPort = ImGui_WS_Port.GetValueOnGameThread();
+	if (CustomPort != INDEX_NONE)
+	{
+		return CustomPort;
+	}
+	
+	if (GIsEditor)
+	{
+		// Editor
+		return 8890;
+	}
+	
+	if (IsRunningDedicatedServer())
+	{
+		// DedicatedServer
+		return 8891;
+	}
+	
+	// Game
+	return 8892;
 }
 
 int32 UImGui_WS_Manager::GetConnectionCount() const
@@ -498,12 +541,24 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	Drawer = new FDrawer{ *this };
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this, [this](float)
+	{
+		if (GEngine->DeferredCommands.Num() == 0)
+		{
+			Drawer = new FDrawer{ *this };
+			return false;
+		}
+		return true;
+	}));
 }
 
 void UImGui_WS_Manager::Deinitialize()
 {
-	delete Drawer;
+	if (Drawer)
+	{
+		delete Drawer;
+		Drawer = nullptr;
+	}
 
 	Super::Deinitialize();
 }
