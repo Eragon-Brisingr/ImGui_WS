@@ -10,6 +10,7 @@
 #include "implot.h"
 #include "imgui-ws.h"
 #include "UnrealImGuiStat.h"
+#include "WebKeyCodeToImGui.h"
 
 FAutoConsoleCommand LaunchImGuiWeb
 {
@@ -103,6 +104,18 @@ public:
 
 		IO.MouseDrawCursor = false;
 
+		// TODO:完成远端的复制功能
+		static auto GetClipboardTextFn_DefaultImpl = [](void* user_data)->const char*
+		{
+			return "...";
+		};
+		static auto SetClipboardTextFn_DefaultImpl = [](void* user_data, const char* text)
+		{
+			UE_LOG(LogTemp, Log, TEXT("%s"), UTF8_TO_TCHAR(text));
+		};
+		IO.GetClipboardTextFn = GetClipboardTextFn_DefaultImpl;
+		IO.SetClipboardTextFn = SetClipboardTextFn_DefaultImpl;
+		
 		// Enable Docking
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		
@@ -144,20 +157,24 @@ public:
 		ImPlot::DestroyContext(PlotContext);
 	}
 private:
-	struct FVSync {
+	struct FVSync
+	{
 		FVSync(double RateFps = 60.0) : tStep_us(1000000.0/RateFps) {}
 
 		uint64_t tStep_us;
 		uint64_t tLast_us = t_us();
 		uint64_t tNext_us = tLast_us + tStep_us;
 
-		inline uint64_t t_us() const {
+		uint64_t t_us() const
+		{
 			return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(); // duh ..
 		}
 
-		inline void wait() {
+		void wait()
+		{
 			uint64_t tNow_us = t_us();
-			while (tNow_us < tNext_us - 100) {
+			while (tNow_us < tNext_us - 100)
+			{
 				std::this_thread::sleep_for(std::chrono::microseconds((uint64_t) (0.9*(tNext_us - tNow_us))));
 				tNow_us = t_us();
 			}
@@ -165,25 +182,24 @@ private:
 			tNext_us += tStep_us;
 		}
 
-		inline float Delta_S() {
+		float Delta_S()
+		{
 			uint64_t tNow_us = t_us();
 			uint64_t res = tNow_us - tLast_us;
 			tLast_us = tNow_us;
 			return float(res)/1e6f;
 		}
 	};
-	struct FState {
-		FState() {
-			for (int i = 0; i < 512; ++i) {
-				lastKeysDown[i] = false;
-			}
-		}
+	struct FState
+	{
+		FState() = default;
 
 		bool bShowImGuiDemo = false;
 		bool bShowPlotDemo = false;
 
 		// client control management
-		struct ClientData {
+		struct ClientData
+		{
 			bool hasControl = false;
 
 			std::string ip = "---";
@@ -204,90 +220,111 @@ private:
 		float lastMouseWheelH = 0.0;
 
 		std::string lastAddText = "";
-		bool lastKeysDown[512];
 
-		void Handle(const ImGuiWS::Event& event) {
-		    switch (event.type) {
+		struct FKeyEvent
+		{
+			ImGuiKey Key;
+			bool bDown;
+		};
+		TArray<FKeyEvent, TInlineAllocator<16>> KeyEvents;
+
+		void Handle(const ImGuiWS::Event& Event)
+		{
+		    switch (Event.type)
+			{
 		        case ImGuiWS::Event::Connected:
-		            {
-		                clients[event.clientId].ip = event.ip;
+					{
+		                clients[Event.clientId].ip = Event.ip;
 		            }
 		            break;
 		        case ImGuiWS::Event::Disconnected:
-		            {
-		                clients.erase(event.clientId);
+					{
+		                clients.erase(Event.clientId);
 		            }
 		            break;
 		        case ImGuiWS::Event::MouseMove:
-		            {
-		                if (event.clientId == curIdControl) {
-		                    lastMousePos[0] = event.mouse_x;
-		                    lastMousePos[1] = event.mouse_y;
+					{
+		                if (Event.clientId == curIdControl)
+						{
+		                    lastMousePos[0] = Event.mouse_x;
+		                    lastMousePos[1] = Event.mouse_y;
 		                }
 		            }
 		            break;
 		        case ImGuiWS::Event::MouseDown:
-		            {
-		                if (event.clientId == curIdControl) {
-		                    lastMouseDown[event.mouse_but] = true;
-		                    lastMousePos[0] = event.mouse_x;
-		                    lastMousePos[1] = event.mouse_y;
+					{
+		                if (Event.clientId == curIdControl)
+						{
+		                    lastMouseDown[Event.mouse_but] = true;
+		                    lastMousePos[0] = Event.mouse_x;
+		                    lastMousePos[1] = Event.mouse_y;
 		                }
 		            }
 		            break;
 		        case ImGuiWS::Event::MouseUp:
-		            {
-		                if (event.clientId == curIdControl) {
-		                    lastMouseDown[event.mouse_but] = false;
-		                    lastMousePos[0] = event.mouse_x;
-		                    lastMousePos[1] = event.mouse_y;
+					{
+		                if (Event.clientId == curIdControl)
+						{
+		                    lastMouseDown[Event.mouse_but] = false;
+		                    lastMousePos[0] = Event.mouse_x;
+		                    lastMousePos[1] = Event.mouse_y;
 		                }
 		            }
 		            break;
 		        case ImGuiWS::Event::MouseWheel:
-		            {
-		                if (event.clientId == curIdControl) {
-		                    lastMouseWheelH = event.wheel_x;
-		                    lastMouseWheel  = event.wheel_y;
+					{
+		                if (Event.clientId == curIdControl)
+						{
+		                    lastMouseWheelH = Event.wheel_x;
+		                    lastMouseWheel  = Event.wheel_y;
 		                }
 		            }
 		            break;
 		        case ImGuiWS::Event::KeyUp:
-		            {
-		                if (event.clientId == curIdControl) {
-		                    if (event.key > 0) {
-		                        lastKeysDown[event.key] = false;
+					{
+		                if (Event.clientId == curIdControl)
+						{
+		                    if (Event.key > 0)
+							{
+		    					const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
+		                    	KeyEvents.Add({ Key, false });
 		                    }
 		                }
 		            }
 		            break;
 		        case ImGuiWS::Event::KeyDown:
-		            {
-		                if (event.clientId == curIdControl) {
-		                    if (event.key > 0) {
-		                        lastKeysDown[event.key] = true;
+					{
+		                if (Event.clientId == curIdControl)
+						{
+		                    if (Event.key > 0)
+							{
+		                    	const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
+		                    	KeyEvents.Add({ Key, true });
 		                    }
 		                }
 		            }
 		            break;
 		        case ImGuiWS::Event::KeyPress:
-		            {
-		                if (event.clientId == curIdControl) {
-		                    lastAddText.resize(1);
-		                    lastAddText[0] = event.key;
+					{
+		                if (Event.clientId == curIdControl)
+						{
+		                    lastAddText.push_back(Event.key);
 		                }
 		            }
 		            break;
 		        default:
-		            {
-		                printf("Unknown input event\n");
+					{
+		                ensureMsgf(false, TEXT("Unknown input event\n"));
 		            }
 		    }
 		}
 
-		void Update() {
-		    if (clients.size() > 0 && (clients.find(curIdControl) == clients.end() || ImGui::GetTime() > tControlNext_s)) {
-		        if (clients.find(curIdControl) != clients.end()) {
+		void Update()
+		{
+		    if (clients.size() > 0 && (clients.find(curIdControl) == clients.end() || ImGui::GetTime() > tControlNext_s))
+			{
+		        if (clients.find(curIdControl) != clients.end())
+				{
 		            clients[curIdControl].hasControl = false;
 		        }
 		        int k = ++controlIteration % clients.size();
@@ -298,34 +335,60 @@ private:
 		        tControlNext_s = ImGui::GetTime() + tControl_s;
 		    }
 
-		    if (clients.size() == 0) {
+		    if (clients.size() == 0)
+			{
 		        curIdControl = -1;
 		    }
 
-		    if (curIdControl > 0) {
-		        ImGuiIO& io = ImGui::GetIO();
-		        io.MousePos = ImVec2{ lastMousePos[0], lastMousePos[1] };
-		        io.MouseWheelH = lastMouseWheelH;
-		        io.MouseWheel = lastMouseWheel;
-		        io.AddMouseWheelEvent(lastMouseWheelH, lastMouseWheel);
-		        io.MouseDown[0] = lastMouseDown[0];
+		    if (curIdControl > 0)
+			{
+		        ImGuiIO& IO = ImGui::GetIO();
+		        IO.MousePos = ImVec2{ lastMousePos[0], lastMousePos[1] };
+		        IO.MouseWheelH = lastMouseWheelH;
+		        IO.MouseWheel = lastMouseWheel;
+		        IO.AddMouseWheelEvent(lastMouseWheelH, lastMouseWheel);
+		        IO.MouseDown[0] = lastMouseDown[0];
 		        // JS上2代表右键但是ImGui定义1为右键，转换下
-		        io.MouseDown[1] = lastMouseDown[2];
-		        io.MouseDown[2] = lastMouseDown[1];
-		        io.MouseDown[3] = lastMouseDown[3];
-		        io.MouseDown[4] = lastMouseDown[4];
+		        IO.MouseDown[1] = lastMouseDown[2];
+		        IO.MouseDown[2] = lastMouseDown[1];
+		        IO.MouseDown[3] = lastMouseDown[3];
+		        IO.MouseDown[4] = lastMouseDown[4];
 
-		        if (lastAddText.size() > 0) {
-		            io.AddInputCharactersUTF8(lastAddText.c_str());
+		        if (lastAddText.size() > 0)
+				{
+		            IO.AddInputCharactersUTF8(lastAddText.c_str());
 		        }
 
-		        for (int i = 0; i < 512; ++i) {
-		            io.KeysDown[i] = lastKeysDown[i];
-		        }
-
+		    	for (const auto& KeyEvent : KeyEvents)
+		    	{
+		    		IO.AddKeyEvent(KeyEvent.Key, KeyEvent.bDown);
+		    		switch (KeyEvent.Key)
+		    		{
+		    		case ImGuiKey_LeftCtrl:
+		    		case ImGuiKey_RightCtrl:
+		    			IO.KeyCtrl = KeyEvent.bDown;
+		    			break;
+		    		case ImGuiKey_LeftShift:
+		    		case ImGuiKey_RightShift:
+		    			IO.KeyShift = KeyEvent.bDown;
+		    			break;
+		    		case ImGuiKey_LeftAlt:
+		    		case ImGuiKey_RightAlt:
+		    			IO.KeyAlt = KeyEvent.bDown;
+		    			break;
+		    		case ImGuiKey_LeftSuper:
+		    		case ImGuiKey_RightSuper:
+		    			IO.KeySuper = KeyEvent.bDown;
+		    			break;
+		    		default:
+		    			break;
+		    		}
+		    	}
+		    	KeyEvents.Empty();
+		    	
 		        lastMouseWheelH = 0.0;
 		        lastMouseWheel = 0.0;
-		        lastAddText = "";
+		        lastAddText.clear();
 		    }
 		}
 	};
@@ -339,7 +402,7 @@ private:
 	void Tick(float DeltaTime) override
 	{
 		if (ImGuiWS.nConnected() == 0)
-	    {
+		{
 	        return;
 	    }
 
@@ -347,7 +410,7 @@ private:
 		
 	    ImGuiContext* OldContent = ImGui::GetCurrentContext();
 	    ON_SCOPE_EXIT
-	    {
+		{
 	        ImGui::SetCurrentContext(OldContent);
 	    };
 	    ImGui::SetCurrentContext(Context);
@@ -355,7 +418,8 @@ private:
 
 	    // websocket event handling
 	    const auto Events = ImGuiWS.takeEvents();
-	    for (const ImGuiWS::Event& Event : Events) {
+	    for (const ImGuiWS::Event& Event : Events)
+		{
 	        State.Handle(Event);
 	    }
 	    State.Update();
@@ -454,9 +518,11 @@ private:
 						ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 						ImGui::Separator();
 						ImGui::Text(" Id   Ip addr");
-						for (auto & [ cid, client ] : State.clients) {
+						for (auto & [ cid, client ] : State.clients)
+						{
 							ImGui::Text("%3d : %s", cid, client.ip.c_str());
-							if (client.hasControl) {
+							if (client.hasControl)
+							{
 								ImGui::SameLine();
 								ImGui::TextDisabled(" [has control for %4.2f seconds]", State.tControlNext_s - ImGui::GetTime());
 							}
