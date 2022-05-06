@@ -327,12 +327,38 @@ var imgui_ws = {
     canvas_on_touch: function(event) {},
 
     set_incppect_handlers: function(incppect) {
+        var ctrlDown = false;
+        let ctrlKey = 17;
+        let cmdKey = 91;
+        let vKey = 86;
+        let cKey = 67;
+        let xKey = 88;
+
         this.canvas_on_keyup = function(event) {
+            if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
+                ctrlDown = false;
+            }
             incppect.send('6 ' + event.keyCode);
         };
 
         this.canvas_on_keydown = function(event) {
-            incppect.send('5 ' + event.keyCode);
+            if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
+                ctrlDown = true;
+            }
+
+            if (ctrlDown && (event.keyCode == cKey || event.keyCode == xKey)) {
+                // copy & cut 当前靠轮询处理
+            }
+
+            if (ctrlDown && event.keyCode == vKey) {
+                navigator.clipboard.readText().then(text => {
+                    incppect.send('9 ' + text)
+                    incppect.send('5 ' + event.keyCode);
+                })
+            }
+            else {
+                incppect.send('5 ' + event.keyCode);
+            }
         };
 
         this.canvas_on_keypress = function(event) {

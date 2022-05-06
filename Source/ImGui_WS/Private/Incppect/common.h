@@ -213,11 +213,11 @@ var incppect = {
     },
 
     send: function(msg) {
-        var data = new Int8Array(4 + msg.length + 1);
-        var enc = new TextEncoder();
+        var encode_text = new TextEncoder().encode(msg);
+        var data = new Int8Array(4 + encode_text.length + 1);
         data[0] = 4;
-        data.set(enc.encode(msg), 4);
-        data[4 + msg.length] = 0;
+        data.set(encode_text, 4);
+        data[4 + encode_text.length] = 0;
         this.ws.send(data);
     },
 

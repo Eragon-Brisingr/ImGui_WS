@@ -64,16 +64,18 @@ public:
 	TArray<ANSICHAR> IniFileNameArray;
 	ImFontAtlas FontAtlas;
 	float DPIScale = 1.f;
+	TTripleBuffer<std::string> ClipboardTextTripleBuffer;
 
 	explicit FDrawer(UImGui_WS_Manager& Manager)
 		: Manager(Manager)
 	{
+		const FString PluginPath = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir();
 		// fonts
 		{
 			ImFontConfig ChineseFontConfig;
 			ChineseFontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseSimplifiedCommon();
 			FPlatformString::Strcpy(ChineseFontConfig.Name, sizeof(ChineseFontConfig.Name), "Zfull-GB, 12px");
-			const FString ChineseFontPath = FPaths::ProjectPluginsDir() / TEXT("UnrealImGui") / TEXT("Resources/Zfull-GB.ttf");
+			const FString ChineseFontPath = PluginPath / TEXT("Resources/Zfull-GB.ttf");
 			FontAtlas.AddFontFromFileTTF(TCHAR_TO_UTF8(*ChineseFontPath), 12.0f*DPIScale, &ChineseFontConfig);
 		}
 		
@@ -105,16 +107,12 @@ public:
 
 		IO.MouseDrawCursor = false;
 
-		// TODO:完成远端的复制功能
-		static auto GetClipboardTextFn_DefaultImpl = [](void* user_data)->const char*
-		{
-			return "...";
-		};
 		static auto SetClipboardTextFn_DefaultImpl = [](void* user_data, const char* text)
 		{
-			UE_LOG(LogTemp, Log, TEXT("%s"), UTF8_TO_TCHAR(text));
+			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
+			FDrawer* Drawer = Manager->Drawer;
+			Drawer->ClipboardTextTripleBuffer.WriteAndSwap(text);
 		};
-		IO.GetClipboardTextFn = GetClipboardTextFn_DefaultImpl;
 		IO.SetClipboardTextFn = SetClipboardTextFn_DefaultImpl;
 		
 		// Enable Docking
@@ -141,7 +139,7 @@ public:
 		ImPlot::SetCurrentContext(PlotContext);
 		
 		// setup imgui-ws
-		static FString HtmlPath = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir() / TEXT("Source/ImGui_WS/HTML");
+		const FString HtmlPath = PluginPath / TEXT("Source/ImGui_WS/HTML");
 		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), { "", "index.html", "imgui-ws.js" }, [this]
 		{
 			WS_ThreadUpdate();
@@ -589,10 +587,10 @@ private:
 		if (ImGuiDataTripleBuffer.IsDirty())
 		{
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
-			auto& Data = ImGuiDataTripleBuffer.SwapAndRead();
-			const FImGuiData* ImGuiData = Data.Get();
+			const FImGuiData* ImGuiData = ImGuiDataTripleBuffer.SwapAndRead().Get();
 			// store ImDrawData for asynchronous dispatching to WS clients
-			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor);
+			const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
+			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText);
 		}
 	}
 };

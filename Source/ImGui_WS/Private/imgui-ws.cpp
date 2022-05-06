@@ -19,6 +19,8 @@
 #include <shared_mutex>
 #include <condition_variable>
 
+#include "imgui.h"
+
 // not using ssl
 using incppect = Incppect<false>;
 
@@ -39,10 +41,12 @@ struct ImGuiWS::Impl {
     struct Data {
         std::map<int, TextureId> textureIdMap;
         std::map<TextureId, Texture> textures;
-        int32_t mouseCursor = 0;
 
         ImDrawDataCompressor::Interface::DrawLists drawLists;
         ImDrawDataCompressor::Interface::DrawListsDiff drawListsDiff;
+        
+        int32_t mouseCursor = 0;
+        std::string clipboardText;
     };
 
     Impl() : compressorDrawData(new ImDrawDataCompressor::XorRlePerDrawListWithVtxOffset()) {}
@@ -99,6 +103,14 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
         std::shared_lock lock(m_impl->mutex);
 
         return incppect::view(m_impl->dataRead.mouseCursor);
+    });
+
+    // sync clipboard
+    m_impl->incpp.var("imgui.clipboard", [this](const auto& )
+    {
+        std::shared_lock lock(m_impl->mutex);
+
+        return incppect::view(m_impl->dataRead.clipboardText);
     });
     
     // texture ids
@@ -269,6 +281,13 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
                                 event.type = Event::TakeControl;
                             }
                             break;
+                        case 9:
+                            {
+                                // clipboard
+                                std::string ClipboardText;
+                                ss >> ClipboardText;
+                                ImGui::SetClipboardText(ClipboardText.c_str());
+                            }
                         default:
                             {
                                 printf("Unknown input received from client: id = %d, type = %d\n", clientId, type);
@@ -350,7 +369,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     return init(port, std::move(pathHttp), std::move(resources), preMainLoop);
 }
 
-bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor) {
+bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText) {
     bool result = true;
 
     result &= m_impl->compressorDrawData->setDrawData(drawData);
@@ -365,6 +384,7 @@ bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor) {
         m_impl->dataRead.drawLists = std::move(drawLists);
         m_impl->dataRead.drawListsDiff = std::move(drawListsDiff);
         m_impl->dataRead.mouseCursor = mouseCursor;
+        m_impl->dataRead.clipboardText = clipboardText;
     }
 
     return result;

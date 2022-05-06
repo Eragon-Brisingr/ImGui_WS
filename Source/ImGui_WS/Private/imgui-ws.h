@@ -74,7 +74,7 @@ class ImGuiWS {
         bool init(int32_t port, std::string pathHttp, std::vector<std::string> resources, const std::function<void()>& preMainLoop);
         bool init(int32_t port, std::string pathHttp, std::vector<std::string> resources, THandler && connect_handler, THandler && disconnect_handler, const std::function<void()>& preMainLoop);
         bool setTexture(TextureId textureId, Texture::Type textureType, int32_t width, int32_t height, const char * data);
-        bool setDrawData(const struct ImDrawData* drawData, int32_t mouseCursor);
+        bool setDrawData(const struct ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText);
         bool addVar(const TPath & path, TGetter && getter);
 
 
