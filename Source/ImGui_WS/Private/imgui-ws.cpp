@@ -79,7 +79,7 @@ bool ImGuiWS::addVar(const TPath & path, TGetter && getter) {
     return m_impl->incpp.var(path, std::move(getter));
 }
 
-bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> resources) {
+bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> resources, const std::function<void()>& preMainLoop) {
     m_impl->incpp.var("my_id[%d]", [](const auto & idxs) {
         static int32_t id;
         id = idxs[0];
@@ -295,6 +295,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     parameters.resources = std::move(resources);
     parameters.sslKey = "key.pem";
     parameters.sslCert = "cert.pem";
+    parameters.preMainLoop = preMainLoop;
     m_impl->worker = m_impl->incpp.runAsync(parameters);
 
     return m_impl->worker.joinable();
@@ -342,11 +343,11 @@ bool ImGuiWS::setTexture(TextureId textureId, Texture::Type textureType, int32_t
     return true;
 }
 
-bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> resources, THandler && handlerConnect, THandler && handlerDisconnect) {
+bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> resources, THandler && handlerConnect, THandler && handlerDisconnect, const std::function<void()>& preMainLoop) {
     m_impl->handlerConnect = std::move(handlerConnect);
     m_impl->handlerDisconnect = std::move(handlerDisconnect);
 
-    return init(port, std::move(pathHttp), std::move(resources));
+    return init(port, std::move(pathHttp), std::move(resources), preMainLoop);
 }
 
 bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor) {

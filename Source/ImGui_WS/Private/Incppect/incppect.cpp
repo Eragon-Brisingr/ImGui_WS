@@ -201,7 +201,14 @@ struct Incppect<SSL>::Impl {
             };
 
             if (doUpdate) {
-                sd->mainLoop->defer([this]() { this->update(); });
+                sd->mainLoop->defer([this]()
+                {
+                    if (parameters.preMainLoop)
+                    {
+                        parameters.preMainLoop();
+                    }
+                    this->update();
+                });
             }
         };
         wsBehaviour.drain = [](auto *ws) {

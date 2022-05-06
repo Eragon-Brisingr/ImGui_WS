@@ -5,6 +5,7 @@
 #include <thread>
 #include <map>
 #include <Interfaces/IPluginManager.h>
+#include <Containers/TripleBuffer.h>
 
 #include "imgui.h"
 #include "implot.h"
@@ -141,7 +142,10 @@ public:
 		
 		// setup imgui-ws
 		static FString HtmlPath = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir() / TEXT("Source/ImGui_WS/HTML");
-		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), { "", "index.html", "imgui-ws.js" });
+		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), { "", "index.html", "imgui-ws.js" }, [this]
+		{
+			WS_ThreadUpdate();
+		});
 
 		// prepare font texture
 		{
@@ -405,6 +409,33 @@ private:
 	bool IsTickableWhenPaused() const { return true; }
 	bool IsTickableInEditor() const { return true; }
 	TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UImGui_WS_Manager_FDrawer, STATGROUP_Tickables); }
+
+	struct FImGuiData : FNoncopyable
+	{
+		ImDrawData CopiedDrawData;
+		const ImGuiMouseCursor MouseCursor;
+
+		FImGuiData(const ImDrawData* DrawData, ImGuiMouseCursor MouseCursor)
+			: CopiedDrawData{ *DrawData }
+		, MouseCursor(MouseCursor)
+		{
+			CopiedDrawData.CmdLists = new ImDrawList*[DrawData->CmdListsCount];
+			for (int32 Idx = 0; Idx < DrawData->CmdListsCount; ++Idx)
+			{
+				CopiedDrawData.CmdLists[Idx] = DrawData->CmdLists[Idx]->CloneOutput();
+			}
+		}
+		~FImGuiData()
+		{
+			for (int32 Idx = 0; Idx < CopiedDrawData.CmdListsCount; ++Idx)
+			{
+				IM_DELETE(CopiedDrawData.CmdLists[Idx]);
+			}
+			delete CopiedDrawData.CmdLists;
+		}
+	};
+	TTripleBuffer<TSharedPtr<FImGuiData>> ImGuiDataTripleBuffer;
+	
 	void Tick(float DeltaTime) override
 	{
 		if (ImGuiWS.nConnected() == 0)
@@ -546,12 +577,23 @@ private:
 	    ImGui::Render();
 
 		{
-			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
-			// store ImDrawData for asynchronous dispatching to WS clients
-			ImGuiWS.setDrawData(ImGui::GetDrawData(), MouseCursor);
+			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
+			const ImDrawData* DrawData = ImGui::GetDrawData();
+			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor));
 		}
 
 	    ImGui::EndFrame();
+	}
+	void WS_ThreadUpdate()
+	{
+		if (ImGuiDataTripleBuffer.IsDirty())
+		{
+			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
+			auto& Data = ImGuiDataTripleBuffer.SwapAndRead();
+			const FImGuiData* ImGuiData = Data.Get();
+			// store ImDrawData for asynchronous dispatching to WS clients
+			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor);
+		}
 	}
 };
 

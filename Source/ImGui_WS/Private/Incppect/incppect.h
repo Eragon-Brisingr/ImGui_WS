@@ -45,6 +45,8 @@ class Incppect {
             // max clients
             // max buffered amount
             // etc.
+
+            std::function<void()> preMainLoop;
         };
 
         Incppect();
