@@ -214,20 +214,10 @@ private:
 		std::map<int, ClientData> clients;
 
 		// client input
-		float lastMousePos[2] = { 0.0, 0.0 };
-		bool  lastMouseDown[5] = { false, false, false, false, false };
-		float lastMouseWheel = 0.0;
-		float lastMouseWheelH = 0.0;
-
-		std::string lastAddText = "";
-
-		struct FKeyEvent
-		{
-			ImGuiKey Key;
-			bool bDown;
-		};
-		TArray<FKeyEvent, TInlineAllocator<16>> KeyEvents;
-
+		TArray<ImGuiWS::Event, TInlineAllocator<16>> PendingEvents;
+		// recover key down state
+		TArray<ImGuiWS::Event, TInlineAllocator<16>> KeyDownEvents;
+		
 		void Handle(const ImGuiWS::Event& Event)
 		{
 		    switch (Event.type)
@@ -243,72 +233,16 @@ private:
 		            }
 		            break;
 		        case ImGuiWS::Event::MouseMove:
-					{
-		                if (Event.clientId == curIdControl)
-						{
-		                    lastMousePos[0] = Event.mouse_x;
-		                    lastMousePos[1] = Event.mouse_y;
-		                }
-		            }
-		            break;
 		        case ImGuiWS::Event::MouseDown:
-					{
-		                if (Event.clientId == curIdControl)
-						{
-		                    lastMouseDown[Event.mouse_but] = true;
-		                    lastMousePos[0] = Event.mouse_x;
-		                    lastMousePos[1] = Event.mouse_y;
-		                }
-		            }
-		            break;
 		        case ImGuiWS::Event::MouseUp:
-					{
-		                if (Event.clientId == curIdControl)
-						{
-		                    lastMouseDown[Event.mouse_but] = false;
-		                    lastMousePos[0] = Event.mouse_x;
-		                    lastMousePos[1] = Event.mouse_y;
-		                }
-		            }
-		            break;
 		        case ImGuiWS::Event::MouseWheel:
-					{
-		                if (Event.clientId == curIdControl)
-						{
-		                    lastMouseWheelH = Event.wheel_x;
-		                    lastMouseWheel  = Event.wheel_y;
-		                }
-		            }
-		            break;
 		        case ImGuiWS::Event::KeyUp:
-					{
-		                if (Event.clientId == curIdControl)
-						{
-		                    if (Event.key > 0)
-							{
-		    					const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
-		                    	KeyEvents.Add({ Key, false });
-		                    }
-		                }
-		            }
-		            break;
 		        case ImGuiWS::Event::KeyDown:
-					{
-		                if (Event.clientId == curIdControl)
-						{
-		                    if (Event.key > 0)
-							{
-		                    	const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
-		                    	KeyEvents.Add({ Key, true });
-		                    }
-		                }
-		            }
-		            break;
 		        case ImGuiWS::Event::KeyPress:
 					{
 		                if (Event.clientId == curIdControl)
 						{
-		                    lastAddText.push_back(Event.key);
+		                	PendingEvents.Add(Event);
 		                }
 		            }
 		            break;
@@ -321,6 +255,7 @@ private:
 
 		void Update()
 		{
+			bool bIsIdControlChanged = false;
 		    if (clients.size() > 0 && (clients.find(curIdControl) == clients.end() || ImGui::GetTime() > tControlNext_s))
 			{
 		        if (clients.find(curIdControl) != clients.end())
@@ -331,64 +266,135 @@ private:
 		        auto client = clients.begin();
 		        std::advance(client, k);
 		        client->second.hasControl = true;
-		        curIdControl = client->first;
+		    	if (curIdControl != client->first)
+		    	{
+					curIdControl = client->first;
+		    		bIsIdControlChanged = true;
+		    	}
 		        tControlNext_s = ImGui::GetTime() + tControl_s;
 		    }
 
-		    if (clients.size() == 0)
+		    if (clients.size() == 0 && curIdControl != INDEX_NONE)
 			{
-		        curIdControl = -1;
+		        curIdControl = INDEX_NONE;
 		    }
 
+			ImGuiIO& IO = ImGui::GetIO();
+			auto SyncKeyMods = [&IO](ImGuiKey Key, bool bDown)
+			{
+				switch (Key)
+				{
+				case ImGuiKey_LeftCtrl:
+				case ImGuiKey_RightCtrl:
+					IO.KeyCtrl = bDown;
+					break;
+				case ImGuiKey_LeftShift:
+				case ImGuiKey_RightShift:
+					IO.KeyShift = bDown;
+					break;
+				case ImGuiKey_LeftAlt:
+				case ImGuiKey_RightAlt:
+					IO.KeyAlt = bDown;
+					break;
+				case ImGuiKey_LeftSuper:
+				case ImGuiKey_RightSuper:
+					IO.KeySuper = bDown;
+					break;
+				default:
+					break;
+				}
+			};
+			static auto ConvertWebMouseButtonToImGui = [](int32 WebMouseButton)
+			{
+				if (WebMouseButton == 1)
+				{
+					return 2;
+				}
+				else if (WebMouseButton == 2)
+				{
+					return 1;
+				}
+				return WebMouseButton;
+			};
+			if (bIsIdControlChanged)
+			{
+				// when id control changed release all button
+				for (const ImGuiWS::Event& Event : KeyDownEvents)
+				{
+					switch (Event.type)
+					{
+					case ImGuiWS::Event::MouseDown:
+						{
+							IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.key), false);
+						}
+						break;
+					case ImGuiWS::Event::KeyDown:
+						{
+							const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
+							IO.AddKeyEvent(Key, false);
+							SyncKeyMods(Key, false);
+						}
+						break;
+					default:
+						ensure(false);
+					}
+				}
+				KeyDownEvents.Empty();
+			}
 		    if (curIdControl > 0)
 			{
-		        ImGuiIO& IO = ImGui::GetIO();
-		        IO.MousePos = ImVec2{ lastMousePos[0], lastMousePos[1] };
-		        IO.MouseWheelH = lastMouseWheelH;
-		        IO.MouseWheel = lastMouseWheel;
-		        IO.AddMouseWheelEvent(lastMouseWheelH, lastMouseWheel);
-		        IO.MouseDown[0] = lastMouseDown[0];
-		        // JS上2代表右键但是ImGui定义1为右键，转换下
-		        IO.MouseDown[1] = lastMouseDown[2];
-		        IO.MouseDown[2] = lastMouseDown[1];
-		        IO.MouseDown[3] = lastMouseDown[3];
-		        IO.MouseDown[4] = lastMouseDown[4];
-
-		        if (lastAddText.size() > 0)
-				{
-		            IO.AddInputCharactersUTF8(lastAddText.c_str());
-		        }
-
-		    	for (const auto& KeyEvent : KeyEvents)
+		    	KeyDownEvents.Empty();
+		    	for (const ImGuiWS::Event& Event : PendingEvents)
 		    	{
-		    		IO.AddKeyEvent(KeyEvent.Key, KeyEvent.bDown);
-		    		switch (KeyEvent.Key)
+		    		switch (Event.type)
 		    		{
-		    		case ImGuiKey_LeftCtrl:
-		    		case ImGuiKey_RightCtrl:
-		    			IO.KeyCtrl = KeyEvent.bDown;
+		    		case ImGuiWS::Event::MouseMove:
+		    			{
+				            IO.AddMousePosEvent(Event.mouse_x, Event.mouse_y);
+		    			}
 		    			break;
-		    		case ImGuiKey_LeftShift:
-		    		case ImGuiKey_RightShift:
-		    			IO.KeyShift = KeyEvent.bDown;
+		    		case ImGuiWS::Event::MouseDown:
+		    			{
+		    				IO.AddMousePosEvent(Event.mouse_x, Event.mouse_y);
+		    				IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.mouse_but), true);
+		    				KeyDownEvents.Add(Event);
+		    			}
 		    			break;
-		    		case ImGuiKey_LeftAlt:
-		    		case ImGuiKey_RightAlt:
-		    			IO.KeyAlt = KeyEvent.bDown;
+		    		case ImGuiWS::Event::MouseUp:
+		    			{
+		    				IO.AddMousePosEvent(Event.mouse_x, Event.mouse_y);
+		    				IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.mouse_but), false);
+		    			}
 		    			break;
-		    		case ImGuiKey_LeftSuper:
-		    		case ImGuiKey_RightSuper:
-		    			IO.KeySuper = KeyEvent.bDown;
+		    		case ImGuiWS::Event::MouseWheel:
+		    			{
+		    				IO.AddMouseWheelEvent(Event.wheel_x, Event.wheel_y);
+		    			}
 		    			break;
-		    		default:
+		    		case ImGuiWS::Event::KeyPress:
+		    			{
+		    				IO.AddInputCharacter(Event.key);
+		    			}
 		    			break;
-		    		}
+		    		case ImGuiWS::Event::KeyDown:
+		    			{
+		    				const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
+		    				IO.AddKeyEvent(Key, true);
+		    				SyncKeyMods(Key, true);
+		    				KeyDownEvents.Add(Event);
+		    			}
+		            	break;
+		            case ImGuiWS::Event::KeyUp:
+			            {
+		            		const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
+		    				IO.AddKeyEvent(Key, false);
+				            SyncKeyMods(Key, false);
+			            }
+		            	break;
+		            default: ;
+		            }
 		    	}
-		    	KeyEvents.Empty();
-		    	
-		        lastMouseWheelH = 0.0;
-		        lastMouseWheel = 0.0;
-		        lastAddText.clear();
+		    	PendingEvents.Empty();
 		    }
 		}
 	};
