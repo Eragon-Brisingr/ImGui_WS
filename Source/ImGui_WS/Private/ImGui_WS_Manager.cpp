@@ -345,7 +345,6 @@ private:
 			}
 		    if (curIdControl > 0)
 			{
-		    	KeyDownEvents.Empty();
 		    	for (const ImGuiWS::Event& Event : PendingEvents)
 		    	{
 		    		switch (Event.type)
@@ -366,6 +365,7 @@ private:
 		    			{
 		    				IO.AddMousePosEvent(Event.mouse_x, Event.mouse_y);
 		    				IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.mouse_but), false);
+		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::Event& E) { return E.type == Event.type && E.mouse_but == Event.mouse_but; } );
 		    			}
 		    			break;
 		    		case ImGuiWS::Event::MouseWheel:
@@ -391,6 +391,7 @@ private:
 		            		const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
 		    				IO.AddKeyEvent(Key, false);
 				            SyncKeyMods(Key, false);
+		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::Event& E) { return E.type == Event.type && E.mouse_but == Event.mouse_but; } );
 			            }
 		            	break;
 		            default: ;
