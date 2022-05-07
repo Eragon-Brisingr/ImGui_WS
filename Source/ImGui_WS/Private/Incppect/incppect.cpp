@@ -500,8 +500,8 @@ struct Incppect<SSL>::Impl {
 
     Parameters parameters;
 
-    int32_t txTotal_bytes = 0;
-    int32_t rxTotal_bytes = 0;
+    double txTotal_bytes = 0;
+    double rxTotal_bytes = 0;
 
     std::map<TPath, int> pathToGetter;
     std::vector<TGetter> getters;

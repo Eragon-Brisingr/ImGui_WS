@@ -119,25 +119,9 @@ var imgui_ws = {
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         this.gl.disable(this.gl.CULL_FACE);
         this.gl.disable(this.gl.DEPTH_TEST);
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
-        var clip_off_x = 0.0;
-        var clip_off_y = 0.0;
-
-        const L = clip_off_x;
-        const R = clip_off_x + this.canvas.width;
-        const T = clip_off_y;
-        const B = clip_off_y + this.canvas.height;
-
-        const ortho_projection = new Float32Array([
-            2.0 / (R - L), 0.0, 0.0, 0.0,
-            0.0, 2.0 / (T - B), 0.0, 0.0,
-            0.0, 0.0, -1.0, 0.0,
-            (R + L) / (L - R), (T + B) / (B - T), 0.0, 1.0,
-        ]);
         this.gl.useProgram(this.shader_program);
         this.gl.uniform1i(this.attribute_location_tex, 0);
-        this.gl.uniformMatrix4fv(this.attribute_location_proj_mtx, false, ortho_projection);
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
@@ -244,9 +228,23 @@ var imgui_ws = {
 
             return;
         }
-
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        
         var clip_off_x = 0.0;
         var clip_off_y = 0.0;
+
+        const L = clip_off_x;
+        const R = clip_off_x + this.canvas.width;
+        const T = clip_off_y;
+        const B = clip_off_y + this.canvas.height;
+
+        const ortho_projection = new Float32Array([
+            2.0 / (R - L), 0.0, 0.0, 0.0,
+            0.0, 2.0 / (T - B), 0.0, 0.0,
+            0.0, 0.0, -1.0, 0.0,
+            (R + L) / (L - R), (T + B) / (B - T), 0.0, 1.0,
+        ]);
+        this.gl.uniformMatrix4fv(this.attribute_location_proj_mtx, false, ortho_projection);
 
         this.gl.enable(this.gl.SCISSOR_TEST);
 

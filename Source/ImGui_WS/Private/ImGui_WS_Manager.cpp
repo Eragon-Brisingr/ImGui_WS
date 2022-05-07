@@ -134,6 +134,7 @@ public:
 			FMemory::Memcpy(IniFileNameArray.GetData(), StringPoint.Get(), StringPoint.Length() + 1);
 		}
 		IO.IniFilename = IniFileNameArray.GetData();
+	    IO.DisplaySize = ImVec2(0, 0);
 
 		PlotContext = ImPlot::CreateContext();
 		ImPlot::SetCurrentContext(PlotContext);
@@ -224,42 +225,54 @@ private:
 		{
 		    switch (Event.type)
 			{
-		        case ImGuiWS::Event::Connected:
+	        case ImGuiWS::Event::Connected:
+				{
+	                clients[Event.clientId].ip = Event.ip;
+	            }
+	            break;
+	        case ImGuiWS::Event::Disconnected:
+				{
+	                clients.erase(Event.clientId);
+	            }
+	            break;
+	        case ImGuiWS::Event::MouseMove:
+	        case ImGuiWS::Event::MouseDown:
+	        case ImGuiWS::Event::MouseUp:
+	        case ImGuiWS::Event::MouseWheel:
+	        case ImGuiWS::Event::KeyUp:
+	        case ImGuiWS::Event::KeyDown:
+	        case ImGuiWS::Event::KeyPress:
+				{
+	                if (Event.clientId == CurControlId)
 					{
-		                clients[Event.clientId].ip = Event.ip;
-		            }
-		            break;
-		        case ImGuiWS::Event::Disconnected:
+		                PendingEvents.Add(Event);
+	                }
+	            }
+	            break;
+		    case ImGuiWS::Event::PasteClipboard:
+			    {
+			    	if (Event.clientId == CurControlId)
+			    	{
+		    			ImGui::SetClipboardText(Event.clipboard_text.c_str());
+			    	}
+			    }
+		    	break;
+			case ImGuiWS::Event::Resize:
+				{
+					if (Event.clientId == CurControlId)
 					{
-		                clients.erase(Event.clientId);
-		            }
-		            break;
-		        case ImGuiWS::Event::MouseMove:
-		        case ImGuiWS::Event::MouseDown:
-		        case ImGuiWS::Event::MouseUp:
-		        case ImGuiWS::Event::MouseWheel:
-		        case ImGuiWS::Event::KeyUp:
-		        case ImGuiWS::Event::KeyDown:
-		        case ImGuiWS::Event::KeyPress:
-					{
-		                if (Event.clientId == CurControlId)
+						ImGuiIO& IO = ImGui::GetIO();
+						if (Event.clientId == CurControlId)
 						{
-		                	PendingEvents.Add(Event);
-		                }
-		            }
-		            break;
-			    case ImGuiWS::Event::PasteClipboard:
-				    {
-			    		if (Event.clientId == CurControlId)
-			    		{
-		    				ImGui::SetClipboardText(Event.clipboard_text.c_str());
-			    		}
-				    }
-		    		break;
-		        default:
-					{
-		                ensureMsgf(false, TEXT("Unknown input event\n"));
-		            }
+							IO.DisplaySize = { (float)Event.client_width, (float)Event.client_height };
+						}
+					}
+				}
+		    	break;
+	        default:
+				{
+	                ensureMsgf(false, TEXT("Unknown input event\n"));
+	            }
 		    }
 		}
 
@@ -473,8 +486,6 @@ private:
 	    State.Update();
 
 	    ImGuiIO& IO = ImGui::GetIO();
-		// TODO：读取当前绘制网页的尺寸
-	    IO.DisplaySize = ImVec2(1920, 1080);
 	    IO.DeltaTime = VSync.Delta_S();
 
 		if (ImGui::BeginMainMenuBar())

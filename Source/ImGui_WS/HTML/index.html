@@ -1,110 +1,147 @@
+<style>
+    .floating-menu {
+        font-family: sans-serif;
+        background: yellowgreen;
+        padding: 5px;
+        z-index: 100;
+        position: fixed;
+        bottom: 0px;
+        right: 0px;
+    }
+</style>
+
 <html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-        <title>imgui-ws : unreal</title>
 
-        <script src="incppect.js"></script>
-        <script src="imgui-ws.js"></script>
-    </head>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <title>imgui-ws : unreal</title>
 
-    <body style="padding: 0px; margin: 0px;">
-        <script>
-            function init() {
-                var output = document.getElementById('client-info');
-                var canvas_main= document.getElementById('canvas_main');
+    <script src="incppect.js"></script>
+    <script src="imgui-ws.js"></script>
+</head>
 
-                incppect.render = function() {
-                    imgui_ws.gl.clearColor(0.45, 0.55, 0.60, 1.00);
-                    imgui_ws.gl.clear(imgui_ws.gl.COLOR_BUFFER_BIT);
+<nav class="floating-menu">
+    <div id="client-info"></div>
+    Update freq: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms"
+        onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
+    <output id="update_freq_ms_out">16</output>[ms]<br>
+    <br>
+</nav>
 
-                    imgui_ws.incppect_textures(this);
-                    imgui_ws.incppect_draw_lists(this);
-                    imgui_ws.render();
+<script>
+    var pre_control_id = -1;
+    function init() {
+        var output = document.getElementById('client-info');
+        var canvas_main = document.getElementById('canvas_main');
+        canvas_main.width = window.innerWidth;
+        canvas_main.height = window.innerHeight;
 
-                    var my_id = this.get_int32('my_id[%d]', -1) || 0;
-                    var control_id = this.get_int32('control_id');
-                    var nclients = this.get_int32('incppect.nclients');
-                    var tx_total = this.get_int32('incppect.tx_total');
-                    var rx_total = this.get_int32('incppect.rx_total');
+        incppect.render = function () {
+            imgui_ws.gl.clearColor(0.45, 0.55, 0.60, 1.00);
+            imgui_ws.gl.clear(imgui_ws.gl.COLOR_BUFFER_BIT);
 
-                    output.innerHTML = 'nclients = ' + nclients + '<br>';
-                    for (var i = 0; i < nclients; ++i) {
-                        var ipaddress_bytes = this.get_int32('incppect.ip_address[%d]', i);
-                        function int_to_ip(int) {
-                            var part1 = int & 255;
-                            var part2 = ((int >> 8) & 255);
-                            var part3 = ((int >> 16) & 255);
-                            var part4 = ((int >> 24) & 255);
+            imgui_ws.incppect_textures(this);
+            imgui_ws.incppect_draw_lists(this);
+            imgui_ws.render();
 
-                            if (part1 == 0 && part2 == 0 && part3 == 0 && part4 == 1) {
-                                return "localhost";
-                            }
+            var my_id = this.get_int32('my_id[%d]', -1) || 0;
+            var control_id = this.get_int32('control_id');
+            var nclients = this.get_int32('incppect.nclients');
+            var tx_total = this.get_double('incppect.tx_total');
+            var rx_total = this.get_double('incppect.rx_total');
 
-                            return part1 + "." + part2 + "." + part3 + "." + part4;
-                        }
-                        output.innerHTML += 'client ' + i + ' : ' + int_to_ip(ipaddress_bytes) + '<br>';
-                    }
-                    output.innerHTML += '<br>';
-                    output.innerHTML += 'Server stats:<br>';
-                    output.innerHTML += 'tx total = ' + (tx_total/1024.0/1024.0).toFixed(4) + ' MB<br>';
-                    output.innerHTML += 'rx total = ' + (rx_total/1024.0/1024.0).toFixed(4) + ' MB<br>';
-                    output.innerHTML += '<br>';
-                    output.innerHTML += 'Client stats:<br>';
-                    output.innerHTML += 'tx client = ' + (this.stats.tx_bytes/1024.0/1024.0).toFixed(4) + ' MB / ' + (this.stats.tx_n) + ' msgs<br>';
-                    output.innerHTML += 'rx client = ' + (this.stats.rx_bytes/1024.0/1024.0).toFixed(4) + ' MB / ' + (this.stats.rx_n) + ' msgs<br>';
-                    output.innerHTML += `Your client Id: ${my_id} | Current control Id: ${control_id}`;
-
-                    if (my_id == control_id) {
-                        var mouse_cursor = this.get_int32('imgui.mouse_cursor', -1) || 0;
-                        var mouse_cursor_type = 
-                        [
-                            'none', // ImGuiMouseCursor_None
-                            'default', // ImGuiMouseCursor_Arrow
-                            'text', // ImGuiMouseCursor_TextInput
-                            'default', // ImGuiMouseCursor_ResizeAll
-                            'ns-resize', // ImGuiMouseCursor_ResizeNS
-                            'ew-resize', // ImGuiMouseCursor_ResizeEW
-                            'nesw-resize', // ImGuiMouseCursor_ResizeNESW
-                            'nwse-resize', // ImGuiMouseCursor_ResizeNWSE
-                            'default', // ImGuiMouseCursor_Hand
-                            'not-allowed', // ImGuiMouseCursor_NotAllowed
-                        ];
-                        canvas_main.style.cursor = mouse_cursor_type[mouse_cursor + 1];
-
-                        var clipboard_text = this.get_str('imgui.clipboard');
-                        if (clipboard_text.length > 0) {
-                            navigator.clipboard.writeText(clipboard_text);
-                        }
-                    }
-                }
-
-                incppect.onerror = function(evt) {
-                    if (typeof evt === 'object') {
-                        output.innerHTML = 'Error: check console for more information';
-                        console.error(evt);
-                    } else {
-                        output.innerHTML = evt;
-                    }
-                }
-
-                incppect.k_requests_update_freq_ms = document.getElementById('update_freq_ms').value;
-                incppect.init();
-
-                imgui_ws.set_incppect_handlers(incppect);
-                imgui_ws.init('canvas_main');
+            const is_control_get = pre_control_id != my_id && control_id == my_id;
+            const is_control_lost = pre_control_id == my_id && control_id != my_id;
+            pre_control_id = control_id;
+            if (is_control_get) {
+                incppect.send('7 ' + canvas_main.width + ' ' + canvas_main.height);
             }
 
-            window.addEventListener('load', init);
+            output.innerHTML = 'nclients = ' + nclients + '<br>';
+            for (var i = 0; i < nclients; ++i) {
+                var ipaddress_bytes = this.get_int32('incppect.ip_address[%d]', i);
+                function int_to_ip(int) {
+                    var part1 = int & 255;
+                    var part2 = ((int >> 8) & 255);
+                    var part3 = ((int >> 16) & 255);
+                    var part4 = ((int >> 24) & 255);
 
-        </script>
+                    if (part1 == 0 && part2 == 0 && part3 == 0 && part4 == 1) {
+                        return "localhost";
+                    }
 
-        <div align="center" width="100%" style="flex: auto">
-            <div id="client-info"></div>
-            Update freq: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms"
-                                    onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
-            <output id="update_freq_ms_out">16</output>[ms]<br>
-            <br>
-            <canvas id="canvas_main" width="1920px" height="1080px" style="background-color: black;" tabindex="0">Your browser does not support the HTML5 canvas tag.</canvas>
-        </div>
-    </body>
+                    return part1 + "." + part2 + "." + part3 + "." + part4;
+                }
+                output.innerHTML += 'client ' + i + ' : ' + int_to_ip(ipaddress_bytes) + '<br>';
+            }
+            output.innerHTML += '<br>';
+            output.innerHTML += 'Server stats:<br>';
+            output.innerHTML += 'tx total = ' + (tx_total / 1024.0 / 1024.0).toFixed(2) + ' MB<br>';
+            output.innerHTML += 'rx total = ' + (rx_total / 1024.0 / 1024.0).toFixed(2) + ' MB<br>';
+            output.innerHTML += '<br>';
+            output.innerHTML += 'Client stats:<br>';
+            output.innerHTML += 'tx client = ' + (this.stats.tx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.tx_n) + ' msgs<br>';
+            output.innerHTML += 'rx client = ' + (this.stats.rx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.rx_n) + ' msgs<br>';
+            output.innerHTML += `Your client Id: ${my_id} | Current control Id: ${control_id}`;
+
+            if (my_id == control_id) {
+                var mouse_cursor = this.get_int32('imgui.mouse_cursor', -1) || 0;
+                var mouse_cursor_type =
+                    [
+                        'none', // ImGuiMouseCursor_None
+                        'default', // ImGuiMouseCursor_Arrow
+                        'text', // ImGuiMouseCursor_TextInput
+                        'default', // ImGuiMouseCursor_ResizeAll
+                        'ns-resize', // ImGuiMouseCursor_ResizeNS
+                        'ew-resize', // ImGuiMouseCursor_ResizeEW
+                        'nesw-resize', // ImGuiMouseCursor_ResizeNESW
+                        'nwse-resize', // ImGuiMouseCursor_ResizeNWSE
+                        'default', // ImGuiMouseCursor_Hand
+                        'not-allowed', // ImGuiMouseCursor_NotAllowed
+                    ];
+                canvas_main.style.cursor = mouse_cursor_type[mouse_cursor + 1];
+
+                var clipboard_text = this.get_str('imgui.clipboard');
+                if (clipboard_text.length > 0) {
+                    navigator.clipboard.writeText(clipboard_text);
+                }
+            }
+
+            // TODO: 非主控端绘制主控端的鼠标位置
+            // var mouse_pos = this.get_float_arr('imgui.mouse_pos');
+        }
+
+        incppect.onerror = function (evt) {
+            if (typeof evt === 'object') {
+                output.innerHTML = 'Error: check console for more information';
+                console.error(evt);
+            } else {
+                output.innerHTML = evt;
+            }
+        }
+
+        incppect.k_requests_update_freq_ms = document.getElementById('update_freq_ms').value;
+        incppect.init();
+
+        imgui_ws.set_incppect_handlers(incppect);
+        imgui_ws.init('canvas_main');
+    }
+    
+    function resizeCanvas() {
+        var canvas_main = document.getElementById('canvas_main');
+        canvas_main.width = window.innerWidth;
+        canvas_main.height = window.innerHeight;
+        incppect.send('7 ' + canvas_main.width + ' ' + canvas_main.height);
+    }
+
+    window.addEventListener('load', init);
+    window.addEventListener('resize', resizeCanvas, false);
+</script>
+
+<body style="padding: 0px; margin: 0px;">
+    <canvas id="canvas_main" style="background-color: black; display:block;" tabindex="0">
+        Your browser does not support the HTML5 canvas tag.
+    </canvas>
+</body>
+
 </html>
