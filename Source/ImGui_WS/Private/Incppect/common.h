@@ -38,6 +38,15 @@ var incppect = {
     k_auto_reconnect: true,
     k_requests_update_freq_ms: 50,
 
+    // stats
+    stats: {
+        tx_n: 0,
+        tx_bytes: 0,
+
+        rx_n: 0,
+        rx_bytes: 0,
+    },
+
     timestamp: function() {
         return window.performance && window.performance.now && window.performance.timing &&
             window.performance.timing.navigationStart ? window.performance.now() + window.performance.timing.navigationStart : Date.now();
@@ -213,12 +222,15 @@ var incppect = {
     },
 
     send: function(msg) {
-        var encode_text = new TextEncoder().encode(msg);
-        var data = new Int8Array(4 + encode_text.length + 1);
+        var data = new Int8Array(4 + msg.length + 1);
+        var enc = new TextEncoder();
         data[0] = 4;
-        data.set(encode_text, 4);
-        data[4 + encode_text.length] = 0;
+        data.set(enc.encode(msg), 4);
+        data[4 + msg.length] = 0;
         this.ws.send(data);
+
+        this.stats.tx_n += 1;
+        this.stats.tx_bytes += data.length;
     },
 
     send_var_to_id_map: function() {
@@ -236,6 +248,9 @@ var incppect = {
         data.set(enc.encode(msg), 4);
         data[4 + msg.length] = 0;
         this.ws.send(data);
+
+        this.stats.tx_n += 1;
+        this.stats.tx_bytes += data.length;
     },
 
     send_requests: function() {
@@ -255,11 +270,17 @@ var incppect = {
             var data = new Int32Array(1);
             data[0] = 3;
             this.ws.send(data);
+
+            this.stats.tx_n += 1;
+            this.stats.tx_bytes += data.length;
         } else {
             var data = new Int32Array(this.requests.length + 1);
             data.set(new Int32Array(this.requests), 1);
             data[0] = 2;
             this.ws.send(data);
+
+            this.stats.tx_n += 1;
+            this.stats.tx_bytes += data.length;
         }
     },
 
@@ -277,6 +298,9 @@ var incppect = {
     },
 
     onmessage: function(evt) {
+        this.stats.rx_n += 1;
+        this.stats.rx_bytes += evt.data.byteLength;
+
         var type_all = (new Uint32Array(evt.data))[0];
 
         if (this.last_data != null && type_all == 1) {

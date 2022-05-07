@@ -11,6 +11,7 @@
 #include "incppect/incppect.h"
 
 #include <atomic>
+#include <array>
 #include <map>
 #include <thread>
 #include <sstream>
@@ -47,6 +48,9 @@ struct ImGuiWS::Impl {
         
         int32_t mouseCursor = 0;
         std::string clipboardText;
+        int32_t controlId;
+        float mousePosX;
+        float mousePosY;
     };
 
     Impl() : compressorDrawData(new ImDrawDataCompressor::XorRlePerDrawListWithVtxOffset()) {}
@@ -105,12 +109,28 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
         return incppect::view(m_impl->dataRead.mouseCursor);
     });
 
+    // current control_id
+    m_impl->incpp.var("control_id", [this](const auto& )
+   {
+       std::shared_lock lock(m_impl->mutex);
+
+       return incppect::view(m_impl->dataRead.controlId);
+   });
+    
     // sync clipboard
     m_impl->incpp.var("imgui.clipboard", [this](const auto& )
     {
         std::shared_lock lock(m_impl->mutex);
 
         return incppect::view(m_impl->dataRead.clipboardText);
+    });
+
+    m_impl->incpp.var("imgui.mouse_pos", [this](const auto& )
+    {
+        std::shared_lock lock(m_impl->mutex);
+
+        std::array<float, 2> MousePos{ m_impl->dataRead.mousePosX, m_impl->dataRead.mousePosY };
+        return incppect::view(MousePos);
     });
     
     // texture ids
@@ -284,9 +304,10 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
                         case 9:
                             {
                                 // clipboard
+                                event.type = Event::PasteClipboard;
                                 std::string ClipboardText;
                                 ss >> ClipboardText;
-                                ImGui::SetClipboardText(ClipboardText.c_str());
+                                event.clipboard_text = ClipboardText;
                             }
                         default:
                             {
@@ -369,7 +390,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     return init(port, std::move(pathHttp), std::move(resources), preMainLoop);
 }
 
-bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText) {
+bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText, int32_t control_id, float mousePosX, float mousePosY) {
     bool result = true;
 
     result &= m_impl->compressorDrawData->setDrawData(drawData);
@@ -385,6 +406,9 @@ bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const
         m_impl->dataRead.drawListsDiff = std::move(drawListsDiff);
         m_impl->dataRead.mouseCursor = mouseCursor;
         m_impl->dataRead.clipboardText = clipboardText;
+        m_impl->dataRead.controlId = control_id;
+        m_impl->dataRead.mousePosX = mousePosX;
+        m_impl->dataRead.mousePosY = mousePosY;
     }
 
     return result;

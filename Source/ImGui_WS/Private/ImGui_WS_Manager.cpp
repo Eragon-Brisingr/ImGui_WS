@@ -212,7 +212,7 @@ private:
 		float tControlNext_s = 0.0f;
 
 		int controlIteration = 0;
-		int curIdControl = -1;
+		int CurControlId = -1;
 		std::map<int, ClientData> clients;
 
 		// client input
@@ -242,12 +242,20 @@ private:
 		        case ImGuiWS::Event::KeyDown:
 		        case ImGuiWS::Event::KeyPress:
 					{
-		                if (Event.clientId == curIdControl)
+		                if (Event.clientId == CurControlId)
 						{
 		                	PendingEvents.Add(Event);
 		                }
 		            }
 		            break;
+			    case ImGuiWS::Event::PasteClipboard:
+				    {
+			    		if (Event.clientId == CurControlId)
+			    		{
+		    				ImGui::SetClipboardText(Event.clipboard_text.c_str());
+			    		}
+				    }
+		    		break;
 		        default:
 					{
 		                ensureMsgf(false, TEXT("Unknown input event\n"));
@@ -258,27 +266,27 @@ private:
 		void Update()
 		{
 			bool bIsIdControlChanged = false;
-		    if (clients.size() > 0 && (clients.find(curIdControl) == clients.end() || ImGui::GetTime() > tControlNext_s))
+		    if (clients.size() > 0 && (clients.find(CurControlId) == clients.end() || ImGui::GetTime() > tControlNext_s))
 			{
-		        if (clients.find(curIdControl) != clients.end())
+		        if (clients.find(CurControlId) != clients.end())
 				{
-		            clients[curIdControl].hasControl = false;
+		            clients[CurControlId].hasControl = false;
 		        }
 		        int k = ++controlIteration % clients.size();
 		        auto client = clients.begin();
 		        std::advance(client, k);
 		        client->second.hasControl = true;
-		    	if (curIdControl != client->first)
+		    	if (CurControlId != client->first)
 		    	{
-					curIdControl = client->first;
+					CurControlId = client->first;
 		    		bIsIdControlChanged = true;
 		    	}
 		        tControlNext_s = ImGui::GetTime() + tControl_s;
 		    }
 
-		    if (clients.size() == 0 && curIdControl != INDEX_NONE)
+		    if (clients.size() == 0 && CurControlId != INDEX_NONE)
 			{
-		        curIdControl = INDEX_NONE;
+		        CurControlId = INDEX_NONE;
 		    }
 
 			ImGuiIO& IO = ImGui::GetIO();
@@ -343,7 +351,7 @@ private:
 				}
 				KeyDownEvents.Empty();
 			}
-		    if (curIdControl > 0)
+		    if (CurControlId > 0)
 			{
 		    	for (const ImGuiWS::Event& Event : PendingEvents)
 		    	{
@@ -413,10 +421,14 @@ private:
 	{
 		ImDrawData CopiedDrawData;
 		const ImGuiMouseCursor MouseCursor;
+		const int32 ControlId;
+		const ImVec2 MousePos;
 
-		FImGuiData(const ImDrawData* DrawData, ImGuiMouseCursor MouseCursor)
+		FImGuiData(const ImDrawData* DrawData, const ImGuiMouseCursor MouseCursor, const int32 ControlId, const ImVec2 MousePos)
 			: CopiedDrawData{ *DrawData }
-		, MouseCursor(MouseCursor)
+			, MouseCursor(MouseCursor)
+			, ControlId(ControlId)
+			, MousePos{ MousePos }
 		{
 			CopiedDrawData.CmdLists = new ImDrawList*[DrawData->CmdListsCount];
 			for (int32 Idx = 0; Idx < DrawData->CmdListsCount; ++Idx)
@@ -578,7 +590,8 @@ private:
 		{
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
 			const ImDrawData* DrawData = ImGui::GetDrawData();
-			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor));
+			const ImVec2 MousePos = ImGui::GetMousePos();
+			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor, State.CurControlId, MousePos));
 		}
 
 	    ImGui::EndFrame();
@@ -591,7 +604,8 @@ private:
 			const FImGuiData* ImGuiData = ImGuiDataTripleBuffer.SwapAndRead().Get();
 			// store ImDrawData for asynchronous dispatching to WS clients
 			const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
-			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText);
+			const ImVec2 MousePos = ImGuiData->MousePos;
+			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, MousePos.x, MousePos.y);
 		}
 	}
 };

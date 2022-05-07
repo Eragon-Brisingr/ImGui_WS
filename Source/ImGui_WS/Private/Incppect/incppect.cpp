@@ -336,8 +336,10 @@ struct Incppect<SSL>::Impl {
 
             curBuffer.clear();
 
-            uint32_t typeAll = 0;
-            std::copy((char *)(&typeAll), (char *)(&typeAll) + sizeof(typeAll), std::back_inserter(curBuffer));
+            {
+                uint32_t typeAll = 0;
+                std::copy((char *)(&typeAll), (char *)(&typeAll) + sizeof(typeAll), std::back_inserter(curBuffer));
+            }
 
             for (auto & [requestId, req] : cd.requests) {
                 auto & getter = getters[req.getterId];
@@ -443,8 +445,8 @@ struct Incppect<SSL>::Impl {
                     uint32_t n = 0;
                     diffBuffer.clear();
 
-                    uint32_t TypeAll = 1;
-                    std::copy((char *)(&TypeAll), (char *)(&TypeAll) + sizeof(TypeAll), std::back_inserter(diffBuffer));
+                    uint32_t typeAll = 1;
+                    std::copy((char *)(&typeAll), (char *)(&typeAll) + sizeof(typeAll), std::back_inserter(diffBuffer));
 
                     for (int i = 4; i < (int) curBuffer.size(); i += 4) {
                         std::memcpy((char *)(&a), prevBuffer.data() + i, sizeof(uint32_t));
