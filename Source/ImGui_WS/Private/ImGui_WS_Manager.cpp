@@ -3,7 +3,7 @@
 
 #include "ImGui_WS_Manager.h"
 #include <thread>
-#include <map>
+#include <sstream>
 #include <Interfaces/IPluginManager.h>
 #include <Containers/TripleBuffer.h>
 
@@ -15,12 +15,19 @@
 
 FAutoConsoleCommand LaunchImGuiWeb
 {
-	TEXT("ImGui.LaunchWeb"),
+	TEXT("ImGui.WS.LaunchWeb"),
 	TEXT("Open ImGui-WS Web"),
 	FConsoleCommandDelegate::CreateLambda([]
 	{
 		const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
-		FPlatformProcess::LaunchURL(*FString::Printf(TEXT("http://localhost:%d"), Manager->GetPort()), nullptr, nullptr);
+		if (Manager->IsEnable())
+		{
+			FPlatformProcess::LaunchURL(*FString::Printf(TEXT("http://localhost:%d"), Manager->GetPort()), nullptr, nullptr);
+		}
+		else
+		{
+			FPlatformProcess::LaunchURL(TEXT("http://localhost#ImGui_WS_Not_Enable!"), nullptr, nullptr);
+		}
 	})
 };
 
@@ -33,7 +40,30 @@ TAutoConsoleVariable<int32> ImGui_WS_Port
 	TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
 	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{
-		UE_LOG(LogTemp, Log, TEXT("ImGui_WS_Port=%d"), ImGui_WS_Port.GetValueOnGameThread());
+		GetMutableDefault<UImGui_WS_Settings>()->Port = ImGui_WS_Port.GetValueOnGameThread();
+	})
+};
+
+TAutoConsoleVariable<int32> ImGui_WS_Enable
+{
+	TEXT("ImGui.WS.Enable"),
+	-1,
+	TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
+	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+	{
+		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+		if (GIsEditor)
+		{
+			Settings->bEditorEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+		}
+		else if (GIsServer)
+		{
+			Settings->bServerEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+		}
+		else if (GIsClient)
+		{
+			Settings->bClientEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+		}
 	})
 };
 
@@ -173,18 +203,6 @@ private:
 			return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(); // duh ..
 		}
 
-		void wait()
-		{
-			uint64_t tNow_us = t_us();
-			while (tNow_us < tNext_us - 100)
-			{
-				std::this_thread::sleep_for(std::chrono::microseconds((uint64_t) (0.9*(tNext_us - tNow_us))));
-				tNow_us = t_us();
-			}
-
-			tNext_us += tStep_us;
-		}
-
 		float Delta_S()
 		{
 			uint64_t tNow_us = t_us();
@@ -203,18 +221,15 @@ private:
 		// client control management
 		struct ClientData
 		{
-			bool hasControl = false;
+			double ControlStartTime = 0.f;
 
-			std::string ip = "---";
+			std::string IpString = "---";
+			uint32 Ip;
 		};
 
-		// client control
-		float tControl_s = 10.0f;
-		float tControlNext_s = 0.0f;
-
-		int controlIteration = 0;
 		int CurControlId = -1;
-		std::map<int, ClientData> clients;
+		bool bIsIdControlChanged = false;
+		TMap<int32, ClientData> Clients;
 
 		// client input
 		TArray<ImGuiWS::Event, TInlineAllocator<16>> PendingEvents;
@@ -227,12 +242,20 @@ private:
 			{
 	        case ImGuiWS::Event::Connected:
 				{
-	                clients[Event.clientId].ip = Event.ip;
+	                ClientData& Client = Clients.Add(Event.clientId);
+	        		
+	        		std::stringstream ss;
+			        { int32 a = uint8(Event.ip); if (a < 0) a += 256; ss << a << "."; }
+			        { int32 a = uint8(Event.ip >> 8); if (a < 0) a += 256; ss << a << "."; }
+			        { int32 a = uint8(Event.ip >> 16); if (a < 0) a += 256; ss << a << "."; }
+			        { int32 a = uint8(Event.ip >> 24); if (a < 0) a += 256; ss << a; }
+	        		Client.Ip = Event.ip;
+	        		Client.IpString = ss.str();
 	            }
 	            break;
 	        case ImGuiWS::Event::Disconnected:
 				{
-	                clients.erase(Event.clientId);
+	                Clients.Remove(Event.clientId);
 	            }
 	            break;
 	        case ImGuiWS::Event::MouseMove:
@@ -249,14 +272,6 @@ private:
 	                }
 	            }
 	            break;
-		    case ImGuiWS::Event::PasteClipboard:
-			    {
-			    	if (Event.clientId == CurControlId)
-			    	{
-		    			ImGui::SetClipboardText(Event.clipboard_text.c_str());
-			    	}
-			    }
-		    	break;
 			case ImGuiWS::Event::Resize:
 				{
 					if (Event.clientId == CurControlId)
@@ -269,6 +284,24 @@ private:
 					}
 				}
 		    	break;
+		    case ImGuiWS::Event::TakeControl:
+			    {
+		    		if (auto* Client = Clients.Find(Event.clientId))
+		    		{
+		    			CurControlId = Event.clientId;
+		    			bIsIdControlChanged = true;
+		    			Client->ControlStartTime = ImGui::GetTime();
+		    		}
+			    }
+		    	break;
+		    case ImGuiWS::Event::PasteClipboard:
+		    	{
+		    		if (Event.clientId == CurControlId)
+		    		{
+		    			ImGui::SetClipboardText(Event.clipboard_text.c_str());
+		    		}
+		    	}
+		    	break;
 	        default:
 				{
 	                ensureMsgf(false, TEXT("Unknown input event\n"));
@@ -278,28 +311,15 @@ private:
 
 		void Update()
 		{
-			bool bIsIdControlChanged = false;
-		    if (clients.size() > 0 && (clients.find(CurControlId) == clients.end() || ImGui::GetTime() > tControlNext_s))
+			if (Clients.Contains(CurControlId) == false && Clients.Num() > 0)
 			{
-		        if (clients.find(CurControlId) != clients.end())
-				{
-		            clients[CurControlId].hasControl = false;
-		        }
-		        int k = ++controlIteration % clients.size();
-		        auto client = clients.begin();
-		        std::advance(client, k);
-		        client->second.hasControl = true;
-		    	if (CurControlId != client->first)
-		    	{
-					CurControlId = client->first;
-		    		bIsIdControlChanged = true;
-		    	}
-		        tControlNext_s = ImGui::GetTime() + tControl_s;
-		    }
-
-		    if (clients.size() == 0 && CurControlId != INDEX_NONE)
+				CurControlId = Clients.CreateIterator().Key();
+				bIsIdControlChanged = true;
+			}
+		    else if (Clients.Num() == 0 && CurControlId != INDEX_NONE)
 			{
 		        CurControlId = INDEX_NONE;
+		    	bIsIdControlChanged = true;
 		    }
 
 			ImGuiIO& IO = ImGui::GetIO();
@@ -363,6 +383,7 @@ private:
 					}
 				}
 				KeyDownEvents.Empty();
+				bIsIdControlChanged = false;
 			}
 		    if (CurControlId > 0)
 			{
@@ -435,13 +456,15 @@ private:
 		ImDrawData CopiedDrawData;
 		const ImGuiMouseCursor MouseCursor;
 		const int32 ControlId;
+		const uint32 ControlIp;
 		const ImVec2 MousePos;
 		const ImVec2 ViewportSize;
 
-		FImGuiData(const ImDrawData* DrawData, const ImGuiMouseCursor MouseCursor, const int32 ControlId, const ImVec2& MousePos, const ImVec2& ViewportSize)
+		FImGuiData(const ImDrawData* DrawData, const ImGuiMouseCursor MouseCursor, const int32 ControlId, uint32 ControlIp, const ImVec2& MousePos, const ImVec2& ViewportSize)
 			: CopiedDrawData{ *DrawData }
 			, MouseCursor(MouseCursor)
 			, ControlId(ControlId)
+			, ControlIp(ControlIp)
 			, MousePos{ MousePos }
 			, ViewportSize(ViewportSize)
 		{
@@ -578,14 +601,14 @@ private:
 						ImGui::BeginTooltip();
 						ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 						ImGui::Separator();
-						ImGui::Text(" Id   Ip addr");
-						for (auto & [ cid, client ] : State.clients)
+						ImGui::Text(" Id   Ip address");
+						for (auto & [ cid, client ] : State.Clients)
 						{
-							ImGui::Text("%3d : %s", cid, client.ip.c_str());
-							if (client.hasControl)
+							ImGui::Text("%3d : %s", cid, client.IpString.c_str());
+							if (cid == State.CurControlId)
 							{
 								ImGui::SameLine();
-								ImGui::TextDisabled(" [has control for %4.2f seconds]", State.tControlNext_s - ImGui::GetTime());
+								ImGui::TextDisabled(" [has controlled %4.2f seconds]", ImGui::GetTime() - client.ControlStartTime);
 							}
 						}
 						ImGui::EndTooltip();
@@ -604,7 +627,8 @@ private:
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
 			const ImDrawData* DrawData = ImGui::GetDrawData();
 			const ImVec2 MousePos = ImGui::GetMousePos();
-			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor, State.CurControlId, MousePos, IO.DisplaySize));
+			const auto CurControlIp = State.Clients.FindRef(State.CurControlId).Ip;
+			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor, State.CurControlId, CurControlIp, MousePos, IO.DisplaySize));
 		}
 
 	    ImGui::EndFrame();
@@ -619,7 +643,7 @@ private:
 			const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
 			const ImVec2 MousePos = ImGuiData->MousePos;
 			const ImVec2 ViewportSize = ImGuiData->ViewportSize;
-			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, MousePos.x, MousePos.y, ViewportSize.x, ViewportSize.y);
+			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, ImGuiData->ControlIp, MousePos.x, MousePos.y, ViewportSize.x, ViewportSize.y);
 		}
 	}
 };
@@ -648,29 +672,41 @@ FImGui_WS_Context* UImGui_WS_Manager::GetImGuiEditorContext()
 #endif
 }
 
+bool UImGui_WS_Manager::IsSettingsEnable()
+{
+	const UImGui_WS_Settings* Settings = GetDefault<UImGui_WS_Settings>();
+	if (GIsEditor)
+	{
+		return Settings->bEditorEnableImGui_WS;
+	}
+	else if (GIsServer)
+	{
+		return Settings->bServerEnableImGui_WS;
+	}
+	else if (GIsClient)
+	{
+		return Settings->bClientEnableImGui_WS;
+	}
+	return false;
+}
+
 int32 UImGui_WS_Manager::GetPort() const
 {
-	// Console Variable
-	const int32 CustomPort = ImGui_WS_Port.GetValueOnGameThread();
-	if (CustomPort != INDEX_NONE)
-	{
-		return CustomPort;
-	}
-	
+	const int32 BasePort = GetDefault<UImGui_WS_Settings>()->Port;
+#if WITH_EDITOR
 	if (GIsEditor)
 	{
 		// Editor
-		return 8890;
+		return BasePort + 2;
 	}
-	
 	if (IsRunningDedicatedServer())
 	{
 		// DedicatedServer
-		return 8891;
+		return BasePort + 1;
 	}
-	
+#endif
 	// Game
-	return 8892;
+	return BasePort;
 }
 
 int32 UImGui_WS_Manager::GetConnectionCount() const
@@ -686,6 +722,10 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		if (GEngine->DeferredCommands.Num() == 0)
 		{
+			if (IsSettingsEnable() == false)
+			{
+				return false;
+			}
 			Drawer = new FDrawer{ *this };
 			return false;
 		}

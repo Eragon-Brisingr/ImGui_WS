@@ -21,11 +21,12 @@
 </head>
 
 <nav class="floating-menu">
-    <div id="client-info"></div>
+    <button id="take_control_btn">take control</button>
+    <br>
     Update freq: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms"
         onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
     <output id="update_freq_ms_out">16</output>[ms]<br>
-    <br>
+    <div id="client-info"></div>
 </nav>
 
 <script>
@@ -33,42 +34,75 @@
     function init() {
         var output = document.getElementById('client-info');
         var canvas_main = document.getElementById('canvas_main');
+        var take_control_btn = document.getElementById('take_control_btn');
+
+        // sync control viewport size
+        window.addEventListener('resize', resizeCanvas, false);
+        function resizeCanvas() {
+            canvas_main.width = window.innerWidth;
+            canvas_main.height = window.innerHeight;
+            incppect.send('7 ' + canvas_main.width + ' ' + canvas_main.height);
+        }
         canvas_main.width = window.innerWidth;
         canvas_main.height = window.innerHeight;
+
+        // take control
+        take_control_btn.onclick = function () {
+            incppect.send('8');
+        }
+
+        function intToIp(int) {
+            var part1 = int & 255;
+            var part2 = ((int >> 8) & 255);
+            var part3 = ((int >> 16) & 255);
+            var part4 = ((int >> 24) & 255);
+
+            if (part1 == 0 && part2 == 0 && part3 == 0 && part4 == 1) {
+                return 'localhost';
+            }
+
+            return part1 + "." + part2 + "." + part3 + "." + part4;
+        }
+
+        function displayMessage(message) {
+            var div = document.getElementById('messageDev');
+            div.style.opacity = 1;
+            div.style.display = 'block';
+            div.innerHTML = message;
+            setTimeout(function(){
+                div.style.opacity = 0;
+                setTimeout(function(){ div.style.display = 'none'; }, 600);
+            }, 3600);
+        }
 
         incppect.render = function () {
             var my_id = this.get_int32('my_id[%d]', -1) || 0;
             var control_id = this.get_int32('control_id');
+            var control_ip = this.get_int32('control_ip');
             var nclients = this.get_int32('incppect.nclients');
             var tx_total = this.get_double('incppect.tx_total');
             var rx_total = this.get_double('incppect.rx_total');
 
-            const is_control_get = pre_control_id != my_id && control_id == my_id;
+            const is_control_take = pre_control_id != my_id && control_id == my_id;
             const is_control_lost = pre_control_id == my_id && control_id != my_id;
             pre_control_id = control_id;
-            if (is_control_get) {
+            if (is_control_take) {
                 resizeCanvas();
+                displayMessage(`<strong>Take Control</strong> control id = ${control_id}`);
+                take_control_btn.disabled = true;
             }
             else if (is_control_lost) {
                 canvas_main.style.cursor = 'default';
+                take_control_btn.disabled = false;
+                alert(`lost control!\n\ncurrent control id = ${control_id}\ncurrent control ip = ${intToIp(control_ip)}`);
             }
 
-            output.innerHTML = 'nclients = ' + nclients + '<br>';
+            output.innerHTML = `Your client Id: ${my_id}<br>`;
+            output.innerHTML += `Current control Id: ${control_id} | Ip: ${intToIp(control_ip)}<br>`
+            output.innerHTML += 'nclients = ' + nclients + '<br>';
             for (var i = 0; i < nclients; ++i) {
                 var ipaddress_bytes = this.get_int32('incppect.ip_address[%d]', i);
-                function int_to_ip(int) {
-                    var part1 = int & 255;
-                    var part2 = ((int >> 8) & 255);
-                    var part3 = ((int >> 16) & 255);
-                    var part4 = ((int >> 24) & 255);
-
-                    if (part1 == 0 && part2 == 0 && part3 == 0 && part4 == 1) {
-                        return "localhost";
-                    }
-
-                    return part1 + "." + part2 + "." + part3 + "." + part4;
-                }
-                output.innerHTML += 'client ' + i + ' : ' + int_to_ip(ipaddress_bytes) + '<br>';
+                output.innerHTML += 'client ' + i + ' : ' + intToIp(ipaddress_bytes) + '<br>';
             }
             output.innerHTML += '<br>';
             output.innerHTML += 'Server stats:<br>';
@@ -78,7 +112,6 @@
             output.innerHTML += 'Client stats:<br>';
             output.innerHTML += 'tx client = ' + (this.stats.tx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.tx_n) + ' msgs<br>';
             output.innerHTML += 'rx client = ' + (this.stats.rx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.rx_n) + ' msgs<br>';
-            output.innerHTML += `Your client Id: ${my_id} | Current control Id: ${control_id}`;
 
             if (my_id == control_id) {
                 var mouse_cursor = this.get_int32('imgui.mouse_cursor', -1) || 0;
@@ -102,8 +135,7 @@
                     navigator.clipboard.writeText(clipboard_text);
                 }
             }
-            else
-            {
+            else {
                 var viewport_size = this.get_float_arr('imgui.viewport_size');
                 canvas_main.width = viewport_size[0];
                 canvas_main.height = viewport_size[1];
@@ -135,45 +167,57 @@
         imgui_ws.init('canvas_main');
     }
 
-    function resizeCanvas() {
-        var canvas_main = document.getElementById('canvas_main');
-        canvas_main.width = window.innerWidth;
-        canvas_main.height = window.innerHeight;
-        incppect.send('7 ' + canvas_main.width + ' ' + canvas_main.height);
-    }
-
     window.addEventListener('load', init);
-    window.addEventListener('resize', resizeCanvas, false);
 </script>
 
 <style>
-.container {
-    width: 100%;
-    height: 100%;
-    position: absolute;    
-    margin:auto;
-    top:0;
-    bottom:0;
-    left:0;
-    right:0;
-    background-color: #000;
+    .container {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        margin: auto;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #000;
     }
-.canvas {
-    max-width: 100%;
-    max-height: 100%;  
-    position: absolute;
-    margin:auto;
-    top:0;
-    bottom:0;
-    left:0;
-    right:0;
+
+    .canvas {
+        max-width: 100%;
+        max-height: 100%;
+        position: absolute;
+        margin: auto;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .message {
+        padding: 10px;
+        margin: auto;
+        margin-top: 20;
+        position: relative;
+        background-color: #2196F3;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.6s;
+        width: 420;
+        border-radius: 8px;
+        text-align: center;
+        display: none;
     }
 </style>
 
-<body class = "container">
+<body class="container">
     <canvas id="canvas_main" class="canvas" tabindex="0">
         Your browser does not support the HTML5 canvas tag.
     </canvas>
 </body>
+
+<div class="message" id="messageDev">
+    
+</div>
 
 </html>

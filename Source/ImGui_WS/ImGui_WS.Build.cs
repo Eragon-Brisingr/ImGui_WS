@@ -23,6 +23,7 @@ public class ImGui_WS : ModuleRules
 	        "Navmesh",
 	        "NavigationSystem",
 	        "Projects",
+	        "DeveloperSettings",
 	        
 	        "ImGui",
 	        "zlib",

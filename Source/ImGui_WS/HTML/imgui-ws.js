@@ -229,7 +229,7 @@ var imgui_ws = {
             return;
         }
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        
+
         var clip_off_x = 0.0;
         var clip_off_y = 0.0;
 
@@ -326,11 +326,11 @@ var imgui_ws = {
 
     set_incppect_handlers: function(incppect) {
         var ctrlDown = false;
-        let ctrlKey = 17;
-        let cmdKey = 91;
-        let vKey = 86;
-        let cKey = 67;
-        let xKey = 88;
+        const ctrlKey = 17;
+        const cmdKey = 91;
+        const vKey = 86;
+        const cKey = 67;
+        const xKey = 88;
 
         this.canvas_on_keyup = function(event) {
             if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
@@ -345,7 +345,7 @@ var imgui_ws = {
             }
 
             if (ctrlDown && (event.keyCode == cKey || event.keyCode == xKey)) {
-                // copy & cut 当前靠轮询处理
+                // copy & cut in render impl
             }
 
             if (ctrlDown && event.keyCode == vKey) {

@@ -60,6 +60,7 @@ struct ImGuiWS::Impl {
     int32_t mouseCursor = 0;
     std::string clipboardText;
     int32_t controlId;
+    uint32_t controlIp;
     float mousePosX;
     float mousePosY;
     float viewportSizeX;
@@ -118,7 +119,15 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
 
        return incppect::view(m_impl->controlId);
    });
-    
+
+    // current control IP
+    m_impl->incpp.var("control_ip", [this](const auto& )
+   {
+       std::shared_lock lock(m_impl->mutex);
+
+       return incppect::view(m_impl->controlIp);
+   });
+
     // sync clipboard
     m_impl->incpp.var("imgui.clipboard", [this](const auto& )
     {
@@ -218,12 +227,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
                 {
                     ++m_impl->nConnected;
                     event.type = Event::Connected;
-                    std::stringstream ss;
-                    { int a = data[0]; if (a < 0) a += 256; ss << a << "."; }
-                    { int a = data[1]; if (a < 0) a += 256; ss << a << "."; }
-                    { int a = data[2]; if (a < 0) a += 256; ss << a << "."; }
-                    { int a = data[3]; if (a < 0) a += 256; ss << a; }
-                    event.ip = ss.str();
+                    event.ip = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
                     if (m_impl->handlerConnect) {
                         m_impl->handlerConnect();
                     }
@@ -335,9 +339,6 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
         m_impl->events.push(std::move(event));
     });
 
-    /*resources.push_back("imgui-ws.js");
-    m_impl->incpp.setResource("/imgui-ws.js", kImGuiWS_js);*/
-
     // start the http/websocket server
     incppect::Parameters parameters;
     parameters.portListen = port;
@@ -402,7 +403,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     return init(port, std::move(pathHttp), std::move(resources), preMainLoop);
 }
 
-bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText, int32_t control_id, float mousePosX, float mousePosY, float viewportSizeX, float viewportSizeY) {
+bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText, int32_t controlId, uint32_t controlIp, float mousePosX, float mousePosY, float viewportSizeX, float viewportSizeY) {
     bool result = true;
 
     result &= m_impl->compressorDrawData->setDrawData(drawData);
@@ -418,7 +419,8 @@ bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const
         m_impl->dataRead.drawListsDiff = std::move(drawListsDiff);
         m_impl->mouseCursor = mouseCursor;
         m_impl->clipboardText = clipboardText;
-        m_impl->controlId = control_id;
+        m_impl->controlId = controlId;
+        m_impl->controlIp = controlIp;
         m_impl->mousePosX = mousePosX;
         m_impl->mousePosY = mousePosY;
         m_impl->viewportSizeX = viewportSizeX;
