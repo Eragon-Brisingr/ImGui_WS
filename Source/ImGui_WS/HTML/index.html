@@ -1,12 +1,30 @@
 <style>
-    .floating-menu {
+    .menu-button {
         font-family: sans-serif;
-        background: yellowgreen;
-        padding: 5px;
-        z-index: 100;
+        background: #b4dbff;
+        padding: 4px;
+        height: 24px;
+        z-index: 1;
         position: fixed;
-        bottom: 0px;
-        right: 0px;
+        bottom: 20px;
+        right: 20px;
+        border-radius: 16px;
+    }
+    
+    .menu-content {
+        display: none;
+        padding: 8px;
+        position: fixed;
+        width: auto;
+        overflow: auto;
+        background: #b4dbff;
+        bottom: 20px;
+        right: 20px;
+        border-radius: 16px;
+    }
+
+    .menu-button:hover .menu-content {
+        display: block;
     }
 </style>
 
@@ -20,14 +38,17 @@
     <script src="imgui-ws.js"></script>
 </head>
 
-<nav class="floating-menu">
-    <button id="take_control_btn">take control</button>
-    <br>
-    Update freq: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms"
-        onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
-    <output id="update_freq_ms_out">16</output>[ms]<br>
-    <div id="client-info"></div>
-</nav>
+<div class="menu-button">
+    Menu
+    <div class="menu-content">
+        <button id="take_control_btn">take control</button>
+        <br>
+        Update freq: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms"
+            onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
+        <output id="update_freq_ms_out">16</output>[ms]<br>
+        <div id="client-info"></div>
+    </div>    
+</div>
 
 <script>
     var pre_control_id = -1;
@@ -69,9 +90,9 @@
             div.style.opacity = 1;
             div.style.display = 'block';
             div.innerHTML = message;
-            setTimeout(function(){
+            setTimeout(function () {
                 div.style.opacity = 0;
-                setTimeout(function(){ div.style.display = 'none'; }, 600);
+                setTimeout(function () { div.style.display = 'none'; }, 600);
             }, 3600);
         }
 
@@ -97,13 +118,10 @@
                 alert(`lost control!\n\ncurrent control id = ${control_id}\ncurrent control ip = ${intToIp(control_ip)}`);
             }
 
-            output.innerHTML = `Your client Id: ${my_id}<br>`;
+            output.innerHTML = '<br>';
+            output.innerHTML += `Your client Id: ${my_id}<br>`;
             output.innerHTML += `Current control Id: ${control_id} | Ip: ${intToIp(control_ip)}<br>`
             output.innerHTML += 'nclients = ' + nclients + '<br>';
-            for (var i = 0; i < nclients; ++i) {
-                var ipaddress_bytes = this.get_int32('incppect.ip_address[%d]', i);
-                output.innerHTML += 'client ' + i + ' : ' + intToIp(ipaddress_bytes) + '<br>';
-            }
             output.innerHTML += '<br>';
             output.innerHTML += 'Server stats:<br>';
             output.innerHTML += 'tx total = ' + (tx_total / 1024.0 / 1024.0).toFixed(2) + ' MB<br>';
@@ -214,10 +232,7 @@
     <canvas id="canvas_main" class="canvas" tabindex="0">
         Your browser does not support the HTML5 canvas tag.
     </canvas>
+    <div class="message" id="messageDev"></div>
 </body>
-
-<div class="message" id="messageDev">
-    
-</div>
 
 </html>
