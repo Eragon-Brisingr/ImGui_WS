@@ -45,12 +45,6 @@ struct ImGuiWS::Impl {
 
         ImDrawDataCompressor::Interface::DrawLists drawLists;
         ImDrawDataCompressor::Interface::DrawListsDiff drawListsDiff;
-        
-        int32_t mouseCursor = 0;
-        std::string clipboardText;
-        int32_t controlId;
-        float mousePosX;
-        float mousePosY;
     };
 
     Impl() : compressorDrawData(new ImDrawDataCompressor::XorRlePerDrawListWithVtxOffset()) {}
@@ -63,6 +57,14 @@ struct ImGuiWS::Impl {
     Data dataWrite;
     Data dataRead;
 
+    int32_t mouseCursor = 0;
+    std::string clipboardText;
+    int32_t controlId;
+    float mousePosX;
+    float mousePosY;
+    float viewportSizeX;
+    float viewportSizeY;
+    
     Events events;
 
     incppect incpp;
@@ -106,7 +108,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     {
         std::shared_lock lock(m_impl->mutex);
 
-        return incppect::view(m_impl->dataRead.mouseCursor);
+        return incppect::view(m_impl->mouseCursor);
     });
 
     // current control_id
@@ -114,7 +116,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
    {
        std::shared_lock lock(m_impl->mutex);
 
-       return incppect::view(m_impl->dataRead.controlId);
+       return incppect::view(m_impl->controlId);
    });
     
     // sync clipboard
@@ -122,14 +124,24 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     {
         std::shared_lock lock(m_impl->mutex);
 
-        return incppect::view(m_impl->dataRead.clipboardText);
+        return incppect::view(m_impl->clipboardText);
     });
 
+    // sync to uncontrol mouse position
     m_impl->incpp.var("imgui.mouse_pos", [this](const auto& )
     {
         std::shared_lock lock(m_impl->mutex);
 
-        std::array<float, 2> MousePos{ m_impl->dataRead.mousePosX, m_impl->dataRead.mousePosY };
+        std::array<float, 2> MousePos{ m_impl->mousePosX, m_impl->mousePosY };
+        return incppect::view(MousePos);
+    });
+    
+    // sync to uncontrol viewport size
+    m_impl->incpp.var("imgui.viewport_size", [this](const auto& )
+    {
+        std::shared_lock lock(m_impl->mutex);
+
+        std::array<float, 2> MousePos{ m_impl->viewportSizeX, m_impl->viewportSizeY };
         return incppect::view(MousePos);
     });
     
@@ -390,7 +402,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     return init(port, std::move(pathHttp), std::move(resources), preMainLoop);
 }
 
-bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText, int32_t control_id, float mousePosX, float mousePosY) {
+bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText, int32_t control_id, float mousePosX, float mousePosY, float viewportSizeX, float viewportSizeY) {
     bool result = true;
 
     result &= m_impl->compressorDrawData->setDrawData(drawData);
@@ -404,11 +416,13 @@ bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const
 
         m_impl->dataRead.drawLists = std::move(drawLists);
         m_impl->dataRead.drawListsDiff = std::move(drawListsDiff);
-        m_impl->dataRead.mouseCursor = mouseCursor;
-        m_impl->dataRead.clipboardText = clipboardText;
-        m_impl->dataRead.controlId = control_id;
-        m_impl->dataRead.mousePosX = mousePosX;
-        m_impl->dataRead.mousePosY = mousePosY;
+        m_impl->mouseCursor = mouseCursor;
+        m_impl->clipboardText = clipboardText;
+        m_impl->controlId = control_id;
+        m_impl->mousePosX = mousePosX;
+        m_impl->mousePosY = mousePosY;
+        m_impl->viewportSizeX = viewportSizeX;
+        m_impl->viewportSizeY = viewportSizeY;
     }
 
     return result;

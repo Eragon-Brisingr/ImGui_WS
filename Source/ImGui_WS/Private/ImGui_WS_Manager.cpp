@@ -436,12 +436,14 @@ private:
 		const ImGuiMouseCursor MouseCursor;
 		const int32 ControlId;
 		const ImVec2 MousePos;
+		const ImVec2 ViewportSize;
 
-		FImGuiData(const ImDrawData* DrawData, const ImGuiMouseCursor MouseCursor, const int32 ControlId, const ImVec2 MousePos)
+		FImGuiData(const ImDrawData* DrawData, const ImGuiMouseCursor MouseCursor, const int32 ControlId, const ImVec2& MousePos, const ImVec2& ViewportSize)
 			: CopiedDrawData{ *DrawData }
 			, MouseCursor(MouseCursor)
 			, ControlId(ControlId)
 			, MousePos{ MousePos }
+			, ViewportSize(ViewportSize)
 		{
 			CopiedDrawData.CmdLists = new ImDrawList*[DrawData->CmdListsCount];
 			for (int32 Idx = 0; Idx < DrawData->CmdListsCount; ++Idx)
@@ -602,7 +604,7 @@ private:
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
 			const ImDrawData* DrawData = ImGui::GetDrawData();
 			const ImVec2 MousePos = ImGui::GetMousePos();
-			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor, State.CurControlId, MousePos));
+			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor, State.CurControlId, MousePos, IO.DisplaySize));
 		}
 
 	    ImGui::EndFrame();
@@ -616,7 +618,8 @@ private:
 			// store ImDrawData for asynchronous dispatching to WS clients
 			const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
 			const ImVec2 MousePos = ImGuiData->MousePos;
-			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, MousePos.x, MousePos.y);
+			const ImVec2 ViewportSize = ImGuiData->ViewportSize;
+			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, MousePos.x, MousePos.y, ViewportSize.x, ViewportSize.y);
 		}
 	}
 };

@@ -37,13 +37,6 @@
         canvas_main.height = window.innerHeight;
 
         incppect.render = function () {
-            imgui_ws.gl.clearColor(0.45, 0.55, 0.60, 1.00);
-            imgui_ws.gl.clear(imgui_ws.gl.COLOR_BUFFER_BIT);
-
-            imgui_ws.incppect_textures(this);
-            imgui_ws.incppect_draw_lists(this);
-            imgui_ws.render();
-
             var my_id = this.get_int32('my_id[%d]', -1) || 0;
             var control_id = this.get_int32('control_id');
             var nclients = this.get_int32('incppect.nclients');
@@ -54,7 +47,10 @@
             const is_control_lost = pre_control_id == my_id && control_id != my_id;
             pre_control_id = control_id;
             if (is_control_get) {
-                incppect.send('7 ' + canvas_main.width + ' ' + canvas_main.height);
+                resizeCanvas();
+            }
+            else if (is_control_lost) {
+                canvas_main.style.cursor = 'default';
             }
 
             output.innerHTML = 'nclients = ' + nclients + '<br>';
@@ -106,7 +102,19 @@
                     navigator.clipboard.writeText(clipboard_text);
                 }
             }
+            else
+            {
+                var viewport_size = this.get_float_arr('imgui.viewport_size');
+                canvas_main.width = viewport_size[0];
+                canvas_main.height = viewport_size[1];
+            }
 
+            imgui_ws.gl.clearColor(0.45, 0.55, 0.60, 1.00);
+            imgui_ws.gl.clear(imgui_ws.gl.COLOR_BUFFER_BIT);
+
+            imgui_ws.incppect_textures(this);
+            imgui_ws.incppect_draw_lists(this);
+            imgui_ws.render();
             // TODO: 非主控端绘制主控端的鼠标位置
             // var mouse_pos = this.get_float_arr('imgui.mouse_pos');
         }
@@ -126,7 +134,7 @@
         imgui_ws.set_incppect_handlers(incppect);
         imgui_ws.init('canvas_main');
     }
-    
+
     function resizeCanvas() {
         var canvas_main = document.getElementById('canvas_main');
         canvas_main.width = window.innerWidth;
@@ -138,8 +146,32 @@
     window.addEventListener('resize', resizeCanvas, false);
 </script>
 
-<body style="padding: 0px; margin: 0px;">
-    <canvas id="canvas_main" style="background-color: black; display:block;" tabindex="0">
+<style>
+.container {
+    width: 100%;
+    height: 100%;
+    position: absolute;    
+    margin:auto;
+    top:0;
+    bottom:0;
+    left:0;
+    right:0;
+    background-color: #000;
+    }
+.canvas {
+    max-width: 100%;
+    max-height: 100%;  
+    position: absolute;
+    margin:auto;
+    top:0;
+    bottom:0;
+    left:0;
+    right:0;
+    }
+</style>
+
+<body class = "container">
+    <canvas id="canvas_main" class="canvas" tabindex="0">
         Your browser does not support the HTML5 canvas tag.
     </canvas>
 </body>
