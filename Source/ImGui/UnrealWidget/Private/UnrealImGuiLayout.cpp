@@ -12,21 +12,22 @@ void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuild
 {
 	for (UUnrealImGuiPanelBase* Panel : LayoutBuilder.Panels)
 	{
-		const int32* DockIdPtr = Panel->DefaultDockSpace.Find(GetClass()->GetFName());
-		const int32 PanelDockKey = DockIdPtr ? *DockIdPtr : DefaultDockId;
+		const UUnrealImGuiPanelBase::FDefaultDockLayout* DefaultDockLayout = Panel->DefaultDockSpace.Find(GetClass()->GetFName());
+		const UUnrealImGuiPanelBase::FDefaultPanelState& DefaultPanelState = DefaultDockLayout ? *DefaultDockLayout : Panel->DefaultState;
+		const int32 PanelDockKey = DefaultDockLayout ? DefaultDockLayout->DockId : DefaultDockId;
 		const ImGuiID* MappedDockId = DockIdMap.Find(PanelDockKey);
-		if (MappedDockId && *MappedDockId != UUnrealImGuiPanelBase::NoDock)
+		if (DefaultPanelState.bEnableDock && MappedDockId)
 		{
 			const FString PanelName = Panel->GetLayoutPanelName(LayoutName.ToString());
-			ImGui::DockBuilderDockWindow(TCHAR_TO_UTF8(*PanelName), DockIdMap[PanelDockKey]);
+			ImGui::DockBuilderDockWindow(TCHAR_TO_UTF8(*PanelName), *MappedDockId);
 			
-			Panel->bIsOpen = true;
-			Panel->PanelOpenState.Add(GetClass()->GetFName(), true);
+			Panel->PanelOpenState.Add(GetClass()->GetFName(), Panel->bIsOpen);
+			Panel->SetOpenState(DefaultPanelState.bOpen);
 		}
 		else
 		{
-			Panel->bIsOpen = false;
-			Panel->PanelOpenState.Add(GetClass()->GetFName(), false);
+			Panel->PanelOpenState.Add(GetClass()->GetFName(), Panel->bIsOpen);
+			Panel->SetOpenState(DefaultPanelState.bOpen);
 		}
 	}
 }

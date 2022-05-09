@@ -21,21 +21,49 @@ public:
 
 	int32 ImGuiWindowFlags;
 	FText Title;
-	// 没有Dock，默认漂浮状态
-	static constexpr int32 NoDock = -1;
-	// Key为类型名,Value为DockId
-	TMap<FName, int32> DefaultDockSpace;
+	struct FDefaultPanelState
+	{
+		const bool bOpen;
+		const bool bEnableDock;
+	};
+	struct FDefaultDockLayout : FDefaultPanelState
+	{
+		FDefaultDockLayout(int32 DockId)
+			: FDefaultDockLayout(DockId, true)
+		{}
+		FDefaultDockLayout(int32 DockId, bool bOpen, bool bEnableDock = true)
+			: FDefaultPanelState{ bOpen, bEnableDock }
+			, DockId(DockId)
+		{}
+		FDefaultDockLayout(int32 DockId, const FDefaultPanelState& DefaultPanelState)
+			: FDefaultPanelState{ DefaultPanelState }
+			, DockId(DockId)
+		{}
+		const int32 DockId;
+	};
+	FDefaultPanelState DefaultState{ false, true };
+	// Key为类型名
+	TMap<FName, FDefaultDockLayout> DefaultDockSpace;
 
+	bool IsOpen() const { return bIsOpen; }
+	void SetOpenState(bool bOpen);
+	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s"), *Title.ToString(), *LayoutName); }
+protected:
+	friend struct FUnrealImGuiPanelBuilder;
+	friend class UUnrealImGuiLayoutBase;
+	
 	UPROPERTY(Transient)
 	uint8 bIsOpen : 1;
 	UPROPERTY(Config)
 	TMap<FName, bool> PanelOpenState;
 
-	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s"), *Title.ToString(), *LayoutName); }
-
 	virtual void Register(UObject* Owner) {}
-	virtual void Draw(UObject* Owner, float DeltaSeconds) {}
 	virtual void Unregister(UObject* Owner) {}
+
+	virtual void WhenOpen() {}
+	virtual void WhenClose() {}
+	
+	virtual void Draw(UObject* Owner, float DeltaSeconds) {}
 
 	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, float DeltaSeconds);
 };

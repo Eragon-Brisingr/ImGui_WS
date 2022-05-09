@@ -24,6 +24,7 @@ public:
 	virtual void Unregister(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) {}
 	virtual void LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) {}
 
+	// DefaultDockId = INDEX_NONE mean no dock panel
 	void ApplyPanelDockSettings(const FUnrealImGuiPanelBuilder& LayoutBuilder, TMap<int32, uint32> DockIdMap, const int32 DefaultDockId);
 	void CreateDockSpace(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder);
 

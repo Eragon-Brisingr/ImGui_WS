@@ -91,11 +91,11 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		{
 			if (const bool* IsOpenPtr = Panel->PanelOpenState.Find(Layout->GetClass()->GetFName()))
 			{
-				Panel->bIsOpen = *IsOpenPtr;
+				Panel->SetOpenState(*IsOpenPtr);
 			}
 			else
 			{
-				Panel->bIsOpen = true;
+				Panel->SetOpenState(Panel->DefaultState.bOpen);
 			}
 			Panel->Register(Owner);
 		}
@@ -104,6 +104,13 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 
 void FUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 {
+	for (UUnrealImGuiPanelBase* Panel : Panels)
+	{
+		if (Panel->bIsOpen)
+		{
+			Panel->SetOpenState(false);
+		}
+	}
 	for (UUnrealImGuiLayoutBase* Layout : Layouts)
 	{
 		Layout->Unregister(Owner, *this);
@@ -152,7 +159,7 @@ void FUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 		if (ImGui::Checkbox(TCHAR_TO_UTF8(*Panel->Title.ToString()), &IsOpen))
 		{
 			const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
-			Panel->bIsOpen = IsOpen;
+			Panel->SetOpenState(IsOpen);
 			Panel->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
 			Panel->SaveConfig();
 		}

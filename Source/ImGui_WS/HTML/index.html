@@ -36,6 +36,7 @@
 
     <script src="incppect.js"></script>
     <script src="imgui-ws.js"></script>
+    <script src="draw-mouse-pos.js"></script>
 </head>
 
 <div class="menu-button">
@@ -165,8 +166,11 @@
             imgui_ws.incppect_textures(this);
             imgui_ws.incppect_draw_lists(this);
             imgui_ws.render();
-            // TODO: 非主控端绘制主控端的鼠标位置
-            // var mouse_pos = this.get_float_arr('imgui.mouse_pos');
+
+            if (my_id != control_id) {
+                var mouse_pos = this.get_float_arr('imgui.mouse_pos');
+                draw_mouse_pos.render(mouse_pos[0], mouse_pos[1]);
+            }
         }
 
         incppect.onerror = function (evt) {
@@ -183,6 +187,8 @@
 
         imgui_ws.set_incppect_handlers(incppect);
         imgui_ws.init('canvas_main');
+
+        draw_mouse_pos.init('canvas_main');
     }
 
     window.addEventListener('load', init);

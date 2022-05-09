@@ -12,6 +12,22 @@ UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
 	
 }
 
+void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
+{
+	if (bIsOpen != bOpen)
+	{
+		bIsOpen = bOpen;
+		if (bIsOpen)
+		{
+			WhenOpen();
+		}
+		else
+		{
+			WhenClose();
+		}
+	}
+}
+
 void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, float DeltaSeconds)
 {
 	if (bIsOpen == false)
@@ -28,8 +44,8 @@ void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* 
 	}
 	if (bIsOpen != IsOpen)
 	{
-		bIsOpen = IsOpen;
 		PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
+		SetOpenState(IsOpen);
 		SaveConfig();
 	}
 }

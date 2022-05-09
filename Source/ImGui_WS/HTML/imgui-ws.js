@@ -113,25 +113,6 @@ var imgui_ws = {
         this.attribute_location_position = this.gl.getAttribLocation(this.shader_program,    "Position");
         this.attribute_location_uv       = this.gl.getAttribLocation(this.shader_program,    "UV");
         this.attribute_location_color    = this.gl.getAttribLocation(this.shader_program,    "Color");
-
-        this.gl.enable(this.gl.BLEND);
-        this.gl.blendEquation(this.gl.FUNC_ADD);
-        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-        this.gl.disable(this.gl.CULL_FACE);
-        this.gl.disable(this.gl.DEPTH_TEST);
-
-        this.gl.useProgram(this.shader_program);
-        this.gl.uniform1i(this.attribute_location_tex, 0);
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
-
-        this.gl.enableVertexAttribArray(this.attribute_location_position);
-        this.gl.enableVertexAttribArray(this.attribute_location_uv);
-        this.gl.enableVertexAttribArray(this.attribute_location_color);
-        this.gl.vertexAttribPointer(this.attribute_location_position, 2, this.gl.FLOAT,         false, 5*4, 0);
-        this.gl.vertexAttribPointer(this.attribute_location_uv,       2, this.gl.FLOAT,         false, 5*4, 2*4);
-        this.gl.vertexAttribPointer(this.attribute_location_color,    4, this.gl.UNSIGNED_BYTE, true,  5*4, 4*4);
     },
 
     incppect_textures: function(incppect) {
@@ -228,6 +209,26 @@ var imgui_ws = {
 
             return;
         }
+        this.gl.useProgram(this.shader_program);
+
+        this.gl.enable(this.gl.BLEND);
+        this.gl.blendEquation(this.gl.FUNC_ADD);
+        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+        this.gl.disable(this.gl.CULL_FACE);
+        this.gl.disable(this.gl.DEPTH_TEST);
+
+        this.gl.uniform1i(this.attribute_location_tex, 0);
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
+        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
+
+        this.gl.enableVertexAttribArray(this.attribute_location_position);
+        this.gl.enableVertexAttribArray(this.attribute_location_uv);
+        this.gl.enableVertexAttribArray(this.attribute_location_color);
+        this.gl.vertexAttribPointer(this.attribute_location_position, 2, this.gl.FLOAT,         false, 5*4, 0);
+        this.gl.vertexAttribPointer(this.attribute_location_uv,       2, this.gl.FLOAT,         false, 5*4, 2*4);
+        this.gl.vertexAttribPointer(this.attribute_location_color,    4, this.gl.UNSIGNED_BYTE, true,  5*4, 4*4);
+
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
         var clip_off_x = 0.0;

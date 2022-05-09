@@ -173,7 +173,7 @@ public:
 		
 		// setup imgui-ws
 		const FString HtmlPath = PluginPath / TEXT("Source/ImGui_WS/HTML");
-		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), { "", "index.html", "imgui-ws.js" }, [this]
+		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), { "", "index.html", "imgui-ws.js", "draw-mouse-pos.js" }, [this]
 		{
 			WS_ThreadUpdate();
 		});
@@ -595,7 +595,7 @@ private:
 			if (ImGui::BeginMainMenuBar())
 			{
 				const ImVec2 WindowSize = ImGui::GetWindowSize();
-				ImGui::Indent(WindowSize.x - 180.f);
+				ImGui::Indent(WindowSize.x -140.f);
 				{
 					ImGui::Text("Connections: %d", ImGuiWS.nConnected());
 					if (ImGui::IsItemHovered())
@@ -610,7 +610,15 @@ private:
 							if (cid == State.CurControlId)
 							{
 								ImGui::SameLine();
-								ImGui::TextDisabled(" [has controlled %4.2f seconds]", ImGui::GetTime() - client.ControlStartTime);
+								const float ControlledSeconds = ImGui::GetTime() - client.ControlStartTime;
+								if (ControlledSeconds < 60.f)
+								{
+									ImGui::TextDisabled(" [has controlled %.0f seconds]", ControlledSeconds);
+								}
+								else
+								{
+									ImGui::TextDisabled(" [has controlled %.1f minutes]", ControlledSeconds / 60.f);
+								}
 							}
 						}
 						ImGui::EndTooltip();
