@@ -47,7 +47,7 @@ TAutoConsoleVariable<int32> ImGui_WS_Port
 TAutoConsoleVariable<int32> ImGui_WS_Enable
 {
 	TEXT("ImGui.WS.Enable"),
-	-1,
+	INDEX_NONE,
 	TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
 	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{

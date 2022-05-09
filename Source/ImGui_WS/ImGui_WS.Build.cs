@@ -24,10 +24,10 @@ public class ImGui_WS : ModuleRules
 	        "NavigationSystem",
 	        "Projects",
 	        "DeveloperSettings",
-	        
-	        "ImGui",
 	        "zlib",
 	        "OpenSSL",
+	        
+	        "ImGui",
 	        "UWS",
 		});
 		

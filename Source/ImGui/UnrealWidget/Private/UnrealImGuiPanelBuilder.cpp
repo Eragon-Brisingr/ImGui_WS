@@ -93,6 +93,10 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 			{
 				Panel->SetOpenState(*IsOpenPtr);
 			}
+			else if (const auto* LayoutSettings = Panel->DefaultDockSpace.Find(Layout->GetClass()->GetFName()))
+			{
+				Panel->SetOpenState(LayoutSettings->bOpen);
+			}
 			else
 			{
 				Panel->SetOpenState(Panel->DefaultState.bOpen);
