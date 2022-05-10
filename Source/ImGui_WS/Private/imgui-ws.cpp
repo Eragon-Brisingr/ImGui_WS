@@ -141,8 +141,9 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     {
         std::shared_lock lock(m_impl->mutex);
 
-        std::array<float, 2> MousePos{ m_impl->mousePosX, m_impl->mousePosY };
-        return incppect::view(MousePos);
+        static std::array<float, 2> mousePos;
+        mousePos = { m_impl->mousePosX, m_impl->mousePosY };
+        return incppect::view(mousePos);
     });
     
     // sync to uncontrol viewport size
@@ -150,8 +151,9 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     {
         std::shared_lock lock(m_impl->mutex);
 
-        std::array<float, 2> MousePos{ m_impl->viewportSizeX, m_impl->viewportSizeY };
-        return incppect::view(MousePos);
+        static std::array<float, 2> viewportSize;
+        viewportSize = { m_impl->viewportSizeX, m_impl->viewportSizeY };
+        return incppect::view(viewportSize);
     });
     
     // texture ids
