@@ -30,7 +30,7 @@ public:
 	FImGui_WS_Context Context;
 };
 
-UCLASS(Config=ImGui_WS, DisplayName = "ImGui WS Settings")
+UCLASS(Config=ImGui_WS, DisplayName = "ImGui WS")
 class UImGui_WS_Settings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -44,22 +44,25 @@ public:
 	// Editor
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Editor Enable ImGui WS"))
 	bool bEditorEnableImGui_WS = true;
-	// Packaged DedicatedServer
-	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Server Enable ImGui WS"))
-	bool bServerEnableImGui_WS = true;
-	// Packaged Game
-	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Client Enable ImGui WS"))
-	bool bClientEnableImGui_WS = false;
-
 	// ImGui-WS Web Port, Only Valid When Pre Game Start. Set In
 	// 1. ImGui_WS.ini
 	// [/Script/ImGui_WS.ImGui_WS_Settings]
-	// Port=8890
+	// GamePort=8890
 	// 2. UE4Editor.exe GAMENAME -ExecCmds="ImGui.WS.Port 8890"
-	//
-	// When in Editor, Editor Port = Port + 2, DS Port = Port + 1
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
-	int32 Port = 8890;
+	int32 EditorPort = 8892;
+
+	// Packaged DedicatedServer
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Server Enable ImGui WS"))
+	bool bServerEnableImGui_WS = true;
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	int32 ServerPort = 8891;
+
+	// Packaged Game
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Game Enable ImGui WS"))
+	bool bGameEnableImGui_WS = false;
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	int32 GamePort = 8890;
 };
 
 UCLASS()

@@ -1,4 +1,6 @@
-# ImGui
+# ImGui_WS
+
+[[toc]]
 
 ## 引用仓库地址
 
@@ -7,9 +9,7 @@
 * [imgui-ws](https://github.com/ggerganov/imgui-ws)  
   实现了ImGui网页绘制
 
-## ImGui_WS
-
-### 额外添加的功能
+## 特性
 
 * 网页绘制
 * 虚幻世界俯视图绘制
@@ -18,14 +18,35 @@
 * 中文字体
 * 编辑器布局系统
 
+## 学习如何使用ImGui
+
+在ImGui网页选择ImGui_WS，勾选ImGuiDemo打开Demo面板
+代码查看**ImGuiDemo.cpp**可参考Demo面板复制所需的控件绘制方法
+
+## 网页绘制
+
+点击右下角的ImGui按钮开启对应的网页，或者控制台输入**ImGui.WS.LaunchWeb**打开网页
+
+### 端口号配置
+
+可以通过Config或者命令行来设置端口号
+
+1. ProjectSettings - Plugins - ImGui_WS 中可配置端口号
+2. ImGui_WS.ini配置文件
+    > [/Script/ImGui_WS.ImGui_WS_Settings]  
+    > GamePort=8890
+    > ServerPort=8891
+    > ServerPort=8892
+
+3. 启动参数配置 -ExecCmds="ImGui.WS.Port 8890"
+
+## 虚幻俯视图
+
+![俯视图](Docs/Viewport.png)  
+
 ### 根据类型筛选Actor
 
 FilterActor搜索框中输入**type:ClassPath**后在地图中只会显示当前类型的Actor
-
-### 学习如何使用ImGui
-
-命令行输入 **ImGui.ToggleDemo** 呼出Demo面板，可查看ImGui各种控件
-代码查看**ImGuiDemo.cpp**可参考Demo面板复制所需的控件绘制方法
 
 ### 添加需要可视化的Actor类型
 
@@ -90,11 +111,17 @@ if (ImGui::BeginMenu("Example Menu"))
 // 逻辑中判断开关，开启的情况再进行调试信息的绘制
 ```
 
+## 虚幻细节面板
+
+![细节面板](Docs/Details.png)  
+
 ### 添加自定义类型的绘制方式
 
 查看**FStructCustomizerScoped**的使用方式
 
 ## 编辑器面板布局
+
+![默认布局效果](Docs/DefaultLayout.png)  
 
 ### 概述
 
@@ -181,8 +208,6 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 	ImGui::DockBuilderFinish(DockId);
 }
 ```
-
-![默认布局](Docs/默认布局.png)
 
 ### 新增面板
 

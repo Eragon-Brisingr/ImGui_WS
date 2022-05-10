@@ -40,7 +40,19 @@ TAutoConsoleVariable<int32> ImGui_WS_Port
 	TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
 	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{
-		GetMutableDefault<UImGui_WS_Settings>()->Port = ImGui_WS_Port.GetValueOnGameThread();
+		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+		if (GIsEditor)
+		{
+			Settings->EditorPort = ImGui_WS_Port.GetValueOnGameThread();
+		}
+		if (IsRunningDedicatedServer())
+		{
+			Settings->ServerPort = ImGui_WS_Port.GetValueOnGameThread();
+		}
+		else
+		{
+			Settings->GamePort = ImGui_WS_Port.GetValueOnGameThread();
+		}
 	})
 };
 
@@ -60,9 +72,9 @@ TAutoConsoleVariable<int32> ImGui_WS_Enable
 		{
 			Settings->bServerEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
 		}
-		else if (GIsClient)
+		else
 		{
-			Settings->bClientEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+			Settings->bGameEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
 		}
 	})
 };
@@ -695,28 +707,26 @@ bool UImGui_WS_Manager::IsSettingsEnable()
 	}
 	else if (GIsClient)
 	{
-		return Settings->bClientEnableImGui_WS;
+		return Settings->bGameEnableImGui_WS;
 	}
 	return false;
 }
 
 int32 UImGui_WS_Manager::GetPort() const
 {
-	const int32 BasePort = GetDefault<UImGui_WS_Settings>()->Port;
-#if WITH_EDITOR
+	const UImGui_WS_Settings* Settings = GetDefault<UImGui_WS_Settings>();
 	if (GIsEditor)
 	{
 		// Editor
-		return BasePort + 2;
+		return Settings->EditorPort;
 	}
 	if (IsRunningDedicatedServer())
 	{
 		// DedicatedServer
-		return BasePort + 1;
+		return Settings->ServerPort;
 	}
-#endif
 	// Game
-	return BasePort;
+	return Settings->GamePort;
 }
 
 int32 UImGui_WS_Manager::GetConnectionCount() const
