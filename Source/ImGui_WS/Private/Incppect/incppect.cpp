@@ -8,6 +8,8 @@
 #include "common.h"
 
 #include "App.h" // uWebSockets
+#include "UnrealImGuiStat.h"
+#include "UnrealImGui_Log.h"
 
 #include <algorithm>
 #include <chrono>
@@ -15,12 +17,6 @@
 #include <map>
 #include <sstream>
 #include <string>
-
-#ifdef INCPPECT_DEBUG
-#define my_printf printf
-#else
-#define my_printf(...)
-#endif
 
 namespace {
     inline int64_t timestamp() {
@@ -78,7 +74,7 @@ struct Incppect<SSL>::Impl {
 
         {
             const char * kProtocol = SSL ? "HTTPS" : "HTTP";
-            my_printf("[incppect] running instance. serving %s from '%s'\n", kProtocol, parameters.httpRoot.c_str());
+            UE_LOG(LogImGui, Log, TEXT("[incppect] running instance. serving %s from '%s'"), UTF8_TO_TCHAR(kProtocol), UTF8_TO_TCHAR(parameters.httpRoot.c_str()));
         }
 
         typename uWS::TemplatedApp<SSL>::WebSocketBehavior wsBehaviour;
@@ -86,7 +82,7 @@ struct Incppect<SSL>::Impl {
         wsBehaviour.maxPayloadLength = parameters.maxPayloadLength_bytes;
         wsBehaviour.idleTimeout = parameters.tIdleTimeout_s;
         wsBehaviour.open = [&](auto * ws, auto * /*req*/) {
-            static int32_t uniqueId = 1;
+            static int32_t uniqueId = 0;
             ++uniqueId;
 
             auto & cd = clientData[uniqueId];
@@ -105,7 +101,7 @@ struct Incppect<SSL>::Impl {
 
             socketData.insert({ uniqueId, sd });
 
-            my_printf("[incppect] client with id = %d connected\n", sd->clientId);
+            UE_LOG(LogImGui, Log, TEXT("[incppect] client with id = %d connected"), sd->clientId);
 
             if (handler) {
                 handler(sd->clientId, Connect, { (const char *) cd.ipAddress, 4 } );
@@ -147,12 +143,12 @@ struct Incppect<SSL>::Impl {
                             }
 
                             if (pathToGetter.find(path) != pathToGetter.end()) {
-                                my_printf("[incppect] requestId = %d, path = '%s', nidxs = %d\n", requestId, path.c_str(), nidxs);
+                                UE_LOG(LogImGui, Verbose, TEXT("[incppect] requestId = %d, path = '%s', nidxs = %d"), requestId, UTF8_TO_TCHAR(path.c_str()), nidxs);
                                 request.getterId = pathToGetter[path];
 
                                 cd.requests[requestId] = std::move(request);
                             } else {
-                                my_printf("[incppect] missing path '%s'\n", path.c_str());
+                                UE_LOG(LogImGui, Warning, TEXT("[incppect] missing path '%s'"), UTF8_TO_TCHAR(path.c_str()));
                             }
                         }
                     }
@@ -161,10 +157,10 @@ struct Incppect<SSL>::Impl {
                     {
                         int nRequests = (message.size() - sizeof(int32_t))/sizeof(int32_t);
                         if (nRequests*sizeof(int32_t) + sizeof(int32_t) != message.size()) {
-                            my_printf("[incppect] error : invalid message data!\n");
+                            UE_LOG(LogImGui, Error, TEXT("[incppect] error : invalid message data!"));
                             return;
                         }
-                        my_printf("[incppect] received requests: %d\n", nRequests);
+                        UE_LOG(LogImGui, Verbose, TEXT("[incppect] received requests: %d"), nRequests);
 
                         cd.lastRequests.clear();
                         for (int i = 0; i < nRequests; ++i) {
@@ -197,7 +193,7 @@ struct Incppect<SSL>::Impl {
                     }
                     break;
                 default:
-                    my_printf("[incppect] unknown message type: %d\n", type);
+                    UE_LOG(LogImGui, Warning, TEXT("[incppect] unknown message type: %d"), type);
             };
 
             if (doUpdate) {
@@ -207,6 +203,7 @@ struct Incppect<SSL>::Impl {
                     {
                         parameters.preMainLoop();
                     }
+                    DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Update"), STAT_ImGuiWS_Update, STATGROUP_ImGui);
                     this->update();
                 });
             }
@@ -214,7 +211,7 @@ struct Incppect<SSL>::Impl {
         wsBehaviour.drain = [](auto *ws) {
             /* Check getBufferedAmount here */
             if (ws->getBufferedAmount() > 0) {
-                my_printf("[incppect] drain: buffered amount = %d\n", ws->getBufferedAmount());
+                UE_LOG(LogImGui, Log, TEXT("[incppect] drain: buffered amount = %d"), ws->getBufferedAmount());
             }
         };
         wsBehaviour.ping = [](auto * /*ws*/) {
@@ -225,7 +222,7 @@ struct Incppect<SSL>::Impl {
         };
         wsBehaviour.close = [this](auto * ws, int /*code*/, std::string_view /*message*/) {
             auto sd = (PerSocketData *) ws->getUserData();
-            my_printf("[incppect] client with id = %d disconnected\n", sd->clientId);
+            UE_LOG(LogImGui, Log, TEXT("[incppect] client with id = %d disconnected"), sd->clientId);
 
             clientData.erase(sd->clientId);
             socketData.erase(sd->clientId);
@@ -249,11 +246,11 @@ struct Incppect<SSL>::Impl {
         }
 
         if (app->constructorFailed()) {
-            my_printf("[incppect] failed to construct uWS server!\n");
+            UE_LOG(LogImGui, Warning, TEXT("[incppect] failed to construct uWS server!"));
             if (SSL) {
-                my_printf("[incppect] verify that you have valid certificate files:\n");
-                my_printf("[incppect] key  file : '%s'\n", parameters.sslKey.c_str());
-                my_printf("[incppect] cert file : '%s'\n", parameters.sslCert.c_str());
+                UE_LOG(LogImGui, Log, TEXT("[incppect] verify that you have valid certificate files:"));
+                UE_LOG(LogImGui, Log, TEXT("[incppect] key  file : '%s'"), UTF8_TO_TCHAR(parameters.sslKey.c_str()));
+                UE_LOG(LogImGui, Log, TEXT("[incppect] cert file : '%s'"), UTF8_TO_TCHAR(parameters.sslCert.c_str()));
             }
 
             return;
@@ -266,7 +263,7 @@ struct Incppect<SSL>::Impl {
         for (const auto & resource : parameters.resources) {
             (*app).get("/" + resource, [this](auto *res, auto *req) {
                 std::string url = std::string(req->getUrl());
-                my_printf("url = '%s'\n", url.c_str());
+                UE_LOG(LogImGui, Log, TEXT("url = '%s'"), UTF8_TO_TCHAR(url.c_str()));
 
                 if (url.size() == 0) {
                     res->end("Resource not found");
@@ -282,7 +279,7 @@ struct Incppect<SSL>::Impl {
                     return;
                 }
 
-                my_printf("resource = '%s'\n", (parameters.httpRoot + url).c_str());
+                UE_LOG(LogImGui, Log, TEXT("resource = '%s'"), UTF8_TO_TCHAR((parameters.httpRoot + url).c_str()));
                 std::ifstream fin(parameters.httpRoot + url);
 
                 if (fin.is_open() == false || fin.good() == false) {
@@ -307,7 +304,7 @@ struct Incppect<SSL>::Impl {
         }
         (*app).get("/*", [this](auto *res, auto *req) {
             const std::string url = std::string(req->getUrl());
-            my_printf("url = '%s'\n", url.c_str());
+            UE_LOG(LogImGui, Log, TEXT("url = '%s'\n"), UTF8_TO_TCHAR(url.c_str()));
 
             res->end("Resource not found");
             return;
@@ -315,10 +312,10 @@ struct Incppect<SSL>::Impl {
         (*app).listen(parameters.portListen, [this](auto *token) {
             this->listenSocket = token;
             if (token) {
-                my_printf("[incppect] listening on port %d\n", parameters.portListen);
+                UE_LOG(LogImGui, Log, TEXT("[incppect] listening on port %d"), parameters.portListen);
 
                 const char * kProtocol = SSL ? "https" : "http";
-                my_printf("[incppect] %s://localhost:%d/\n", kProtocol, parameters.portListen);
+                UE_LOG(LogImGui, Log, TEXT("[incppect] %s://localhost:%d/"), UTF8_TO_TCHAR(kProtocol), parameters.portListen);
             }
         }).run();
     }
@@ -326,7 +323,7 @@ struct Incppect<SSL>::Impl {
     void update() {
         for (auto & [clientId, cd] : clientData) {
             if (socketData[clientId]->ws->getBufferedAmount()) {
-                my_printf("[incppect] warning: buffered amount = %d, not sending updates to client %d. waiting for buffer to drain\n", socketData[clientId]->ws->getBufferedAmount(), clientId);
+                UE_LOG(LogImGui, Warning, TEXT("[incppect] warning: buffered amount = %d, not sending updates to client %d. waiting for buffer to drain"), socketData[clientId]->ws->getBufferedAmount(), clientId);
                 continue;
             }
 
@@ -342,6 +339,8 @@ struct Incppect<SSL>::Impl {
             }
 
             for (auto & [requestId, req] : cd.requests) {
+                DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Getter"), STAT_ImGuiWS_ImGuiWS_Getter, STATGROUP_ImGui);
+
                 auto & getter = getters[req.getterId];
                 auto tCur = ::timestamp();
                 if (((req.tLastRequestTimeout_ms < 0 && req.tLastRequested_ms > 0) || (tCur - req.tLastRequested_ms < req.tLastRequestTimeout_ms)) &&
@@ -438,6 +437,8 @@ struct Incppect<SSL>::Impl {
             }
 
             if (curBuffer.size() > 4) {
+                DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Diff"), STAT_ImGuiWS_Diff, STATGROUP_ImGui);
+                
                 if (curBuffer.size() == prevBuffer.size() && curBuffer.size() > 256) {
                     uint32_t a = 0;
                     uint32_t b = 0;
@@ -468,25 +469,25 @@ struct Incppect<SSL>::Impl {
                     std::copy((char *)(&c), (char *)(&c) + sizeof(uint32_t), std::back_inserter(diffBuffer));
 
                     if ((int32_t) diffBuffer.size() > parameters.maxPayloadLength_bytes) {
-                        my_printf("[incppect] warning: buffer size (%d) exceeds maxPayloadLength (%d)\n", (int) diffBuffer.size(), parameters.maxPayloadLength_bytes);
+                        UE_LOG(LogImGui, Warning, TEXT("[incppect] warning: buffer size (%d) exceeds maxPayloadLength (%d)"), (int) diffBuffer.size(), parameters.maxPayloadLength_bytes);
                     }
 
                     // compress only for message larger than 64 bytes
                     bool doCompress = diffBuffer.size() > 64;
 
                     if (socketData[clientId]->ws->send({ diffBuffer.data(), diffBuffer.size() }, uWS::OpCode::BINARY, doCompress) == false) {
-                        my_printf("[incpeect] warning: backpressure for client %d increased \n", clientId);
+                        UE_LOG(LogImGui, Warning, TEXT("[incpeect] warning: backpressure for client %d increased"), clientId);
                     }
                 } else {
                     if ((int32_t) curBuffer.size() > parameters.maxPayloadLength_bytes) {
-                        my_printf("[incppect] warning: buffer size (%d) exceeds maxPayloadLength (%d)\n", (int) curBuffer.size(), parameters.maxPayloadLength_bytes);
+                        UE_LOG(LogImGui, Warning, TEXT("[incppect] warning: buffer size (%d) exceeds maxPayloadLength (%d)"), (int) curBuffer.size(), parameters.maxPayloadLength_bytes);
                     }
 
                     // compress only for message larger than 64 bytes
                     bool doCompress = curBuffer.size() > 64;
 
                     if (socketData[clientId]->ws->send({ curBuffer.data(), curBuffer.size() }, uWS::OpCode::BINARY, doCompress) == false) {
-                        my_printf("[incpeect] warning: backpressure for client %d increased \n", clientId);
+                        UE_LOG(LogImGui, Warning, TEXT("[incpeect] warning: backpressure for client %d increased"), clientId);
                     }
                 }
 

@@ -50,7 +50,7 @@ struct ImGuiWS::Impl {
 
     std::atomic<int32_t> nConnected = 0;
 
-    std::thread worker;
+    FThread worker;
     mutable std::shared_mutex mutex;
 
     Data dataWrite;
@@ -80,8 +80,8 @@ ImGuiWS::ImGuiWS() : m_impl(new Impl()) {
 
 ImGuiWS::~ImGuiWS() {
     m_impl->incpp.stop();
-    if (m_impl->worker.joinable()) {
-        m_impl->worker.join();
+    if (m_impl->worker.IsJoinable()) {
+        m_impl->worker.Join();
     }
 }
 
@@ -106,16 +106,12 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     // sync mouse cursor
     m_impl->incpp.var("imgui.mouse_cursor", [this](const auto& )
     {
-        std::shared_lock lock(m_impl->mutex);
-
         return incppect::view(m_impl->mouseCursor);
     });
 
     // current control_id
     m_impl->incpp.var("control_id", [this](const auto& )
    {
-       std::shared_lock lock(m_impl->mutex);
-
        return incppect::view(m_impl->controlId);
    });
 
@@ -130,16 +126,12 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     // sync clipboard
     m_impl->incpp.var("imgui.clipboard", [this](const auto& )
     {
-        std::shared_lock lock(m_impl->mutex);
-
         return incppect::view(m_impl->clipboardText);
     });
 
     // sync to uncontrol mouse position
     m_impl->incpp.var("imgui.mouse_pos", [this](const auto& )
     {
-        std::shared_lock lock(m_impl->mutex);
-
         static std::array<float, 2> mousePos;
         mousePos = { m_impl->mousePosX, m_impl->mousePosY };
         return incppect::view(mousePos);
@@ -148,8 +140,6 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     // sync to uncontrol viewport size
     m_impl->incpp.var("imgui.viewport_size", [this](const auto& )
     {
-        std::shared_lock lock(m_impl->mutex);
-
         static std::array<float, 2> viewportSize;
         viewportSize = { m_impl->viewportSizeX, m_impl->viewportSizeY };
         return incppect::view(viewportSize);
@@ -195,7 +185,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
 
     // get imgui's draw data
     m_impl->incpp.var("imgui.n_draw_lists", [this](const auto & ) {
-        std::shared_lock lock(m_impl->mutex);
+        // std::shared_lock lock(m_impl->mutex);
 
         return incppect::view(m_impl->dataRead.drawLists.size());
     });
@@ -203,7 +193,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     m_impl->incpp.var("imgui.draw_list[%d]", [this](const auto & idxs) {
         static std::vector<char> data;
         {
-            std::shared_lock lock(m_impl->mutex);
+            // std::shared_lock lock(m_impl->mutex);
 
             if (idxs[0] >= (int) m_impl->dataRead.drawLists.size()) {
                 return std::string_view { nullptr, 0 };
@@ -343,16 +333,18 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     // start the http/websocket server
     incppect::Parameters parameters;
     parameters.portListen = port;
-    parameters.maxPayloadLength_bytes = 1024*1024;
+    parameters.maxPayloadLength_bytes = 4*1024*1024;
     parameters.tLastRequestTimeout_ms = -1;
     parameters.httpRoot = std::move(pathHttp);
     parameters.resources = std::move(resources);
     parameters.sslKey = "key.pem";
     parameters.sslCert = "cert.pem";
     parameters.preMainLoop = preMainLoop;
-    m_impl->worker = m_impl->incpp.runAsync(parameters);
-
-    return m_impl->worker.joinable();
+    m_impl->worker = FThread{ TEXT("ImGui_WS"), [incpp = &m_impl->incpp, parameters]
+    {
+        incpp->run(parameters);
+    }, 0, TPri_Lowest};
+    return m_impl->worker.IsJoinable();
 }
 
 bool ImGuiWS::setTexture(TextureId textureId, Texture::Type textureType, int32_t width, int32_t height, const char * data) {
@@ -413,7 +405,7 @@ bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const
 
     // make the draw lists available to incppect clients
     {
-        std::unique_lock lock(m_impl->mutex);
+        // std::unique_lock lock(m_impl->mutex);
 
         m_impl->dataRead.drawLists = std::move(drawLists);
         m_impl->mouseCursor = mouseCursor;
