@@ -92,6 +92,8 @@ bool XorRlePerDrawListWithVtxOffset::setDrawData(const ::ImDrawData * drawData) 
         ::writeCmdListToBuffer(drawData->CmdLists[iList], m_drawListsCur[iList]);
     }
 
+    return true;
+
     // calculate diff
 
     m_drawListsDiff.clear();

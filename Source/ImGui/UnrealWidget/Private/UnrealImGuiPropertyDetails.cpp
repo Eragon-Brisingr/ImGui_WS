@@ -132,11 +132,11 @@ namespace UnrealImGui
 	template<typename ComponentT, int32 Length>
 	struct FComponentPropertyCustomization : public IUnrealStructCustomization
 	{
-		ImGuiDataType data_type;
-		const char* fmt = nullptr;
+		ImGuiDataType DataType;
+		const char* Format = nullptr;
 
 		FComponentPropertyCustomization(ImGuiDataType data_type, const char* fmt = nullptr)
-			: data_type(data_type), fmt(fmt)
+			: DataType(data_type), Format(fmt)
 		{}
 
 		void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
@@ -145,7 +145,7 @@ namespace UnrealImGui
 			
 			ComponentT Component[Length];
 			FMemory::Memcpy(&Component, Containers[0] + Offset, sizeof(ComponentT) * Length);
-			ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), data_type, Component, Length, nullptr, nullptr, fmt);
+			ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), DataType, Component, Length, nullptr, nullptr, Format);
 			if (ImGui::IsItemDeactivatedAfterEdit())
 			{
 				for (uint8* Container : Containers)
@@ -194,10 +194,11 @@ namespace UnrealImGui
 			}
 		};
 
-		AddStructCustomizer(TBaseStructure<FVector>::Get(), MakeShared<FComponentPropertyCustomization<float, 3>>(ImGuiDataType_Float, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FRotator>::Get(), MakeShared<FComponentPropertyCustomization<float, 3>>(ImGuiDataType_Float, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FVector2D>::Get(), MakeShared<FComponentPropertyCustomization<float, 2>>(ImGuiDataType_Float, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FVector4>::Get(), MakeShared<FComponentPropertyCustomization<float, 4>>(ImGuiDataType_Float, "%.3f"));
+		static_assert(TIsSame<FVector::FReal, double>::Value);
+		AddStructCustomizer(TBaseStructure<FVector>::Get(), MakeShared<FComponentPropertyCustomization<FVector::FReal, 3>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TBaseStructure<FRotator>::Get(), MakeShared<FComponentPropertyCustomization<FRotator::FReal, 3>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TBaseStructure<FVector2D>::Get(), MakeShared<FComponentPropertyCustomization<FVector2D::FReal, 2>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TBaseStructure<FVector4>::Get(), MakeShared<FComponentPropertyCustomization<FVector4::FReal, 4>>(ImGuiDataType_Double, "%.3f"));
 		AddStructCustomizer(StaticGetBaseStructure::Get(TEXT("IntVector")), MakeShared<FComponentPropertyCustomization<int32, 3>>(ImGuiDataType_S32));
 
 		struct FQuatCustomization : public IUnrealStructCustomization
@@ -207,7 +208,8 @@ namespace UnrealImGui
 				FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
 				
 				FRotator Rotation = reinterpret_cast<FQuat*>(Containers[0] + Offset)->Rotator();
-				ImGui::InputFloat3(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), (float*)&Rotation);
+				static_assert(TIsSame<FRotator::FReal, double>::Value);
+				ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), ImGuiDataType_Double, (double*)&Rotation, 3);
 				if (ImGui::IsItemDeactivatedAfterEdit())
 				{
 					const FQuat Quat = Rotation.Quaternion();
@@ -228,6 +230,7 @@ namespace UnrealImGui
 				FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
 				
 				FLinearColor Color = *reinterpret_cast<FLinearColor*>(Containers[0] + Offset);
+				static_assert(TIsSame<decltype(Color.A), float>::Value);
 				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), (float*)&Color))
 				{
 					for (uint8* Container : Containers)
@@ -247,6 +250,7 @@ namespace UnrealImGui
 				FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
 
 				FLinearColor Color = *reinterpret_cast<FColor*>(Containers[0] + Offset);
+				static_assert(TIsSame<decltype(Color.A), float>::Value);
 				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), (float*)&Color))
 				{
 					for (uint8* Container : Containers)

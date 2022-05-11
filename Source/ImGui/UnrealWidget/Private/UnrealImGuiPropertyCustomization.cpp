@@ -148,8 +148,8 @@ namespace UnrealImGui
 		}
 		else if (NumericProperty->IsFloatingPoint())
 		{
-			float Number = static_cast<float>(NumericProperty->GetFloatingPointPropertyValue(FirstValuePtr));
-			ImGui::InputScalar(PropertyLabelName, ImGuiDataType_Float, &Number);
+			double Number = NumericProperty->GetFloatingPointPropertyValue(FirstValuePtr);
+			ImGui::InputScalar(PropertyLabelName, ImGuiDataType_Double, &Number);
 			if (ImGui::IsItemDeactivatedAfterEdit())
 			{
 				for (uint8* Container : Containers)
@@ -249,7 +249,7 @@ namespace UnrealImGui
 		}
 		else
 		{
-			uint8* FirstValuePtr = Containers[0] + Offset;
+			const uint8* FirstValuePtr = Containers[0] + Offset;
 			FName ObjectName = NAME_None;
 			const UObject* FirstValue = IsIdentical ? ObjectProperty->GetPropertyValue(FirstValuePtr) : nullptr;
 			if (IsIdentical)
@@ -1254,8 +1254,7 @@ namespace UnrealImGui
 		
 		const FStructProperty* StructProperty = CastFieldChecked<FStructProperty>(Property);
 		int32 ElementCount = 0;
-		for (FProperty* ChildProperty = StructProperty->Struct->PropertyLink; ChildProperty; ChildProperty =
-		     ChildProperty->PropertyLinkNext)
+		for (FProperty* ChildProperty = StructProperty->Struct->PropertyLink; ChildProperty; ChildProperty = ChildProperty->PropertyLinkNext)
 		{
 			if (IsPropertyShow(ChildProperty))
 			{

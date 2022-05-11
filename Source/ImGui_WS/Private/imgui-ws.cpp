@@ -44,7 +44,6 @@ struct ImGuiWS::Impl {
         std::map<TextureId, Texture> textures;
 
         ImDrawDataCompressor::Interface::DrawLists drawLists;
-        ImDrawDataCompressor::Interface::DrawListsDiff drawListsDiff;
     };
 
     Impl() : compressorDrawData(new ImDrawDataCompressor::XorRlePerDrawListWithVtxOffset()) {}
@@ -411,14 +410,12 @@ bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const
     result &= m_impl->compressorDrawData->setDrawData(drawData);
 
     auto & drawLists = m_impl->compressorDrawData->getDrawLists();
-    auto & drawListsDiff = m_impl->compressorDrawData->getDrawListsDiff();
 
     // make the draw lists available to incppect clients
     {
         std::unique_lock lock(m_impl->mutex);
 
         m_impl->dataRead.drawLists = std::move(drawLists);
-        m_impl->dataRead.drawListsDiff = std::move(drawListsDiff);
         m_impl->mouseCursor = mouseCursor;
         m_impl->clipboardText = clipboardText;
         m_impl->controlId = controlId;
