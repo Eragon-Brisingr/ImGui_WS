@@ -18,9 +18,8 @@ public class UWS : ModuleRules
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/uWS.lib"));
-			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/libuv/lib/uv.lib"));
-			
-			RuntimeDependencies.Add("$(BinaryOutputDir)/uv.dll", Path.Combine(ModuleDirectory, "prebuilt/libuv/lib/uv.dll"));
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/libuv/lib/uv_a.lib"));
+			PublicSystemLibraries.Add("UserEnv.Lib");
 		}
 	}
 }
