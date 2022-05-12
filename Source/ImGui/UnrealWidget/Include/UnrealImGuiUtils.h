@@ -9,27 +9,24 @@
  */
 namespace UnrealImGui
 {
-	struct IMGUI_API FUTF8String
+	struct IMGUI_API FUTF8String : TArray<ANSICHAR>
 	{
-		FUTF8String() = default;
+		using Super = TArray<ANSICHAR>;
+		FUTF8String()
+			: Super{ '\0' }
+		{}
 		FUTF8String(const TCHAR* Message)
 		{
 			FTCHARToUTF8 TCHARToUTF8{ Message };
-			UTF8RawArray.SetNumUninitialized(TCHARToUTF8.Length() + 1);
-			FMemory::Memcpy(UTF8RawArray.GetData(), TCHARToUTF8.Get(), TCHARToUTF8.Length() + 1);
+			SetNumUninitialized(TCHARToUTF8.Length() + 1);
+			FMemory::Memcpy(GetData(), TCHARToUTF8.Get(), TCHARToUTF8.Length() + 1);
 		}
 
-		const ANSICHAR* operator*() const
-		{
-			return UTF8RawArray.GetData();
-		}
-
-		SIZE_T GetAllocatedSize() const
-		{
-			return UTF8RawArray.GetAllocatedSize();
-		}
-	private:
-		TArray<ANSICHAR> UTF8RawArray;  
+		const ANSICHAR* operator*() const { return GetData(); }
+		FString ToString() const { return UTF8_TO_TCHAR(GetData()); }
+		void Reset(SizeType NewSize = 0) { Super::Reset(NewSize + 1); Add('\0'); }
+		void Empty(SizeType Slack = 0) { Super::Empty(Slack + 1); Add('\0'); }
+		bool IsEmpty() const { return (*this)[0] == '\0'; }
 	};
 	
 	struct IMGUI_API FWidgetDisableScope

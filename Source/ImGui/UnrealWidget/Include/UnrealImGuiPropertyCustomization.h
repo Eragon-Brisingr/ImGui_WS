@@ -61,7 +61,7 @@ namespace UnrealImGui
 	{
 		void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override;
 	private:
-		mutable TWeakObjectPtr<UClass> CachedInstancedClass;
+		mutable TWeakObjectPtr<UClass> CachedClass;
 		mutable TArray<TWeakObjectPtr<UClass>> CachedClassList;
 	};
 
@@ -69,7 +69,7 @@ namespace UnrealImGui
 	{
 		void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override;
 	private:
-		mutable TWeakObjectPtr<UClass> CachedInstancedClass;
+		mutable TWeakObjectPtr<UClass> CachedClass;
 		mutable TArray<TWeakObjectPtr<UClass>> CachedClassList;
 	};
 

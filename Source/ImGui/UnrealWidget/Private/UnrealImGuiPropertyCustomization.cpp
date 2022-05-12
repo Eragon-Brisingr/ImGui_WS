@@ -8,6 +8,8 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiWrapper.h"
 
 namespace UnrealImGui
 {
@@ -177,10 +179,13 @@ namespace UnrealImGui
 		{
 			const UObject* FirstValue = ObjectProperty->GetPropertyValue(Containers[0] + Offset);
 
-			if (ImGui::BeginCombo(
-				TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)),
-				TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
+			static FUTF8String FilterString;
+			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
+			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
 			{
+				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				const bool IsFiltered = ImGui::IsItemEdited();
+				ImGui::Separator();
 				if (ImGui::Selectable("Clear"))
 				{
 					for (uint8* Container : Containers)
@@ -189,62 +194,85 @@ namespace UnrealImGui
 					}
 					NotifyPostPropertyValueChanged(Property);
 				}
-				ImGui::Separator();
-
-				if (CachedInstancedClass != ObjectProperty->PropertyClass)
+				if (CachedInstancedClass != ObjectProperty->PropertyClass || IsFiltered)
 				{
 					CachedInstancedClass = ObjectProperty->PropertyClass;
 					CachedClassList.Reset();
-					TArray<UClass*> DerivedClasses;
-					GetDerivedClasses(ObjectProperty->PropertyClass, DerivedClasses);
-					DerivedClasses.Add(ObjectProperty->PropertyClass);
-					DerivedClasses.Sort([](const UClass& LHS, const UClass& RHS)
+					TArray<UClass*> AllClasses;
+					GetDerivedClasses(ObjectProperty->PropertyClass, AllClasses);
+					AllClasses.Add(ObjectProperty->PropertyClass);
+					const FString Filter = FilterString.ToString();
+					for (UClass* Class : AllClasses)
 					{
-						return LHS.GetFName().FastLess(RHS.GetFName());
-					});
-					for (UClass* DerivedClass : DerivedClasses)
-					{
-						if (DerivedClass->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
+						if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
 						{
 							continue;
 						}
-						if (DerivedClass->HasAllClassFlags(CLASS_EditInlineNew))
+						// Skip SKEL and REINST classes.
+						if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
 						{
-							CachedClassList.Add(DerivedClass);
+							continue;
+						}
+						if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
+						{
+							continue;
+						}
+						if (Class->HasAllClassFlags(CLASS_EditInlineNew))
+						{
+							CachedClassList.Add(Class);
 						}
 					}
-				}
-				const UClass* FirstValueClass = FirstValue ? FirstValue->GetClass() : nullptr;
-				for (const TWeakObjectPtr<UClass>& ClassPtr : CachedClassList)
-				{
-					if (UClass* Class = ClassPtr.Get())
+					CachedClassList.Sort([](const TWeakObjectPtr<UClass>& LHS, const TWeakObjectPtr<UClass>& RHS)
 					{
-						const bool IsSelected = Class == FirstValueClass;
-						if (ImGui::Selectable(TCHAR_TO_UTF8(*Class->GetName()), IsSelected))
+						return LHS->GetFName().FastLess(RHS->GetFName());
+					});
+				}
+				if (ImGui::ListBoxHeader("##Content", CachedClassList.Num()))
+				{
+					const UClass* FirstValueClass = FirstValue ? FirstValue->GetClass() : nullptr;
+					ImGuiListClipper ListClipper{ CachedClassList.Num() };
+					while (ListClipper.Step())
+					{
+						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
 						{
-							for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
+							if (UClass* Class = CachedClassList[Idx].Get())
 							{
-								uint8* Container = Containers[Idx];
-								UObject* Outer = InnerValue::GOuters[Idx];
-								check(Outer);
-								ObjectProperty->SetPropertyValue(Container + Offset, NewObject<UObject>(Outer, Class));
-							}
-							NotifyPostPropertyValueChanged(Property);
-						}
-						if (IsSelected)
-						{
-							ImGui::SetItemDefaultFocus();
-						}
+								const bool IsSelected = Class == FirstValueClass;
+								if (ImGui::Selectable(TCHAR_TO_UTF8(*Class->GetName()), IsSelected))
+								{
+									for (int32 ContainerIdx = 0; ContainerIdx < Containers.Num(); ++ContainerIdx)
+									{
+										uint8* Container = Containers[ContainerIdx];
+										UObject* Outer = InnerValue::GOuters[ContainerIdx];
+										check(Outer);
+										ObjectProperty->SetPropertyValue(Container + Offset, NewObject<UObject>(Outer, Class));
+									}
+									NotifyPostPropertyValueChanged(Property);
+								}
+								if (IsSelected)
+								{
+									ImGui::SetItemDefaultFocus();
+								}
 
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
-							ImGui::EndTooltip();
+								if (ImGui::IsItemHovered())
+								{
+									ImGui::BeginTooltip();
+									ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
+									ImGui::EndTooltip();
+								}
+							}
 						}
 					}
+					ListClipper.End();
+					ImGui::ListBoxFooter();
 				}
 				ImGui::EndCombo();
+			}
+			else if (FilterString.IsEmpty() == false)
+			{
+				FilterString.Reset();
+				CachedInstancedClass = nullptr;
+				CachedClassList.Empty();
 			}
 		}
 		else
@@ -269,11 +297,13 @@ namespace UnrealImGui
 				static FName MultiValueName = TEXT("Multi Values");
 				ObjectName = MultiValueName;
 			}
-			UClass* ObjectClass = ObjectProperty->PropertyClass;
-
+			static FUTF8String FilterString;
+			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName.ToString())))
 			{
-				// TODO：添加搜索
+				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				const bool IsFiltered = ImGui::IsItemEdited();
+				ImGui::Separator();
 				if (ImGui::Selectable("Clear"))
 				{
 					for (uint8* Container : Containers)
@@ -282,8 +312,8 @@ namespace UnrealImGui
 					}
 					NotifyPostPropertyValueChanged(Property);
 				}
-				ImGui::Separator();
-				if (CachedAssetClass != ObjectClass)
+				UClass* ObjectClass = ObjectProperty->PropertyClass;
+				if (CachedAssetClass != ObjectClass || IsFiltered)
 				{
 					CachedAssetClass = ObjectClass;
 					CachedAssetList.Reset();
@@ -293,41 +323,56 @@ namespace UnrealImGui
 					ARFilter.bRecursiveClasses = true;
 					ARFilter.ClassNames.Add(ObjectClass->GetFName());
 					AssetRegistry.GetAssets(ARFilter, CachedAssetList);
+					const FString Filter = FilterString.ToString();
+					if (Filter.IsEmpty() == false)
+					{
+						CachedAssetList.RemoveAllSwap([&](const FAssetData& E) { return E.AssetName.ToString().Contains(Filter) == false; });
+					}
 					CachedAssetList.Sort([](const FAssetData& LHS, const FAssetData& RHS)
 					{
 						return LHS.AssetName.FastLess(RHS.AssetName);
 					});
 				}
-				ImGuiListClipper ListClipper{ CachedAssetList.Num() };
-				while (ListClipper.Step())
+				if (ImGui::ListBoxHeader("##Content", CachedAssetList.Num()))
 				{
-					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					ImGuiListClipper ListClipper{ CachedAssetList.Num() };
+					while (ListClipper.Step())
 					{
-						const FAssetData& Asset = CachedAssetList[Idx];
-						const bool IsSelected = Asset.AssetName == ObjectName;
-						if (ImGui::Selectable(TCHAR_TO_UTF8(*Asset.AssetName.ToString()), IsSelected))
+						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
 						{
-							for (uint8* Container : Containers)
+							const FAssetData& Asset = CachedAssetList[Idx];
+							const bool IsSelected = Asset.AssetName == ObjectName;
+							if (ImGui::Selectable(TCHAR_TO_UTF8(*Asset.AssetName.ToString()), IsSelected))
 							{
-								ObjectProperty->SetPropertyValue(Container + Offset, Asset.GetAsset());
+								for (uint8* Container : Containers)
+								{
+									ObjectProperty->SetPropertyValue(Container + Offset, Asset.GetAsset());
+								}
+								NotifyPostPropertyValueChanged(Property);
 							}
-							NotifyPostPropertyValueChanged(Property);
-						}
-						if (IsSelected)
-						{
-							ImGui::SetItemDefaultFocus();
-						}
+							if (IsSelected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
 
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							ImGui::Text(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
-							ImGui::EndTooltip();
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::BeginTooltip();
+								ImGui::Text(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
+								ImGui::EndTooltip();
+							}
 						}
 					}
+					ListClipper.End();
+					ImGui::ListBoxFooter();
 				}
-				ListClipper.End();
 				ImGui::EndCombo();
+			}
+			else if (FilterString.IsEmpty() == false)
+			{
+				FilterString.Reset();
+				CachedAssetClass = nullptr;
+				CachedAssetList.Empty();
 			}
 			if (FirstValue)
 			{
@@ -403,9 +448,13 @@ namespace UnrealImGui
 
 		if (ObjectClass->IsChildOf(AActor::StaticClass()))
 		{
+			static FUTF8String FilterString;
+			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
 			{
-				// TODO：添加搜索
+				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				const bool IsFiltered = ImGui::IsItemEdited();
+				ImGui::Separator();
 				if (ImGui::Selectable("Clear"))
 				{
 					for (uint8* Container : Containers)
@@ -414,29 +463,130 @@ namespace UnrealImGui
 					}
 					NotifyPostPropertyValueChanged(Property);
 				}
-				ImGui::Separator();
 
-				if (CachedActorClass != SoftObjectProperty->PropertyClass)
+				if (CachedActorClass != SoftObjectProperty->PropertyClass || IsFiltered)
 				{
 					CachedActorClass = SoftObjectProperty->PropertyClass;
 					CachedActorList.Reset();
 					const UObject* Outer = InnerValue::GOuters[0];
+					const FString Filter = FilterString.ToString();
 					for (TActorIterator<AActor> It(Outer ? Outer->GetWorld() : GWorld, SoftObjectProperty->PropertyClass); It; ++It)
 					{
-						CachedActorList.Add(*It);
+						AActor* Actor = *It;
+						if (Actor == nullptr)
+						{
+							continue;
+						}
+						if (Filter.Len() > 0 && Actor->GetName().Contains(Filter) == false)
+						{
+							continue;
+						}
+						CachedActorList.Add(Actor);
 					}
 				}
-				ImGuiListClipper ListClipper{ CachedActorList.Num() };
-				while (ListClipper.Step())
+				if (ImGui::ListBoxHeader("##Content", CachedActorList.Num()))
 				{
-					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					ImGuiListClipper ListClipper{ CachedActorList.Num() };
+					while (ListClipper.Step())
 					{
-						if (AActor* Actor = CachedActorList[Idx].Get())
+						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
 						{
-							const bool IsSelected = FirstValue.Get() == Actor;
-							if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), IsSelected))
+							if (AActor* Actor = CachedActorList[Idx].Get())
 							{
-								const FSoftObjectPtr NewValue{Actor};
+								const bool IsSelected = FirstValue.Get() == Actor;
+								if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), IsSelected))
+								{
+									const FSoftObjectPtr NewValue{Actor};
+									for (uint8* Container : Containers)
+									{
+										SoftObjectProperty->SetPropertyValue(Container + Offset, NewValue);
+									}
+									NotifyPostPropertyValueChanged(Property);
+								}
+								if (IsSelected)
+								{
+									ImGui::SetItemDefaultFocus();
+								}
+
+								if (ImGui::IsItemHovered())
+								{
+									ImGui::BeginTooltip();
+									ImGui::Text(TCHAR_TO_UTF8(*Actor->GetFullName()));
+									ImGui::EndTooltip();
+								}
+							}
+							else
+							{
+								ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+								ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+								ImGui::Text("Deleted");
+								ImGui::PopItemFlag();
+								ImGui::PopStyleVar();
+							}
+						}
+					}
+					ListClipper.End();
+					ImGui::ListBoxFooter();
+				}
+				ImGui::EndCombo();
+			}
+			else
+			{
+				FilterString.Reset();
+				CachedActorClass = nullptr;
+				CachedActorList.Empty();
+			}
+		}
+		else
+		{
+			static FUTF8String FilterString;
+			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
+			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
+			{
+				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				const bool IsFiltered = ImGui::IsItemEdited();
+				ImGui::Separator();
+				if (ImGui::Selectable("Clear"))
+				{
+					for (uint8* Container : Containers)
+					{
+						SoftObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
+					}
+					NotifyPostPropertyValueChanged(Property);
+				}
+
+				if (CachedAssetClass != ObjectClass || IsFiltered)
+				{
+					CachedAssetClass = ObjectClass;
+					CachedAssetList.Reset();
+					static IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+					FARFilter ARFilter;
+					ARFilter.bRecursivePaths = true;
+					ARFilter.bRecursiveClasses = true;
+					ARFilter.ClassNames.Add(ObjectClass->GetFName());
+					AssetRegistry.GetAssets(ARFilter, CachedAssetList);
+					const FString Filter = FilterString.ToString();
+					if (Filter.IsEmpty() == false)
+					{
+						CachedAssetList.RemoveAllSwap([&](const FAssetData& E) { return E.AssetName.ToString().Contains(Filter) == false; });
+					}
+					CachedAssetList.Sort([](const FAssetData& LHS, const FAssetData& RHS)
+					{
+						return LHS.AssetName.FastLess(RHS.AssetName);
+					});
+				}
+				if (ImGui::ListBoxHeader("##Content", CachedAssetList.Num()))
+				{
+					ImGuiListClipper ListClipper{ CachedAssetList.Num() };
+					while (ListClipper.Step())
+					{
+						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+						{
+							const FAssetData& Asset = CachedAssetList[Idx];
+							const bool IsSelected = FirstValue.GetUniqueID().GetAssetPathName() == Asset.ObjectPath;
+							if (ImGui::Selectable(TCHAR_TO_UTF8(*Asset.AssetName.ToString()), IsSelected))
+							{
+								const FSoftObjectPtr NewValue{Asset.ToSoftObjectPath()};
 								for (uint8* Container : Containers)
 								{
 									SoftObjectProperty->SetPropertyValue(Container + Offset, NewValue);
@@ -451,77 +601,21 @@ namespace UnrealImGui
 							if (ImGui::IsItemHovered())
 							{
 								ImGui::BeginTooltip();
-								ImGui::Text(TCHAR_TO_UTF8(*Actor->GetFullName()));
+								ImGui::Text(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
 								ImGui::EndTooltip();
 							}
 						}
 					}
+					ListClipper.End();
+					ImGui::ListBoxFooter();
 				}
-				ListClipper.End();
 				ImGui::EndCombo();
 			}
-		}
-		else
-		{
-			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
+			else if (FilterString.IsEmpty() == false)
 			{
-				// TODO：添加搜索
-				if (ImGui::Selectable("Clear"))
-				{
-					for (uint8* Container : Containers)
-					{
-						SoftObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
-					}
-					NotifyPostPropertyValueChanged(Property);
-				}
-				ImGui::Separator();
-
-				if (CachedAssetClass != ObjectClass)
-				{
-					CachedAssetClass = ObjectClass;
-					CachedAssetList.Reset();
-					static IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
-					FARFilter ARFilter;
-					ARFilter.bRecursivePaths = true;
-					ARFilter.bRecursiveClasses = true;
-					ARFilter.ClassNames.Add(ObjectClass->GetFName());
-					AssetRegistry.GetAssets(ARFilter, CachedAssetList);
-					CachedAssetList.Sort([](const FAssetData& LHS, const FAssetData& RHS)
-					{
-						return LHS.AssetName.FastLess(RHS.AssetName);
-					});
-				}
-				ImGuiListClipper ListClipper{ CachedAssetList.Num() };
-				while (ListClipper.Step())
-				{
-					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
-					{
-						const FAssetData& Asset = CachedAssetList[Idx];
-						const bool IsSelected = FirstValue.GetUniqueID().GetAssetPathName() == Asset.ObjectPath;
-						if (ImGui::Selectable(TCHAR_TO_UTF8(*Asset.AssetName.ToString()), IsSelected))
-						{
-							const FSoftObjectPtr NewValue{Asset.ToSoftObjectPath()};
-							for (uint8* Container : Containers)
-							{
-								SoftObjectProperty->SetPropertyValue(Container + Offset, NewValue);
-							}
-							NotifyPostPropertyValueChanged(Property);
-						}
-						if (IsSelected)
-						{
-							ImGui::SetItemDefaultFocus();
-						}
-
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							ImGui::Text(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
-							ImGui::EndTooltip();
-						}
-					}
-				}
-				ListClipper.End();
-				ImGui::EndCombo();
+				FilterString.Reset();
+				CachedAssetClass = nullptr;
+				CachedAssetList.Empty();
 			}
 		}
 		if (IsIdentical && FirstValue.IsNull() == false)
@@ -542,9 +636,13 @@ namespace UnrealImGui
 		const FClassProperty* ClassProperty = CastFieldChecked<FClassProperty>(Property);
 		const UObject* FirstValue = ClassProperty->GetPropertyValue(Containers[0] + Offset);
 
+		static FUTF8String FilterString;
+		ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
 		{
-			// TODO：添加搜索
+			UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			const bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::Separator();
 			if (ImGui::Selectable("Clear"))
 			{
 				for (uint8* Container : Containers)
@@ -553,65 +651,79 @@ namespace UnrealImGui
 				}
 				NotifyPostPropertyValueChanged(Property);
 			}
-			ImGui::Separator();
-			if (CachedInstancedClass != ClassProperty->MetaClass)
+			if (CachedClass != ClassProperty->MetaClass || IsFiltered)
 			{
-				CachedInstancedClass = ClassProperty->MetaClass;
+				CachedClass = ClassProperty->MetaClass;
 				CachedClassList.Reset();
 				// TODO：搜索未加载的蓝图类型
-				TArray<UClass*> DerivedClasses;
-				GetDerivedClasses(ClassProperty->MetaClass, DerivedClasses);
-				DerivedClasses.Add(ClassProperty->MetaClass);
-				DerivedClasses.Sort([](const UClass& LHS, const UClass& RHS)
+				TArray<UClass*> AllClasses;
+				GetDerivedClasses(ClassProperty->MetaClass, AllClasses);
+				AllClasses.Add(ClassProperty->MetaClass);
+				const FString Filter = FilterString.ToString();
+				for (UClass* Class : AllClasses)
 				{
-					return LHS.GetFName().FastLess(RHS.GetFName());
-				});
-				for (UClass* DerivedClass : DerivedClasses)
-				{
-					if (DerivedClass->HasAnyClassFlags(CLASS_Deprecated))
+					if (Class->HasAnyClassFlags(CLASS_Deprecated))
 					{
 						continue;
 					}
 					// Skip SKEL and REINST classes.
-					if (DerivedClass->GetName().StartsWith(TEXT("SKEL_")) || DerivedClass->GetName().StartsWith(TEXT("REINST_")))
+					if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
 					{
 						continue;
 					}
-					CachedClassList.Add(DerivedClass);
-				}
-			}
-			ImGuiListClipper ListClipper{ CachedClassList.Num() };
-			while (ListClipper.Step())
-			{
-				for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
-				{
-					if (UClass* Class = CachedClassList[Idx].Get())
+					if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
 					{
-						const bool IsSelected = Class == ClassProperty->MetaClass;
-						if (ImGui::Selectable(TCHAR_TO_UTF8(*Class->GetName()), IsSelected))
+						continue;
+					}
+					CachedClassList.Add(Class);
+				}
+				CachedClassList.Sort([](const TWeakObjectPtr<UClass>& LHS, const TWeakObjectPtr<UClass>& RHS)
+				{
+					return LHS->GetFName().FastLess(RHS->GetFName());
+				});
+			}
+			if (ImGui::ListBoxHeader("##Content", CachedClassList.Num()))
+			{
+				ImGuiListClipper ListClipper{ CachedClassList.Num() };
+				while (ListClipper.Step())
+				{
+					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					{
+						if (UClass* Class = CachedClassList[Idx].Get())
 						{
-							for (uint8* Container : Containers)
+							const bool IsSelected = Class == ClassProperty->MetaClass;
+							if (ImGui::Selectable(TCHAR_TO_UTF8(*Class->GetName()), IsSelected))
 							{
-								ClassProperty->SetPropertyValue(Container + Offset, Class);
+								for (uint8* Container : Containers)
+								{
+									ClassProperty->SetPropertyValue(Container + Offset, Class);
+								}
+								NotifyPostPropertyValueChanged(Property);
 							}
-							NotifyPostPropertyValueChanged(Property);
-						}
-						if (IsSelected)
-						{
-							ImGui::SetItemDefaultFocus();
-						}
+							if (IsSelected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
 
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
-							ImGui::EndTooltip();
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::BeginTooltip();
+								ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
+								ImGui::EndTooltip();
+							}
 						}
 					}
 				}
+				ListClipper.End();
+				ImGui::ListBoxFooter();
 			}
-			ListClipper.End();
 			ImGui::EndCombo();
+		}
+		else if (FilterString.IsEmpty() == false)
+		{
+			FilterString.Reset();
+			CachedClass = nullptr;
+			CachedClassList.Empty();
 		}
 		if (FirstValue)
 		{
@@ -629,11 +741,15 @@ namespace UnrealImGui
 		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
 		
 		const FSoftClassProperty* SoftClassProperty = CastFieldChecked<FSoftClassProperty>(Property);
-
 		const FSoftObjectPtr FirstValue = SoftClassProperty->GetPropertyValue(Containers[0] + Offset);
+	
+		static FUTF8String FilterString;
+		ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue.IsNull() ? TEXT("Null") : *FirstValue.GetUniqueID().GetAssetName())))
 		{
-			// TODO：添加搜索
+			UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			const bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::Separator();
 			if (ImGui::Selectable("Clear"))
 			{
 				for (uint8* Container : Containers)
@@ -642,67 +758,80 @@ namespace UnrealImGui
 				}
 				NotifyPostPropertyValueChanged(Property);
 			}
-			ImGui::Separator();
-
-			if (CachedInstancedClass != SoftClassProperty->MetaClass)
+			if (CachedClass != SoftClassProperty->MetaClass || IsFiltered)
 			{
-				CachedInstancedClass = SoftClassProperty->MetaClass;
+				CachedClass = SoftClassProperty->MetaClass;
 				CachedClassList.Reset();
 				// TODO：搜索未加载的蓝图类型
-				TArray<UClass*> DerivedClasses;
-				GetDerivedClasses(SoftClassProperty->MetaClass, DerivedClasses);
-				DerivedClasses.Add(SoftClassProperty->MetaClass);
-				DerivedClasses.Sort([](const UClass& LHS, const UClass& RHS)
+				TArray<UClass*> AllClasses;
+				GetDerivedClasses(SoftClassProperty->MetaClass, AllClasses);
+				AllClasses.Add(SoftClassProperty->MetaClass);
+				const FString Filter = FilterString.ToString();
+				for (UClass* Class : AllClasses)
 				{
-					return LHS.GetFName().FastLess(RHS.GetFName());
-				});
-				for (UClass* DerivedClass : DerivedClasses)
-				{
-					if (DerivedClass->HasAnyClassFlags(CLASS_Deprecated))
+					if (Class->HasAnyClassFlags(CLASS_Deprecated))
 					{
 						continue;
 					}
 					// Skip SKEL and REINST classes.
-					if (DerivedClass->GetName().StartsWith(TEXT("SKEL_")) || DerivedClass->GetName().StartsWith(TEXT("REINST_")))
+					if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
 					{
 						continue;
 					}
-					CachedClassList.Add(DerivedClass);
-				}
-			}
-			ImGuiListClipper ListClipper{ CachedClassList.Num() };
-			while (ListClipper.Step())
-			{
-				for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
-				{
-					if (UClass* Class = CachedClassList[Idx].Get())
+					if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
 					{
-						const bool IsSelected = Class == SoftClassProperty->MetaClass;
-						if (ImGui::Selectable(TCHAR_TO_UTF8(*Class->GetName()), IsSelected))
+						continue;
+					}
+					CachedClassList.Add(Class);
+				}
+				CachedClassList.Sort([](const TWeakObjectPtr<UClass>& LHS, const TWeakObjectPtr<UClass>& RHS)
+				{
+					return LHS->GetFName().FastLess(RHS->GetFName());
+				});
+			}
+			if (ImGui::ListBoxHeader("##Content", CachedClassList.Num()))
+			{
+				ImGuiListClipper ListClipper{ CachedClassList.Num() };
+				while (ListClipper.Step())
+				{
+					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					{
+						if (UClass* Class = CachedClassList[Idx].Get())
 						{
-							const FSoftObjectPtr NewValue{Class};
-							for (uint8* Container : Containers)
+							const bool IsSelected = Class == SoftClassProperty->MetaClass;
+							if (ImGui::Selectable(TCHAR_TO_UTF8(*Class->GetName()), IsSelected))
 							{
-								SoftClassProperty->SetPropertyValue(Container + Offset, NewValue);
+								const FSoftObjectPtr NewValue{Class};
+								for (uint8* Container : Containers)
+								{
+									SoftClassProperty->SetPropertyValue(Container + Offset, NewValue);
+								}
+								NotifyPostPropertyValueChanged(Property);
 							}
-							NotifyPostPropertyValueChanged(Property);
-						}
-						if (IsSelected)
-						{
-							ImGui::SetItemDefaultFocus();
-						}
+							if (IsSelected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
 
-						if (ImGui::IsItemHovered())
-						{
-							ImGui::BeginTooltip();
-							ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
-							ImGui::EndTooltip();
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::BeginTooltip();
+								ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
+								ImGui::EndTooltip();
+							}
 						}
 					}
 				}
+				ListClipper.End();
+				ImGui::ListBoxFooter();
 			}
-			ListClipper.End();
 			ImGui::EndCombo();
+		}
+		else if (FilterString.IsEmpty() == false)
+		{
+			FilterString.Reset();
+			CachedClass = nullptr;
+			CachedClassList.Empty();
 		}
 		if (IsIdentical && FirstValue.IsNull() == false)
 		{
