@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "implot.h"
 #include "imgui-ws.h"
+#include "imgui_notify.h"
 #include "UnrealImGuiStat.h"
 #include "WebKeyCodeToImGui.h"
 
@@ -114,16 +115,20 @@ public:
 		const FString PluginPath = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir();
 		// fonts
 		{
-			ImFontConfig ChineseFontConfig;
-			ChineseFontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseSimplifiedCommon();
-			FPlatformString::Strcpy(ChineseFontConfig.Name, sizeof(ChineseFontConfig.Name), "Zfull-GB, 12px");
+			ImFontConfig FontConfig;
+			FontConfig.FontDataOwnedByAtlas = false;
+			FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseSimplifiedCommon();
+			FPlatformString::Strcpy(FontConfig.Name, sizeof(FontConfig.Name), "Zfull-GB, 12px");
 			const FString ChineseFontPath = PluginPath / TEXT("Resources/Zfull-GB.ttf");
-			FontAtlas.AddFontFromFileTTF(TCHAR_TO_UTF8(*ChineseFontPath), 12.0f*DPIScale, &ChineseFontConfig);
+			FontAtlas.AddFontFromFileTTF(TCHAR_TO_UTF8(*ChineseFontPath), 12.0f * DPIScale, &FontConfig);
 		}
 		
 		IMGUI_CHECKVERSION();
 		Context = ImGui::CreateContext(&FontAtlas);
 		ImGuiIO& IO = ImGui::GetIO();
+
+		// Initialize notify
+		ImGui::MergeIconsWithLatestFont(16.f * DPIScale, false);
 
 		IO.KeyMap[ImGuiKey_Tab]         = 9;
 		IO.KeyMap[ImGuiKey_LeftArrow]   = 37;
@@ -640,6 +645,12 @@ private:
 			}
 		}
 
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.f); // Round borders
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(43.f / 255.f, 43.f / 255.f, 43.f / 255.f, 100.f / 255.f)); // Background color
+		ImGui::RenderNotifications();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleColor();
+		
 		const ImGuiMouseCursor MouseCursor = ImGui::GetMouseCursor();
 		
 	    // generate ImDrawData

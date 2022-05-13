@@ -17,6 +17,7 @@
 * 接入ImPlot数据可视化库
 * 中文字体
 * 编辑器布局系统
+* 冒泡消息提示
 
 ## 学习如何使用ImGui
 
@@ -234,3 +235,9 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 	};
 }
 ```
+
+## 冒泡消息提示
+
+调用**ImGui::InsertNotification**使用全局的冒泡消息提示  
+
+![冒泡消息提示](Docs/Notification.gif)  

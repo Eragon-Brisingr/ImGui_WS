@@ -13,9 +13,18 @@ struct IMGUI_API FUnrealImGuiObjectBrowser
 {
 	GENERATED_BODY()
 public:
+	FUnrealImGuiObjectBrowser()
+		: bDisplayAllProperties(true)
+		, bEnableEditVisibleProperty(false)
+	{}
+	
 	void Draw(UObject* Owner);
 
-	UPROPERTY()
-	TObjectPtr<UObject> SelectedObject;
+	UPROPERTY(Transient)
+	TObjectPtr<UObject> SelectedObject = nullptr;
 	uint32 DockSpaceId = INDEX_NONE;
+	UPROPERTY(Config)
+	uint8 bDisplayAllProperties : 1;
+	UPROPERTY(Config)
+	uint8 bEnableEditVisibleProperty : 1;
 };

@@ -26,6 +26,7 @@ public class ImGui : ModuleRules
 			Path.Combine(ModuleDirectory, "ImGuiLibrary/Include"),
 			Path.Combine(ModuleDirectory, "ImPlotLibrary/Include"),
 			Path.Combine(ModuleDirectory, "UnrealWidget/Include"),
+			Path.Combine(ModuleDirectory, "NotifyLibrary/Include"),
 		});
 	}
 }

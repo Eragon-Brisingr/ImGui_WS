@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "imgui_notify.h"
 #include "UnrealImGuiPropertyDetails.h"
 #include "UnrealImGuiUtils.h"
 #include "UnrealImGuiWrapper.h"
@@ -38,8 +39,8 @@ void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
 				}
 			}
 		}
+		ImGui::EndChild();
 	}
-	ImGui::EndChild();
 
 	const ImGuiWindowClass* WindowClass = &ImGui::GetCurrentWindowRead()->WindowClass;
 	if (DockSpaceId == INDEX_NONE)
@@ -59,9 +60,21 @@ void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
 	{
 		static UnrealImGui::FUTF8String FilterString;
 		const bool bInvokeSearch = UnrealImGui::InputTextWithHint("##Filter", "Filer", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
-		if (bInvokeSearch)
+		if (bInvokeSearch && ImGui::IsItemDeactivatedAfterEdit())
 		{
 			SelectedObject = FindObject<UObject>(nullptr, *FilterString.ToString());
+			if (SelectedObject == nullptr)
+			{
+				SelectedObject = LoadObject<UObject>(nullptr, *FilterString.ToString());
+				if (SelectedObject)
+				{
+					ImGui::InsertNotification(ImGuiToastType_Info, "load \"%s\" object", *FilterString);
+				}
+				else
+				{
+					ImGui::InsertNotification(ImGuiToastType_Error, "\"%s\" object not find", *FilterString);
+				}
+			}
 			FilterString.Empty();
 		}
 		ImGui::Separator();
@@ -122,8 +135,34 @@ void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
 	}
 
 	ImGui::SetNextWindowClass(WindowClass);
-	if (ImGui::Begin("ObjectBrowserDetails"))
+	if (ImGui::Begin("ObjectBrowserDetails", nullptr, ImGuiWindowFlags_MenuBar))
 	{
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("Detail Settings"))
+			{
+				{
+					bool Value = bDisplayAllProperties;
+					if (ImGui::Checkbox("Display All Properties", &Value))
+					{
+						bDisplayAllProperties = Value;
+						Owner->SaveConfig();
+					}
+				}
+				{
+					bool Value = bEnableEditVisibleProperty;
+					if (ImGui::Checkbox("Enable Edit Visible Property", &Value))
+					{
+						bEnableEditVisibleProperty = Value;
+						Owner->SaveConfig();
+					}
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
+		TGuardValue<bool> GDisplayAllPropertiesGuard(UnrealImGui::GlobalValue::GDisplayAllProperties, bDisplayAllProperties);
+		TGuardValue<bool> GEnableEditVisiblePropertyGuard(UnrealImGui::GlobalValue::GEnableEditVisibleProperty, bEnableEditVisibleProperty);
 		if (SelectedObject)
 		{
 			ImGui::Text(TCHAR_TO_UTF8(*SelectedObject->GetName()));
