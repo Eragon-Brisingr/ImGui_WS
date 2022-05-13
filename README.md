@@ -238,6 +238,8 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 
 ## 冒泡消息提示
 
+[imgui-notify](https://github.com/patrickcjk/imgui-notify)
+
 调用**ImGui::InsertNotification**使用全局的冒泡消息提示  
 
 ![冒泡消息提示](Docs/Notification.gif)  
