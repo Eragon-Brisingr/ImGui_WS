@@ -14,13 +14,27 @@ UImGuiWorldDebuggerStatPanel::UImGuiWorldDebuggerStatPanel()
 	Title = LOCTEXT("Stat", "Stat");
 	DefaultDockSpace =
 	{
-		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Utils }
+		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), { UImGuiWorldDebuggerDefaultLayout::EDockId::Utils, false } }
 	};
 }
 
 void UImGuiWorldDebuggerStatPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds)
 {
 	StatDevice.Draw(this);
+}
+
+UImGuiWorldDebuggerObjectBrowserPanel::UImGuiWorldDebuggerObjectBrowserPanel()
+{
+	Title = LOCTEXT("Object Browser", "Object Browser");
+	DefaultDockSpace =
+	{
+		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), { UImGuiWorldDebuggerDefaultLayout::EDockId::Utils, false } }
+	};
+}
+
+void UImGuiWorldDebuggerObjectBrowserPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds)
+{
+	ObjectBrowser.Draw(this);
 }
 
 #undef LOCTEXT_NAMESPACE

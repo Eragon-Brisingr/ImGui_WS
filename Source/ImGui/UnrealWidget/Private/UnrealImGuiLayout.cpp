@@ -34,9 +34,10 @@ void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuild
 
 void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
 {
-	if (DockSpaceId != INDEX_NONE && bIsCheckNewPanelLayout == false)
+	const bool IsNew = DockSpaceId == INDEX_NONE;
+	if (IsNew)
 	{
-		bIsCheckNewPanelLayout = true;
+		const_cast<uint32&>(DockSpaceId) = ImGui::GetID(TCHAR_TO_UTF8(*LayoutName.ToString()));
 
 		for (const UUnrealImGuiPanelBase* Panel : LayoutBuilder.Panels)
 		{
@@ -51,6 +52,5 @@ void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const FUnrealImGuiP
 		}
 	}
 
-	DockSpaceId = ImGui::GetID(TCHAR_TO_UTF8(*LayoutName.ToString()));
 	ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }

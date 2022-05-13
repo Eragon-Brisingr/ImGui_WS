@@ -18,8 +18,7 @@ namespace UnrealImGui
 	{
 		if (Disable)
 		{
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+			ImGui::BeginDisabled(true);
 		}
 	}
 
@@ -27,8 +26,7 @@ namespace UnrealImGui
 	{
 		if (Disable)
 		{
-			ImGui::PopItemFlag();
-			ImGui::PopStyleVar();
+			ImGui::EndDisabled();
 		}
 	}
 
@@ -517,11 +515,9 @@ namespace UnrealImGui
 							}
 							else
 							{
-								ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-								ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+								ImGui::BeginDisabled(true);
 								ImGui::Text("Deleted");
-								ImGui::PopItemFlag();
-								ImGui::PopStyleVar();
+								ImGui::EndDisabled();
 							}
 						}
 					}

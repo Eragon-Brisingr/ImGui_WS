@@ -17,7 +17,6 @@ class IMGUI_API UUnrealImGuiLayoutBase : public UObject
 	GENERATED_BODY()
 public:
 	UUnrealImGuiLayoutBase()
-		: bIsCheckNewPanelLayout(false)
 	{}
 
 	virtual void Register(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) {}
@@ -30,6 +29,5 @@ public:
 
 	FText LayoutName;
 protected:
-	uint32 DockSpaceId = INDEX_NONE;
-	uint8 bIsCheckNewPanelLayout : 1;
+	const uint32 DockSpaceId = INDEX_NONE;
 };

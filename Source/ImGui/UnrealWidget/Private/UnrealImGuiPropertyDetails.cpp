@@ -401,7 +401,7 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 	CollapseCategories |= TopClass->HasAnyClassFlags(CLASS_CollapseCategories);
 	for (const UClass* DetailClass = TopClass; DetailClass != UObject::StaticClass(); DetailClass = DetailClass->GetSuperClass())
 	{
-		if (DetailClass->PropertyLink->GetOwnerClass() == DetailClass)
+		if (DetailClass->PropertyLink && DetailClass->PropertyLink->GetOwnerClass() == DetailClass)
 		{
 			if (CollapseCategories)
 			{

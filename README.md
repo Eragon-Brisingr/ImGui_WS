@@ -189,10 +189,11 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 	const ImGuiID DockId = ImGui::DockBuilderAddNode(DockSpaceId, ImGuiDockNodeFlags_None);
 
 	// 调用DockBuilderSplitNode划分布局
-	ImGuiID ViewportId = ImGui::DockBuilderSplitNode(DockSpaceId, ImGuiDir_Left, 0.7f, nullptr, &DockSpaceId);
+	ImGuiID RemainAreaId;
+	ImGuiID ViewportId = ImGui::DockBuilderSplitNode(DockSpaceId, ImGuiDir_Left, 0.7f, nullptr, &RemainAreaId);
 	const ImGuiID UtilsId = ImGui::DockBuilderSplitNode(ViewportId, ImGuiDir_Down, 0.3f, nullptr, &ViewportId);
-	const ImGuiID OutlinerId = ImGui::DockBuilderSplitNode(DockSpaceId, ImGuiDir_Up, 0.3f, nullptr, &DockSpaceId);
-	const ImGuiID DetailsId = ImGui::DockBuilderSplitNode(DockSpaceId, ImGuiDir_Down, 0.7f, nullptr, &DockSpaceId);
+	const ImGuiID OutlinerId = ImGui::DockBuilderSplitNode(RemainAreaId, ImGuiDir_Up, 0.3f, nullptr, &RemainAreaId);
+	const ImGuiID DetailsId = ImGui::DockBuilderSplitNode(RemainAreaId, ImGuiDir_Down, 0.7f, nullptr, &RemainAreaId);
 
 	// 将声明的DockId与ImGui的实际ID添加映射关系
 	const TMap<int32, ImGuiID> DockIdMap

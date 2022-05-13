@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "ImGuiWorldDebuggerPanel.h"
+#include "UnrealImGuiObjectBrowser.h"
 #include "UnrealImGuiStatDevice.h"
 #include "ImGuiWorldDebuggerUtilPanels.generated.h"
 
@@ -19,6 +20,19 @@ public:
 	
 	UPROPERTY()
 	FUnrealImGuiStatDevice StatDevice;
+
+	void Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds) override;
+};
+
+UCLASS()
+class IMGUI_WS_API UImGuiWorldDebuggerObjectBrowserPanel : public UImGuiWorldDebuggerPanelBase
+{
+	GENERATED_BODY()
+public:
+	UImGuiWorldDebuggerObjectBrowserPanel();
+	
+	UPROPERTY()
+	FUnrealImGuiObjectBrowser ObjectBrowser;
 
 	void Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds) override;
 };
