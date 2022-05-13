@@ -1,3 +1,5 @@
+#include "imgui_notify.h"
+
 // imgui-notify by patrickcjk
 // https://github.com/patrickcjk/imgui-notify
 
@@ -5,7 +7,6 @@
 #ifndef IMGUI_NOTIFY
 #define IMGUI_NOTIFY
 
-#include "imgui_notify.h"
 #include <vector>
 #include <string>
 #include "font_awesome_5.h"
@@ -339,7 +340,7 @@ namespace ImGui
 	/// Adds font-awesome font, must be called ONCE on initialization
 	/// <param name="FontDataOwnedByAtlas">Fonts are loaded from read-only memory, should be set to false!</param>
 	/// </summary>
-	NOTIFY_INLINE void MergeIconsWithLatestFont(float font_size, bool FontDataOwnedByAtlas)
+	void MergeIconsWithLatestFont(float font_size, bool FontDataOwnedByAtlas)
 	{
 		static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 
