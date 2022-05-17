@@ -476,7 +476,7 @@ struct Incppect<SSL>::Impl {
                     bool doCompress = diffBuffer.size() > 64;
 
                     if (socketData[clientId]->ws->send({ diffBuffer.data(), diffBuffer.size() }, uWS::OpCode::BINARY, doCompress) == false) {
-                        UE_LOG(LogImGui, Warning, TEXT("[incpeect] warning: backpressure for client %d increased"), clientId);
+                        UE_LOG(LogImGui, Warning, TEXT("[incppect] warning: backpressure for client %d increased"), clientId);
                     }
                 } else {
                     if ((int32_t) curBuffer.size() > parameters.maxPayloadLength_bytes) {
@@ -487,7 +487,7 @@ struct Incppect<SSL>::Impl {
                     bool doCompress = curBuffer.size() > 64;
 
                     if (socketData[clientId]->ws->send({ curBuffer.data(), curBuffer.size() }, uWS::OpCode::BINARY, doCompress) == false) {
-                        UE_LOG(LogImGui, Warning, TEXT("[incpeect] warning: backpressure for client %d increased"), clientId);
+                        UE_LOG(LogImGui, Warning, TEXT("[incppect] warning: backpressure for client %d increased"), clientId);
                     }
                 }
 

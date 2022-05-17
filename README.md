@@ -35,11 +35,17 @@
 1. ProjectSettings - Plugins - ImGui_WS 中可配置端口号
 2. ImGui_WS.ini配置文件
     > [/Script/ImGui_WS.ImGui_WS_Settings]  
-    > GamePort=8890
-    > ServerPort=8891
-    > ServerPort=8892
+    GamePort=8890  
+    ServerPort=8891  
+    ServerPort=8892  
 
 3. 启动参数配置 -ExecCmds="ImGui.WS.Port 8890"
+
+### 绘制事件
+
+UImGui_WS_Manager::GetImGuiContext获取到ImGuiContext  
+成员OnDraw为ImGui_WS绘制调用的事件  
+绑定该事件调用ImGui绘制特定的面板
 
 ## 虚幻俯视图
 
