@@ -13,7 +13,7 @@
 
 * 网页绘制
 * 虚幻世界俯视图绘制
-* 虚幻Object的Detials面板
+* 虚幻Object的Details面板
 * 接入ImPlot数据可视化库
 * 中文字体
 * 编辑器布局系统

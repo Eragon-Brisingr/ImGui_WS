@@ -118,8 +118,8 @@ public:
 			ImFontConfig FontConfig;
 			FontConfig.FontDataOwnedByAtlas = false;
 			FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseSimplifiedCommon();
-			FPlatformString::Strcpy(FontConfig.Name, sizeof(FontConfig.Name), "Zfull-GB, 12px");
-			const FString ChineseFontPath = PluginPath / TEXT("Resources/Zfull-GB.ttf");
+			FPlatformString::Strcpy(FontConfig.Name, sizeof(FontConfig.Name), "zpix, 12px");
+			const FString ChineseFontPath = PluginPath / TEXT("Resources/zpix.ttf");
 			FontAtlas.AddFontFromFileTTF(TCHAR_TO_UTF8(*ChineseFontPath), 12.0f * DPIScale, &FontConfig);
 		}
 		

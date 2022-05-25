@@ -36,7 +36,7 @@ public class ImGui_WS : ModuleRules
 		});
 		
 		// 打包后也能读取字体文件
-		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/Zfull-GB.ttf"), StagedFileType.NonUFS);
+		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/DefaultFont.ttf"), StagedFileType.NonUFS);
 		// 打包后也能加载网页
 		RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "HTML/index.html"), StagedFileType.NonUFS);
 		RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "HTML/imgui-ws.js"), StagedFileType.NonUFS);
