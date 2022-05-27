@@ -42,6 +42,8 @@ namespace UnrealImGui
 		void Register(FUnrealImGuiLogDevice* LogDevice);
 		void Unregister(FUnrealImGuiLogDevice* LogDevice);
 		TArray<FUnrealImGuiLogDevice*> LogDevices;
+		SIZE_T AllLogSize = 0;
+		SIZE_T MaxLogSize;
 	};
 
 	extern IMGUI_API TSharedPtr<FUnrealImGuiOutputDevice> GUnrealImGuiOutputDevice;
@@ -64,8 +66,11 @@ private:
 	TSet<FName> HideCategoryNames;
 	UPROPERTY()
 	FString FilterString;
-	
+
+	int32 DisplayLineIndexOffset = 0;
 	TArray<int32> DisplayLines;
+
+	int32 HoveredLogIndex = INDEX_NONE;
 
 	void RefreshDisplayLines();
 	void ClearCurrentLines();
