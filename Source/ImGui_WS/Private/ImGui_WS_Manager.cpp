@@ -164,8 +164,6 @@ public:
 		
 		// Enable Docking
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		// 16-bit indices + allow large meshes
-		IO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 		
 		ImGui::StyleColorsDark();
 		ImGui::GetStyle().AntiAliasedFill = false;

@@ -31,7 +31,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 
 		for (AActor* Actor : Level->Actors)
 		{
-			if (CanActorDisplay(Actor))
+			if (Actor && CanActorDisplay(Actor))
 			{
 				DisplayActors.Add(Actor);
 				Actor->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
@@ -41,7 +41,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 	});
 	OnActorSpawnedHandler = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
 	{
-		if (CanActorDisplay(Actor))
+		if (CanActorDisplay(Actor) && Actor->OnDestroyed.IsAlreadyBound(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy) == false)
 		{
 			DisplayActors.Add(Actor);
 			Actor->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
@@ -175,9 +175,10 @@ void UImGuiWorldDebuggerOutlinerPanel::RefreshDisplayActors()
 	DisplayActors.Empty();
 	for (TActorIterator<AActor> It{ GetWorld() }; It; ++It)
 	{
-		if (CanActorDisplay(*It))
+		AActor* Actor = *It;
+		if (Actor && CanActorDisplay(Actor))
 		{
-			DisplayActors.Add(*It);
+			DisplayActors.Add(Actor);
 			It->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
 		}
 	}
