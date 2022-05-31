@@ -79,6 +79,10 @@ public:
 	
 	int32 GetPort() const;
 	int32 GetConnectionCount() const;
+
+	bool IsRecording() const;
+	void StartRecord();
+	void StopRecord();
 protected:
 	static constexpr int32 EditorIndex = INDEX_NONE;
 	int32 DrawContextIndex = 0;
@@ -96,5 +100,5 @@ private:
 	TArray<UImGui_WS_WorldSubsystem*> WorldSubsystems;
 
 	class FDrawer;
-	FDrawer* Drawer;
+	FDrawer* Drawer = nullptr;
 };

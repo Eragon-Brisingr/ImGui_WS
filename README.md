@@ -12,6 +12,7 @@
 ## 特性
 
 * 网页绘制
+* 录制绘制数据与回放
 * 虚幻世界俯视图绘制
 * 虚幻Object的Details面板
 * 接入ImPlot数据可视化库
@@ -249,3 +250,21 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 调用**ImGui::InsertNotification**使用全局的冒泡消息提示  
 
 ![冒泡消息提示](Docs/Notification.gif)  
+
+## 录制绘制数据与回放
+
+### 录制方式
+
+开始录制：
+
+* 菜单->ImGui_WS->Start Record
+* 控制台输入ImGui.WS.StartRecord
+
+结束录制：
+
+* 菜单->ImGui_WS->Stop Record
+* 控制台输入ImGui.WS.StopRecord
+
+### 回放录制数据
+
+菜单->ImGui_WS->Load Record，选择录制的文件进行回看

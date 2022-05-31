@@ -23,7 +23,7 @@ namespace UnrealImGui
 	        // If for some reason we refuse the new length (BufTextLen) and/or capacity (BufSize) we need to set them back to what we want.
 	        FUTF8String& str = user_data->Str;
 	        IM_ASSERT(data->Buf == str.GetData());
-	        str.SetNum(data->BufTextLen + 1);
+	        str.SetNum(data->BufTextLen);
 	        data->Buf = str.GetData();
 	    }
 	    else if (user_data->ChainCallback)

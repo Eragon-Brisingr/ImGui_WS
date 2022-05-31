@@ -10,9 +10,14 @@
 #include "imgui.h"
 #include "implot.h"
 #include "imgui-ws.h"
+#include "ImGuiFileDialog.h"
 #include "imgui_notify.h"
 #include "UnrealImGuiStat.h"
+#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiWrapper.h"
 #include "WebKeyCodeToImGui.h"
+#include "Record/imgui-ws-record.h"
+#include "Record/ImGuiWS_Replay.h"
 
 FAutoConsoleCommand LaunchImGuiWeb
 {
@@ -80,6 +85,51 @@ TAutoConsoleVariable<int32> ImGui_WS_Enable
 	})
 };
 
+UnrealImGui::FUTF8String GRecordSaveDirPathString{ *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT("ImGui_WS")) };
+namespace Impl
+{
+	TAutoConsoleVariable<FString> CVar_RecordSaveDirPathString
+	{
+		TEXT("ImGui.WS.RecordDirPath"),
+		GRecordSaveDirPathString.ToString(),
+		TEXT("Set ImGui-WS Record Saved Path"),
+		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+		{
+			const FString RecordSaveDirPathString = CVar_RecordSaveDirPathString.GetValueOnAnyThread();
+			if (FPaths::DirectoryExists(RecordSaveDirPathString))
+			{
+				GRecordSaveDirPathString = UnrealImGui::FUTF8String{ *RecordSaveDirPathString };
+			}
+		})
+	};
+}
+FAutoConsoleCommand StartImGuiRecord
+{
+	TEXT("ImGui.WS.StartRecord"),
+	TEXT("Start ImGui-WS Record"),
+	FConsoleCommandDelegate::CreateLambda([]
+	{
+		UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
+		if (Manager->IsEnable() && Manager->IsRecording() == false)
+		{
+			Manager->StartRecord();
+		}
+	})
+};
+FAutoConsoleCommand EndImGuiRecord
+{
+	TEXT("ImGui.WS.StopRecord"),
+	TEXT("Stop ImGui-WS Record"),
+	FConsoleCommandDelegate::CreateLambda([]
+	{
+		UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
+		if (Manager->IsEnable() && Manager->IsRecording())
+		{
+			Manager->StopRecord();
+		}
+	})
+};
+
 void UImGui_WS_WorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -108,6 +158,10 @@ public:
 	ImFontAtlas FontAtlas;
 	float DPIScale = 1.f;
 	TTripleBuffer<std::string> ClipboardTextTripleBuffer;
+
+	FCriticalSection RecordCriticalSection;
+	TSharedPtr<ImGuiWS_Record::Session, ESPMode::ThreadSafe> RecordSession;
+	TUniquePtr<ImGuiWS_Record::FImGuiWS_Replay> RecordReplay;
 
 	explicit FDrawer(UImGui_WS_Manager& Manager)
 		: Manager(Manager)
@@ -477,7 +531,7 @@ private:
 		const ImVec2 MousePos;
 		const ImVec2 ViewportSize;
 
-		FImGuiData(const ImDrawData* DrawData, const ImGuiMouseCursor MouseCursor, const int32 ControlId, uint32 ControlIp, const ImVec2& MousePos, const ImVec2& ViewportSize)
+		FImGuiData(const ImDrawData* DrawData, ImGuiWS_Record::FImGuiWS_Replay* Replay, const ImGuiMouseCursor MouseCursor, const int32 ControlId, uint32 ControlIp, const ImVec2& MousePos, const ImVec2& ViewportSize)
 			: CopiedDrawData{ *DrawData }
 			, MouseCursor(MouseCursor)
 			, ControlId(ControlId)
@@ -485,10 +539,27 @@ private:
 			, MousePos{ MousePos }
 			, ViewportSize(ViewportSize)
 		{
-			CopiedDrawData.CmdLists = new ImDrawList*[DrawData->CmdListsCount];
-			for (int32 Idx = 0; Idx < DrawData->CmdListsCount; ++Idx)
+			ImGuiWS_Record::FImGuiWS_Replay::FDrawData ReplayDrawData;
+			if (Replay && Replay->GetDrawData(ReplayDrawData))
 			{
-				CopiedDrawData.CmdLists[Idx] = DrawData->CmdLists[Idx]->CloneOutput();
+				CopiedDrawData.CmdListsCount = ReplayDrawData->CmdListsCount + DrawData->CmdListsCount;
+				CopiedDrawData.CmdLists = new ImDrawList*[CopiedDrawData.CmdListsCount];
+				for (int32 Idx = 0; Idx < ReplayDrawData->CmdListsCount; ++Idx)
+				{
+					CopiedDrawData.CmdLists[Idx] = ReplayDrawData->CmdLists[Idx]->CloneOutput();
+				}
+				for (int32 Idx = 0; Idx < DrawData->CmdListsCount; ++Idx)
+				{
+					CopiedDrawData.CmdLists[ReplayDrawData->CmdListsCount + Idx] = DrawData->CmdLists[Idx]->CloneOutput();
+				}
+			}
+			else
+			{
+				CopiedDrawData.CmdLists = new ImDrawList*[DrawData->CmdListsCount];
+				for (int32 Idx = 0; Idx < DrawData->CmdListsCount; ++Idx)
+				{
+					CopiedDrawData.CmdLists[Idx] = DrawData->CmdLists[Idx]->CloneOutput();
+				}
 			}
 		}
 		~FImGuiData()
@@ -501,35 +572,9 @@ private:
 		}
 	};
 	TTripleBuffer<TSharedPtr<FImGuiData>> ImGuiDataTripleBuffer;
-	
-	void Tick(float DeltaTime) override
+
+	void DefaultDraw(float DeltaTime)
 	{
-		if (ImGuiWS.nConnected() == 0)
-		{
-	        return;
-	    }
-
-		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Tick"), STAT_ImGuiWS_Tick, STATGROUP_ImGui);
-		
-	    ImGuiContext* OldContent = ImGui::GetCurrentContext();
-	    ON_SCOPE_EXIT
-		{
-	        ImGui::SetCurrentContext(OldContent);
-	    };
-	    ImGui::SetCurrentContext(Context);
-	    ImGui::NewFrame();
-
-	    // websocket event handling
-	    const auto Events = ImGuiWS.takeEvents();
-	    for (const ImGuiWS::Event& Event : Events)
-		{
-	        State.Handle(Event);
-	    }
-	    State.Update();
-
-	    ImGuiIO& IO = ImGui::GetIO();
-	    IO.DeltaTime = VSync.Delta_S();
-
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("ImGui_WS"))
@@ -577,7 +622,103 @@ private:
 				ImGui::Separator();
 				ImGui::Checkbox("ImGui Demo", &State.bShowImGuiDemo);
 				ImGui::Checkbox("ImPlot Demo", &State.bShowPlotDemo);
-				
+
+				ImGui::Separator();
+				if (RecordSession.IsValid() == false)
+				{
+					if (ImGui::Button("Start Record"))
+					{
+						ImGui::OpenPopup("RecordSettings");
+					}
+					if (ImGui::BeginPopupModal("RecordSettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+					{
+						static UnrealImGui::FUTF8String SaveFilePath = GRecordSaveDirPathString;
+						ImGui::Text("Save Path:");
+						ImGui::SameLine();
+						ImGui::SetNextItemWidth(600.f);
+						UnrealImGui::InputText("##RecordSavePath", GRecordSaveDirPathString);
+
+						ImGui::SameLine();
+						if (ImGui::ArrowButton("SaveRecordFile", ImGuiDir_Down))
+						{
+							ImGui::OpenPopup("Select Save Record Directory");
+						}
+						static UnrealImGui::FFileDialogState FileDialogState;
+						UnrealImGui::ShowFileDialog("Select Save Record Directory", FileDialogState, SaveFilePath, nullptr, UnrealImGui::FileDialogType::SelectFolder);
+
+						ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 110.f);
+						if (ImGui::Button("Start"))
+						{
+							if (FPaths::DirectoryExists(GRecordSaveDirPathString.ToString()))
+							{
+								StartRecord();
+								ImGui::InsertNotification(ImGuiToastType_Info, "Start Record ImGui");
+								ImGui::CloseCurrentPopup();
+							}
+							else
+							{
+								ImGui::InsertNotification(ImGuiToastType_Error, "Input Directory Not Exist");
+							}
+						}
+						ImGui::SameLine();
+						if (ImGui::Button("Cancel"))
+						{
+							ImGui::CloseCurrentPopup();
+						}
+						
+						ImGui::EndPopup();
+					}
+					
+					if (ImGui::Button("Load Record"))
+					{
+						ImGui::OpenPopup("ReplaySettings");
+					}
+					if (ImGui::BeginPopupModal("ReplaySettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+					{
+						static UnrealImGui::FUTF8String LoadFilePath = GRecordSaveDirPathString;
+						ImGui::Text("File Path:");
+						ImGui::SameLine();
+						ImGui::SetNextItemWidth(600.f);
+						UnrealImGui::InputText("##RecordFilePath", LoadFilePath);
+
+						ImGui::SameLine();
+						if (ImGui::ArrowButton("OpenRecordFile", ImGuiDir_Down))
+						{
+							ImGui::OpenPopup("Load Replay File");
+						}
+						static UnrealImGui::FFileDialogState FileDialogState;
+						UnrealImGui::ShowFileDialog("Load Replay File", FileDialogState, LoadFilePath, ".imgrcd", UnrealImGui::FileDialogType::OpenFile);
+
+						ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.f);
+						if (ImGui::Button("Load"))
+						{
+							if (FPaths::FileExists(LoadFilePath.ToString()))
+							{
+								RecordReplay = MakeUnique<ImGuiWS_Record::FImGuiWS_Replay>(*LoadFilePath);
+								ImGui::CloseCurrentPopup();
+							}
+							else
+							{
+								ImGui::InsertNotification(ImGuiToastType_Error, "File Not Exist");
+							}
+						}
+						ImGui::SameLine();
+						if (ImGui::Button("Cancel"))
+						{
+							ImGui::CloseCurrentPopup();
+						}
+						
+						ImGui::EndPopup();
+					}
+				}
+				else
+				{
+					if (ImGui::Button("End Record"))
+					{
+						StopRecord();
+					}
+				}
+
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();
@@ -610,7 +751,31 @@ private:
 			if (ImGui::BeginMainMenuBar())
 			{
 				const ImVec2 WindowSize = ImGui::GetWindowSize();
-				ImGui::Indent(WindowSize.x -140.f);
+				constexpr float StopRecordButtonWidth = 140.f;
+				float TotalInfoWidth = 140.f;
+				if (RecordSession.IsValid())
+				{
+					TotalInfoWidth += StopRecordButtonWidth;
+				}
+				ImGui::Indent(WindowSize.x - TotalInfoWidth);
+
+				if (RecordSession.IsValid())
+				{
+					const ImGuiStyle& Style = ImGui::GetStyle();
+					if (ImGui::Button(TCHAR_TO_UTF8(*FString::Printf(TEXT("Stop Record (%.0f MB)"), RecordSession->totalSize_bytes() / 1024.f / 1024.f)), { StopRecordButtonWidth - Style.FramePadding.x * 2.f, 0.f }))
+					{
+						StopRecord();
+					}
+					if (RecordSession.IsValid() && ImGui::IsItemHovered())
+					{
+						ImGui::BeginTooltip();
+						ImGui::Text("Record Info:");
+						ImGui::Text("	Frame: %d", RecordSession->nFrames());
+						ImGui::Text("	Size: %.2f MB", RecordSession->totalSize_bytes() / 1024.f / 1024.f);
+						ImGui::EndTooltip();
+					}
+				}
+				
 				{
 					ImGui::Text("Connections: %d", ImGuiWS.nConnected());
 					if (ImGui::IsItemHovered())
@@ -643,38 +808,112 @@ private:
 			}
 		}
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.f); // Round borders
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(43.f / 255.f, 43.f / 255.f, 43.f / 255.f, 100.f / 255.f)); // Background color
-		ImGui::RenderNotifications();
-		ImGui::PopStyleVar();
-		ImGui::PopStyleColor();
+		{
+			// Notify
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.f);
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(43.f / 255.f, 43.f / 255.f, 43.f / 255.f, 100.f / 255.f));
+			ImGui::RenderNotifications();
+			ImGui::PopStyleVar();
+			ImGui::PopStyleColor();
+		}
+	}
+	
+	void Tick(float DeltaTime) override
+	{
+		if (ImGuiWS.nConnected() == 0 && RecordSession.IsValid() == false)
+		{
+	        return;
+	    }
+
+		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Tick"), STAT_ImGuiWS_Tick, STATGROUP_ImGui);
 		
-		const ImGuiMouseCursor MouseCursor = ImGui::GetMouseCursor();
+	    ImGuiContext* OldContent = ImGui::GetCurrentContext();
+	    ON_SCOPE_EXIT
+		{
+	        ImGui::SetCurrentContext(OldContent);
+	    };
+	    ImGui::SetCurrentContext(Context);
+	    ImGui::NewFrame();
+
+	    // websocket event handling
+	    const auto Events = ImGuiWS.takeEvents();
+	    for (const ImGuiWS::Event& Event : Events)
+		{
+	        State.Handle(Event);
+	    }
+	    State.Update();
+
+	    ImGuiIO& IO = ImGui::GetIO();
+	    IO.DeltaTime = VSync.Delta_S();
+
+		bool CloseRecord = false;
+		if (RecordReplay.IsValid())
+		{
+			RecordReplay->Draw(DeltaTime, CloseRecord);
+		}
+		else
+		{
+			DefaultDraw(DeltaTime);
+		}
 		
 	    // generate ImDrawData
 	    ImGui::Render();
-
+		
 		{
+			// store ImDrawData for asynchronous dispatching to WS clients
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
 			const ImDrawData* DrawData = ImGui::GetDrawData();
 			const ImVec2 MousePos = ImGui::GetMousePos();
 			const auto CurControlIp = State.Clients.FindRef(State.CurControlId).Ip;
-			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, MouseCursor, State.CurControlId, CurControlIp, MousePos, IO.DisplaySize));
+			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, RecordReplay.Get(), ImGui::GetMouseCursor(), State.CurControlId, CurControlIp, MousePos, IO.DisplaySize));
 		}
 
 	    ImGui::EndFrame();
+
+		if (CloseRecord)
+		{
+			RecordReplay.Reset();
+		}
 	}
 	void WS_ThreadUpdate()
 	{
 		if (ImGuiDataTripleBuffer.IsDirty())
 		{
-			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
 			const FImGuiData* ImGuiData = ImGuiDataTripleBuffer.SwapAndRead().Get();
-			// store ImDrawData for asynchronous dispatching to WS clients
-			const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
-			const ImVec2 MousePos = ImGuiData->MousePos;
-			const ImVec2 ViewportSize = ImGuiData->ViewportSize;
-			ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, ImGuiData->ControlIp, MousePos.x, MousePos.y, ViewportSize.x, ViewportSize.y);
+			{
+				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
+				const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
+				const ImVec2 MousePos = ImGuiData->MousePos;
+				const ImVec2 ViewportSize = ImGuiData->ViewportSize;
+				ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, ImGuiData->ControlIp, MousePos.x, MousePos.y, ViewportSize.x, ViewportSize.y);
+			}
+
+			if (const auto RecordSessionKeeper = RecordSession)
+			{
+				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Record_AddFrame"), STAT_ImGuiWS_Record_AddFrame, STATGROUP_ImGui);
+				FScopeLock ScopeLock{ &RecordCriticalSection };
+				RecordSessionKeeper->addFrame(&ImGuiData->CopiedDrawData);
+			}
+		}
+	}
+
+public:
+	void StartRecord()
+	{
+		// TODO：改为流式写入内存
+		RecordSession = MakeShared<ImGuiWS_Record::Session>();
+	}
+	void StopRecord()
+	{
+		check(RecordSession.IsValid());
+		const FString SaveDirPath = GRecordSaveDirPathString.ToString();
+		FScopeLock ScopeLock{ &RecordCriticalSection };
+		const FString SavePath = FString::Printf(TEXT("%s/%s.imgrcd"), *SaveDirPath, *FDateTime::Now().ToString());
+		if (RecordSession->save(TCHAR_TO_UTF8(*SavePath)))
+		{
+			RecordSession.Reset();
+
+			ImGui::InsertNotification(ImGuiToastType_Success, "Save Record To:\n%s", TCHAR_TO_UTF8(*SavePath));
 		}
 	}
 };
@@ -741,6 +980,31 @@ int32 UImGui_WS_Manager::GetPort() const
 int32 UImGui_WS_Manager::GetConnectionCount() const
 {
 	return Drawer ? Drawer->ImGuiWS.nConnected() : 0;
+}
+
+bool UImGui_WS_Manager::IsRecording() const
+{
+	if (Drawer && Drawer->RecordSession)
+	{
+		return true;
+	}
+	return false;
+}
+
+void UImGui_WS_Manager::StartRecord()
+{
+	if (Drawer && Drawer->RecordSession.IsValid() == false)
+	{
+		Drawer->StartRecord();
+	}
+}
+
+void UImGui_WS_Manager::StopRecord()
+{
+	if (Drawer && Drawer->RecordSession.IsValid())
+	{
+		Drawer->StopRecord();
+	}
 }
 
 void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
