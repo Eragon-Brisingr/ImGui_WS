@@ -281,9 +281,9 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 	{
 		ImGui::BeginTooltip();
 #if WITH_EDITOR
-		ImGui::Text(TCHAR_TO_UTF8(*Property->GetToolTipText().ToString()));
+		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Property->GetToolTipText().ToString()));
 #else
-		ImGui::Text(TCHAR_TO_UTF8(*Property->GetName()));
+		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Property->GetName()));
 #endif
 		ImGui::EndTooltip();
 	}
@@ -321,7 +321,7 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 		CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, true, IsShowChildren);
 		ImGui::TableSetColumnIndex(1);
 		ImGui::SetNextItemWidth(InnerValue::ValueRightBaseWidth);
-		ImGui::Text(TCHAR_TO_UTF8(*FString::Printf(TEXT("%d Elements %s"), Property->ArrayDim, IsIdentical ? TEXT("") : TEXT("*"))));
+		ImGui::TextUnformatted(TCHAR_TO_UTF8(*FString::Printf(TEXT("%d Elements %s"), Property->ArrayDim, IsIdentical ? TEXT("") : TEXT("*"))));
 
 		if (IsShowChildren)
 		{
@@ -426,9 +426,9 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 				{
 					ImGui::BeginTooltip();
 #if WITH_EDITOR
-					ImGui::Text(TCHAR_TO_UTF8(*DetailClass->GetToolTipText().ToString()));
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*DetailClass->GetToolTipText().ToString()));
 #else
-					ImGui::Text(TCHAR_TO_UTF8(*DetailClass->GetName()));
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*DetailClass->GetName()));
 #endif
 					ImGui::EndTooltip();
 				}

@@ -121,7 +121,7 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 						const FString StatDisplay = StatDesc.Len() == 0 ? ComplexStat.GetShortName().GetPlainNameString() : StatDesc;
 						const float IndentWidth = StatGroup.Indentation[Idx] * 4.f;
 						ImGui::Indent(IndentWidth);
-						ImGui::Text(TCHAR_TO_UTF8(*StatDisplay));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*StatDisplay));
 						ImGui::Unindent(IndentWidth);
 
 						RenderCycleInfo(ComplexStat);
@@ -153,7 +153,7 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 						ImGui::TableNextColumn();
 						const FString StatDesc = ComplexStat.GetDescription();
 						const FString StatDisplay = StatDesc.Len() == 0 ? ComplexStat.GetShortName().GetPlainNameString() : StatDesc;
-						ImGui::Text(TCHAR_TO_UTF8(*StatDisplay));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*StatDisplay));
 
 						RenderCycleInfo(ComplexStat);
 					}
@@ -181,7 +181,7 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 
 						// Memory Counters
 						ImGui::TableNextColumn();
-						ImGui::Text(TCHAR_TO_UTF8(*ComplexStat.GetDescription()));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*ComplexStat.GetDescription()));
 
 						const float MaxMemUsed = ComplexStat.GetValue_double(EComplexStatField::IncMax);
 						// UsedMax
@@ -201,7 +201,7 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 						ImGui::TableNextColumn();
 						if (const auto PoolAbbreviation = ViewData->PoolAbbreviation.Find(Region))
 						{
-							ImGui::Text(TCHAR_TO_UTF8(**PoolAbbreviation));
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(**PoolAbbreviation));
 						}
 
 						// Pool Capacity
@@ -237,7 +237,7 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 						ImGui::TableNextColumn();
 						const FString StatDesc = ComplexStat.GetDescription();
 						const FString StatDisplay = StatDesc.Len() == 0 ? ComplexStat.GetShortName().GetPlainNameString() : StatDesc;
-						ImGui::Text(TCHAR_TO_UTF8(*StatDisplay));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*StatDisplay));
 
 						if(bIsCycle)
 						{
@@ -281,12 +281,12 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 							if (ComplexStat.NameAndInfo.GetField<EStatDataType>() == EStatDataType::ST_double)
 							{
 								const FString ValueFormatted = FormatStatValueFloat(ComplexStat.GetValue_double(EComplexStatField::IncAve));
-								ImGui::Text(TCHAR_TO_UTF8(*ValueFormatted));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*ValueFormatted));
 							}
 							else if (ComplexStat.NameAndInfo.GetField<EStatDataType>() == EStatDataType::ST_int64)
 							{
 								const FString ValueFormatted = FormatStatValueInt64(ComplexStat.GetValue_int64(EComplexStatField::IncAve));
-								ImGui::Text(TCHAR_TO_UTF8(*ValueFormatted));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*ValueFormatted));
 							}
 						}
 
@@ -295,12 +295,12 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 						if (ComplexStat.NameAndInfo.GetField<EStatDataType>() == EStatDataType::ST_double)
 						{
 							const FString ValueFormatted = FormatStatValueFloat(ComplexStat.GetValue_double(EComplexStatField::IncMax));
-							ImGui::Text(TCHAR_TO_UTF8(*ValueFormatted));
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*ValueFormatted));
 						}
 						else if (ComplexStat.NameAndInfo.GetField<EStatDataType>() == EStatDataType::ST_int64)
 						{
 							const FString ValueFormatted = FormatStatValueInt64(ComplexStat.GetValue_int64(EComplexStatField::IncMax));
-							ImGui::Text(TCHAR_TO_UTF8(*ValueFormatted));
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*ValueFormatted));
 						}
 
 						// Min
@@ -308,12 +308,12 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 						if (ComplexStat.NameAndInfo.GetField<EStatDataType>() == EStatDataType::ST_double)
 						{
 							const FString ValueFormatted = FormatStatValueFloat(ComplexStat.GetValue_double(EComplexStatField::IncMin));
-							ImGui::Text(TCHAR_TO_UTF8(*ValueFormatted));
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*ValueFormatted));
 						}
 						else if (ComplexStat.NameAndInfo.GetField<EStatDataType>() == EStatDataType::ST_int64)
 						{
 							const FString ValueFormatted = FormatStatValueInt64(ComplexStat.GetValue_int64(EComplexStatField::IncMin));
-							ImGui::Text(TCHAR_TO_UTF8(*ValueFormatted));
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*ValueFormatted));
 						}
 					}
 				}

@@ -165,7 +165,7 @@ void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
 		TGuardValue<bool> GEnableEditVisiblePropertyGuard(UnrealImGui::GlobalValue::GEnableEditVisibleProperty, bEnableEditVisibleProperty);
 		if (SelectedObject)
 		{
-			ImGui::Text(TCHAR_TO_UTF8(*SelectedObject->GetName()));
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*SelectedObject->GetName()));
 			UnrealImGui::DrawDetailTable("Details", SelectedObject->GetClass(), { SelectedObject });
 		}
 		else

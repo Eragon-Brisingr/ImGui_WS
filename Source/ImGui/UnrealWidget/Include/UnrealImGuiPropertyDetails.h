@@ -182,10 +182,8 @@ namespace UnrealImGui
 				}
 			}
 		};
-	private:
-		friend class FImGuiModule;
 		static void InitialDefaultCustomizer();
-
+	private:
 		static TMap<FFieldClass*, TSharedRef<IUnrealPropertyCustomization>> PropertyCustomizeMap;
 		static TMap<UStruct*, TSharedRef<IUnrealStructCustomization>> StructCustomizeMap;
 		static TMap<UClass*, TSharedRef<IUnrealClassCustomization>> ClassCustomizeMap;

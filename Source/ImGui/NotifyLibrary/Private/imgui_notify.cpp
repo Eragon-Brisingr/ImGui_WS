@@ -26,7 +26,7 @@
 
 #define NOTIFY_INLINE					inline
 #define NOTIFY_NULL_OR_EMPTY(str)		(!str ||! strlen(str))
-#define NOTIFY_FORMAT(fn, format, ...)	if (format) { va_list args; va_start(args, format); fn(format, args, __VA_ARGS__); va_end(args); }
+#define NOTIFY_FORMAT(fn, format)	if (format) { va_list args; va_start(args, format); fn(format, args); va_end(args); }
 
 typedef int ImGuiToastPhase;
 typedef int ImGuiToastPos;
@@ -85,18 +85,22 @@ public:
 	{
 		if (!strlen(this->title))
 		{
+			static char success_title[] = "Success";
+			static char warning_title[] = "Warning";
+			static char error_title[] = "Error";
+			static char info_title[] = "Info";
 			switch (this->type)
 			{
 			case ImGuiToastType_None:
 				return NULL;
 			case ImGuiToastType_Success:
-				return "Success";
+				return success_title;
 			case ImGuiToastType_Warning:
-				return "Warning";
+				return warning_title;
 			case ImGuiToastType_Error:
-				return "Error";
+				return error_title;
 			case ImGuiToastType_Info:
-				return "Info";
+				return info_title;
 			}
 		}
 
@@ -264,7 +268,7 @@ namespace ImGui
 
 			// Generate new unique name for this toast
 			char window_name[50];
-			sprintf_s(window_name, "##TOAST%d", i);
+			snprintf(window_name, sizeof(window_name),"##TOAST%d", i);
 
 			SetNextWindowBgAlpha(opacity);
 			SetNextWindowPos(ImVec2(vp_size.x - NOTIFY_PADDING_X, vp_size.y - NOTIFY_PADDING_Y - height), ImGuiCond_Always, ImVec2(1.0f, 1.0f));
@@ -283,7 +287,9 @@ namespace ImGui
 				if (!NOTIFY_NULL_OR_EMPTY(icon))
 				{
 					//Text(icon); // Render icon text
-					TextColored(text_color, icon);
+					PushStyleColor(ImGuiCol_Text, text_color);
+					TextUnformatted(icon);
+					PopStyleColor();
 					was_title_rendered = true;
 				}
 
@@ -294,7 +300,7 @@ namespace ImGui
 					if (!NOTIFY_NULL_OR_EMPTY(icon))
 						SameLine();
 
-					Text(title); // Render title text
+					TextUnformatted(title); // Render title text
 					was_title_rendered = true;
 				}
 				else if (!NOTIFY_NULL_OR_EMPTY(default_title))
@@ -302,7 +308,7 @@ namespace ImGui
 					if (!NOTIFY_NULL_OR_EMPTY(icon))
 						SameLine();
 
-					Text(default_title); // Render default title text (ImGuiToastType_Success -> "Success", etc...)
+					TextUnformatted(default_title); // Render default title text (ImGuiToastType_Success -> "Success", etc...)
 					was_title_rendered = true;
 				}
 
@@ -322,7 +328,7 @@ namespace ImGui
 #endif
 					}
 
-					Text(content); // Render content text
+					TextUnformatted(content); // Render content text
 				}
 
 				PopTextWrapPos();

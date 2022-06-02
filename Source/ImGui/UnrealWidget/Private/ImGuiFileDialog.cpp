@@ -170,7 +170,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
-					ImGui::Text(Folders[i].path().stem().string().c_str());
+					ImGui::TextUnformatted(Folders[i].path().stem().string().c_str());
 					ImGui::EndTooltip();
 				}
 			}
@@ -306,7 +306,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 			if (ImGui::IsItemHovered())
 			{
 				ImGui::BeginTooltip();
-				ImGui::Text(Files[i].path().filename().string().c_str());
+				ImGui::TextUnformatted(Files[i].path().filename().string().c_str());
 				ImGui::EndTooltip();
 			}
 			ImGui::NextColumn();
@@ -327,7 +327,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 			}
 			else
 			{
-				ImGui::Text("%d B", Files[i].file_size());
+				ImGui::Text("%lu B", Files[i].file_size());
 			}
 			ImGui::NextColumn();
 			ImGui::TextUnformatted(Files[i].path().extension().string().c_str());
@@ -381,20 +381,18 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 			ImGui::PopItemFlag();
 		}
 
-		ImVec2 center(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x * 0.5f,
-		              ImGui::GetWindowPos().y + ImGui::GetWindowSize().y * 0.5f);
+		ImVec2 center(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x * 0.5f, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y * 0.5f);
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 		if (ImGui::BeginPopup("NewFolderPopup", ImGuiWindowFlags_Modal))
 		{
 			ImGui::Text("Enter a name for the new folder");
 			static char new_folder_name[500] = "";
-			static char new_folder_error[500] = "";
 			ImGui::InputText("##newfolder", new_folder_name, sizeof(new_folder_name));
 			if (ImGui::Button("Create##1"))
 			{
 				if (strlen(new_folder_name) <= 0)
 				{
-					strcpy_s(new_folder_error, "Folder name can't be empty");
+					ImGui::InsertNotification(ImGuiToastType_Error, "Folder name can't be empty");
 				}
 				else
 				{
@@ -406,11 +404,9 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 			ImGui::SameLine();
 			if (ImGui::Button("Cancel##1"))
 			{
-				strcpy_s(new_folder_name, "");
-				strcpy_s(new_folder_error, "");
+				new_folder_name[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}
-			ImGui::TextColored(ImColor(1.0f, 0.0f, 0.2f, 1.0f), new_folder_error);
 			ImGui::EndPopup();
 		}
 

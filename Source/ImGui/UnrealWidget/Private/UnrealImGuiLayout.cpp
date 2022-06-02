@@ -13,7 +13,7 @@ void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuild
 	for (UUnrealImGuiPanelBase* Panel : LayoutBuilder.Panels)
 	{
 		const UUnrealImGuiPanelBase::FDefaultDockLayout* DefaultDockLayout = Panel->DefaultDockSpace.Find(GetClass()->GetFName());
-		const UUnrealImGuiPanelBase::FDefaultPanelState& DefaultPanelState = DefaultDockLayout ? *DefaultDockLayout : Panel->DefaultState;
+		const UUnrealImGuiPanelBase::FDefaultPanelState& DefaultPanelState = DefaultDockLayout ? static_cast<const UUnrealImGuiPanelBase::FDefaultPanelState&>(*DefaultDockLayout) : Panel->DefaultState;
 		const int32 PanelDockKey = DefaultDockLayout ? DefaultDockLayout->DockId : DefaultDockId;
 		const ImGuiID* MappedDockId = DockIdMap.Find(PanelDockKey);
 		if (DefaultPanelState.bEnableDock && MappedDockId)

@@ -17,9 +17,14 @@ public class UWS : ModuleRules
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{
-			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/uWS.lib"));
-			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/libuv/lib/uv_a.lib"));
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/uWebSockets/uWS-win-x64.lib"));
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/libuv/lib/libuv-win-x64.lib"));
 			PublicSystemLibraries.Add("UserEnv.Lib");
+		}
+		else if (Target.Platform == UnrealTargetPlatform.Linux)
+		{
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/uWebSockets/uWS-linux-x64.a"));
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "prebuilt/libuv/lib/libuv-linux-x86_64.a"));
 		}
 	}
 }

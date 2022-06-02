@@ -255,7 +255,7 @@ namespace UnrealImGui
 								if (ImGui::IsItemHovered())
 								{
 									ImGui::BeginTooltip();
-									ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
+									ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 									ImGui::EndTooltip();
 								}
 							}
@@ -356,7 +356,7 @@ namespace UnrealImGui
 							if (ImGui::IsItemHovered())
 							{
 								ImGui::BeginTooltip();
-								ImGui::Text(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
 								ImGui::EndTooltip();
 							}
 						}
@@ -377,7 +377,7 @@ namespace UnrealImGui
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
-					ImGui::Text(TCHAR_TO_UTF8(*FirstValue->GetPathName()));
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue->GetPathName()));
 					ImGui::EndTooltip();
 				}
 			}
@@ -509,7 +509,7 @@ namespace UnrealImGui
 								if (ImGui::IsItemHovered())
 								{
 									ImGui::BeginTooltip();
-									ImGui::Text(TCHAR_TO_UTF8(*Actor->GetFullName()));
+									ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetFullName()));
 									ImGui::EndTooltip();
 								}
 							}
@@ -597,7 +597,7 @@ namespace UnrealImGui
 							if (ImGui::IsItemHovered())
 							{
 								ImGui::BeginTooltip();
-								ImGui::Text(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
 								ImGui::EndTooltip();
 							}
 						}
@@ -619,7 +619,7 @@ namespace UnrealImGui
 			if (ImGui::IsItemHovered())
 			{
 				ImGui::BeginTooltip();
-				ImGui::Text(TCHAR_TO_UTF8(*FirstValue.ToString()));
+				ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue.ToString()));
 				ImGui::EndTooltip();
 			}
 		}
@@ -704,7 +704,7 @@ namespace UnrealImGui
 							if (ImGui::IsItemHovered())
 							{
 								ImGui::BeginTooltip();
-								ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 								ImGui::EndTooltip();
 							}
 						}
@@ -726,7 +726,7 @@ namespace UnrealImGui
 			if (ImGui::IsItemHovered())
 			{
 				ImGui::BeginTooltip();
-				ImGui::Text(TCHAR_TO_UTF8(*FirstValue->GetPathName()));
+				ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue->GetPathName()));
 				ImGui::EndTooltip();
 			}
 		}
@@ -812,7 +812,7 @@ namespace UnrealImGui
 							if (ImGui::IsItemHovered())
 							{
 								ImGui::BeginTooltip();
-								ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 								ImGui::EndTooltip();
 							}
 						}
@@ -834,7 +834,7 @@ namespace UnrealImGui
 			if (ImGui::IsItemHovered())
 			{
 				ImGui::BeginTooltip();
-				ImGui::Text(TCHAR_TO_UTF8(*FirstValue.ToString()));
+				ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue.ToString()));
 				ImGui::EndTooltip();
 			}
 		}

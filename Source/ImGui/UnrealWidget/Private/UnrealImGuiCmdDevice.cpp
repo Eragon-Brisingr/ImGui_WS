@@ -381,11 +381,11 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 							ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterY);
 						}
 						ImGui::TableNextColumn();
-						ImGui::Text(*Cmd.CmdHelp);
+						ImGui::TextUnformatted(*Cmd.CmdHelp);
 						if (ImGui::IsItemHovered())
 						{
 							ImGui::BeginTooltip();
-							ImGui::Text(*Cmd.CmdHelp);
+							ImGui::TextUnformatted(*Cmd.CmdHelp);
 							ImGui::EndTooltip();
 						}
 					}
