@@ -52,9 +52,9 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	int32 EditorPort = 8892;
 
-	// Packaged DedicatedServer
+	// Packaged Server
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Server Enable ImGui WS"))
-	bool bServerEnableImGui_WS = true;
+	bool bServerEnableImGui_WS = false;
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	int32 ServerPort = 8891;
 

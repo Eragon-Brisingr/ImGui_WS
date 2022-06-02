@@ -233,7 +233,7 @@ void UImGuiWorldDebuggerViewportPanel::DrawFilterPopup(UWorld* World)
 					if (ImGui::IsItemHovered())
 					{
 						ImGui::BeginTooltip();
-						ImGui::Text(TCHAR_TO_UTF8(*Class->GetFullName()));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 						ImGui::EndTooltip();
 						if (IO.MouseDown[ImGuiMouseButton_Left])
 						{
@@ -261,7 +261,7 @@ void UImGuiWorldDebuggerViewportPanel::DrawFilterPopup(UWorld* World)
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
-					ImGui::Text(TCHAR_TO_UTF8(*Actor->GetFullName(World)));
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetFullName(World)));
 					ImGui::EndTooltip();
 					if (IO.MouseDown[ImGuiMouseButton_Left])
 					{
@@ -749,7 +749,7 @@ void UImGuiWorldDebuggerViewportPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 					if ((MouseWorldPosition - FVector2D(Location)).SizeSquared() < Radius * Radius)
 					{
 						ImGui::BeginTooltip();
-						ImGui::Text(TCHAR_TO_UTF8(*Actor->GetName()));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetName()));
 						ImGui::Separator();
 						Drawer->DrawImGuiDebuggerToolTips(Actor);
 						ImGui::EndTooltip();

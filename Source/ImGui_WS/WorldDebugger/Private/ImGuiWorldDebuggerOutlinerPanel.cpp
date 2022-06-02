@@ -139,15 +139,15 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 					if (ImGui::IsItemHovered())
 					{
 						ImGui::BeginTooltip();
-						ImGui::Text(TCHAR_TO_UTF8(*Actor->GetName()));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetName()));
 						ImGui::EndTooltip();
 					}
 					ImGui::TableNextColumn();
-					ImGui::Text(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
 					if (ImGui::IsItemHovered())
 					{
 						ImGui::BeginTooltip();
-						ImGui::Text(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
 						ImGui::EndTooltip();
 					}
 				}

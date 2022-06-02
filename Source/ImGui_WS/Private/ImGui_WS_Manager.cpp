@@ -37,61 +37,61 @@ FAutoConsoleCommand LaunchImGuiWeb
 	})
 };
 
-TAutoConsoleVariable<int32> ImGui_WS_Port
+UnrealImGui::FUTF8String GRecordSaveDirPathString;
+namespace ImGuiConsoleImpl
 {
-	TEXT("ImGui.WS.Port"),
-	INDEX_NONE,
-	TEXT("ImGui-WS Web Port, Only Valid When Pre Game Start. Set In\n")
-	TEXT("1. Engine.ini\n [ConsoleVariables] \n ImGui.WS.Port=8890\n")
-	TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
-	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+	TAutoConsoleVariable<int32> ImGui_WS_Port
 	{
-		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
-		if (GIsEditor)
+		TEXT("ImGui.WS.Port"),
+		INDEX_NONE,
+		TEXT("ImGui-WS Web Port, Only Valid When Pre Game Start. Set In\n")
+		TEXT("1. Engine.ini\n [ConsoleVariables] \n ImGui.WS.Port=8890\n")
+		TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
+		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 		{
-			Settings->EditorPort = ImGui_WS_Port.GetValueOnGameThread();
-		}
-		if (IsRunningDedicatedServer())
-		{
-			Settings->ServerPort = ImGui_WS_Port.GetValueOnGameThread();
-		}
-		else
-		{
-			Settings->GamePort = ImGui_WS_Port.GetValueOnGameThread();
-		}
-	})
-};
+			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+			if (GIsEditor)
+			{
+				Settings->EditorPort = ImGui_WS_Port.GetValueOnGameThread();
+			}
+			else if (GIsServer)
+			{
+				Settings->ServerPort = ImGui_WS_Port.GetValueOnGameThread();
+			}
+			else
+			{
+				Settings->GamePort = ImGui_WS_Port.GetValueOnGameThread();
+			}
+		})
+	};
 
-TAutoConsoleVariable<int32> ImGui_WS_Enable
-{
-	TEXT("ImGui.WS.Enable"),
-	INDEX_NONE,
-	TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
-	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+	TAutoConsoleVariable<int32> ImGui_WS_Enable
 	{
-		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
-		if (GIsEditor)
+		TEXT("ImGui.WS.Enable"),
+		INDEX_NONE,
+		TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
+		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 		{
-			Settings->bEditorEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
-		}
-		else if (GIsServer)
-		{
-			Settings->bServerEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
-		}
-		else
-		{
-			Settings->bGameEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
-		}
-	})
-};
+			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+			if (GIsEditor)
+			{
+				Settings->bEditorEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+			}
+			else if (GIsServer)
+			{
+				Settings->bServerEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+			}
+			else
+			{
+				Settings->bGameEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+			}
+		})
+	};
 
-UnrealImGui::FUTF8String GRecordSaveDirPathString{ *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT("ImGui_WS")) };
-namespace Impl
-{
 	TAutoConsoleVariable<FString> CVar_RecordSaveDirPathString
 	{
 		TEXT("ImGui.WS.RecordDirPath"),
-		GRecordSaveDirPathString.ToString(),
+		TEXT("./"),
 		TEXT("Set ImGui-WS Record Saved Path"),
 		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 		{
@@ -211,8 +211,7 @@ public:
 		static auto SetClipboardTextFn_DefaultImpl = [](void* user_data, const char* text)
 		{
 			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
-			FDrawer* Drawer = Manager->Drawer;
-			Drawer->ClipboardTextTripleBuffer.WriteAndSwap(text);
+			Manager->Drawer->ClipboardTextTripleBuffer.WriteAndSwap(text);
 		};
 		IO.SetClipboardTextFn = SetClipboardTextFn_DefaultImpl;
 		
@@ -762,13 +761,14 @@ private:
 				if (RecordSession.IsValid())
 				{
 					const ImGuiStyle& Style = ImGui::GetStyle();
-					if (ImGui::Button(TCHAR_TO_UTF8(*FString::Printf(TEXT("Stop Record (%.0f MB)"), RecordSession->totalSize_bytes() / 1024.f / 1024.f)), { StopRecordButtonWidth - Style.FramePadding.x * 2.f, 0.f }))
+					if (ImGui::Button(TCHAR_TO_UTF8(*FString::Printf(TEXT("Recording (%.0f MB)###StopRecordButton"), RecordSession->totalSize_bytes() / 1024.f / 1024.f)), { StopRecordButtonWidth - Style.FramePadding.x * 2.f, 0.f }))
 					{
 						StopRecord();
 					}
 					if (RecordSession.IsValid() && ImGui::IsItemHovered())
 					{
 						ImGui::BeginTooltip();
+						ImGui::Text("Stop Current Record");
 						ImGui::Text("Record Info:");
 						ImGui::Text("	Frame: %d", RecordSession->nFrames());
 						ImGui::Text("	Size: %.2f MB", RecordSession->totalSize_bytes() / 1024.f / 1024.f);
@@ -951,6 +951,9 @@ bool UImGui_WS_Manager::IsSettingsEnable()
 	}
 	else if (GIsServer)
 	{
+#if WITH_EDITOR
+		return Settings->bEditorEnableImGui_WS;
+#endif
 		return Settings->bServerEnableImGui_WS;
 	}
 	else if (GIsClient)
@@ -968,9 +971,9 @@ int32 UImGui_WS_Manager::GetPort() const
 		// Editor
 		return Settings->EditorPort;
 	}
-	if (IsRunningDedicatedServer())
+	if (GIsServer)
 	{
-		// DedicatedServer
+		// Server
 		return Settings->ServerPort;
 	}
 	// Game
@@ -1011,6 +1014,8 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	GRecordSaveDirPathString = *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT("ImGui_WS"));
+	ImGuiConsoleImpl::CVar_RecordSaveDirPathString->Set(*GRecordSaveDirPathString.ToString());
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this, [this](float)
 	{
 		if (GEngine->DeferredCommands.Num() == 0)

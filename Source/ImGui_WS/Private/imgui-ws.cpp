@@ -8,7 +8,7 @@
 
 // #include "common.h"
 
-#include "incppect/incppect.h"
+#include "Incppect/incppect.h"
 
 #include <atomic>
 #include <array>

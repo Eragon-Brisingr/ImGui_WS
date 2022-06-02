@@ -3,11 +3,14 @@
  *  \author Georgi Gerganov
  */
 
-#include "incppect/incppect.h"
+#include "Incppect/incppect.h"
 
 #include "common.h"
 
+THIRD_PARTY_INCLUDES_START
 #include "App.h" // uWebSockets
+THIRD_PARTY_INCLUDES_END
+
 #include "UnrealImGuiStat.h"
 #include "UnrealImGui_Log.h"
 

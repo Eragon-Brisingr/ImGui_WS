@@ -81,7 +81,7 @@ void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugge
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::BeginTooltip();
-			ImGui::Text(TCHAR_TO_UTF8(*FirstActor->GetName()));
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstActor->GetName()));
 			ImGui::EndTooltip();
 		}
 	}
