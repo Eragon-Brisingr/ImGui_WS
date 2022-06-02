@@ -40,62 +40,64 @@ FAutoConsoleCommand LaunchImGuiWeb
 UnrealImGui::FUTF8String GRecordSaveDirPathString;
 namespace ImGuiConsoleImpl
 {
-	TAutoConsoleVariable<int32> ImGui_WS_Port
+	FAutoConsoleVariable CVar_ImGui_WS_Port
 	{
 		TEXT("ImGui.WS.Port"),
 		INDEX_NONE,
 		TEXT("ImGui-WS Web Port, Only Valid When Pre Game Start. Set In\n")
 		TEXT("1. Engine.ini\n [ConsoleVariables] \n ImGui.WS.Port=8890\n")
 		TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
-		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
 		{
+			const int32 ImGui_WS_Port = ConsoleVariable->GetInt();
 			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
 			if (GIsEditor)
 			{
-				Settings->EditorPort = ImGui_WS_Port.GetValueOnGameThread();
+				Settings->EditorPort = ImGui_WS_Port;
 			}
 			else if (GIsServer)
 			{
-				Settings->ServerPort = ImGui_WS_Port.GetValueOnGameThread();
+				Settings->ServerPort = ImGui_WS_Port;
 			}
 			else
 			{
-				Settings->GamePort = ImGui_WS_Port.GetValueOnGameThread();
+				Settings->GamePort = ImGui_WS_Port;
 			}
 		})
 	};
 
-	TAutoConsoleVariable<int32> ImGui_WS_Enable
+	FAutoConsoleVariable CVar_ImGui_WS_Enable
 	{
 		TEXT("ImGui.WS.Enable"),
 		INDEX_NONE,
 		TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
-		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
 		{
 			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+			const int32 ImGui_WS_Enable = ConsoleVariable->GetInt();
 			if (GIsEditor)
 			{
-				Settings->bEditorEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+				Settings->bEditorEnableImGui_WS = !!ImGui_WS_Enable;
 			}
 			else if (GIsServer)
 			{
-				Settings->bServerEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+				Settings->bServerEnableImGui_WS = !!ImGui_WS_Enable;
 			}
 			else
 			{
-				Settings->bGameEnableImGui_WS = !!ImGui_WS_Enable.GetValueOnGameThread();
+				Settings->bGameEnableImGui_WS = !!ImGui_WS_Enable;
 			}
 		})
 	};
 
-	TAutoConsoleVariable<FString> CVar_RecordSaveDirPathString
+	FAutoConsoleVariable CVar_RecordSaveDirPathString
 	{
 		TEXT("ImGui.WS.RecordDirPath"),
 		TEXT("./"),
 		TEXT("Set ImGui-WS Record Saved Path"),
-		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
 		{
-			const FString RecordSaveDirPathString = CVar_RecordSaveDirPathString.GetValueOnAnyThread();
+			const FString RecordSaveDirPathString = ConsoleVariable->GetString();
 			if (FPaths::DirectoryExists(RecordSaveDirPathString))
 			{
 				GRecordSaveDirPathString = UnrealImGui::FUTF8String{ *RecordSaveDirPathString };

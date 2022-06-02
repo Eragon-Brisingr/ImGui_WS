@@ -14,6 +14,7 @@
 #include <GameFramework/PlayerController.h>
 
 #include "imgui.h"
+#include "ImGuiWorldDebuggerBase.h"
 #include "UnrealImGuiStat.h"
 #include "ImGuiWorldDebuggerDrawer.h"
 #include "ImGuiWorldDebuggerLayout.h"
