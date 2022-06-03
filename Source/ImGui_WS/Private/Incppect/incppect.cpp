@@ -8,7 +8,7 @@
 #include "common.h"
 
 THIRD_PARTY_INCLUDES_START
-#include "App.h" // uWebSockets
+#include "UWS_App.h" // uWebSockets "App.h"
 THIRD_PARTY_INCLUDES_END
 
 #include "UnrealImGuiStat.h"
