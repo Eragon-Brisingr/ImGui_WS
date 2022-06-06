@@ -22,8 +22,9 @@
 
 ## 学习如何使用ImGui
 
-在ImGui网页选择ImGui_WS，勾选ImGuiDemo打开Demo面板
-代码查看**ImGuiDemo.cpp**可参考Demo面板复制所需的控件绘制方法
+在ImGui网页选择ImGui_WS，勾选ImGuiDemo打开Demo面板  
+代码查看**ImGuiDemo.cpp**可参考Demo面板复制所需的控件绘制方法  
+> [imgui_manual](https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html) demo网页版  
 
 ## 网页绘制
 
@@ -47,6 +48,24 @@
 UImGui_WS_Manager::GetImGuiContext获取到ImGuiContext  
 成员OnDraw为ImGui_WS绘制调用的事件  
 绑定该事件调用ImGui绘制特定的面板
+
+## 录制绘制数据与回放
+
+### 录制方式
+
+开始录制：
+
+* 菜单->ImGui_WS->Start Record
+* 控制台输入ImGui.WS.StartRecord
+
+结束录制：
+
+* 菜单->ImGui_WS->Stop Record
+* 控制台输入ImGui.WS.StopRecord
+
+### 回放录制数据
+
+菜单->ImGui_WS->Load Record，选择录制的文件进行回看
 
 ## 虚幻俯视图
 
@@ -79,7 +98,7 @@ UShootWeaponBulletDrawer::UShootWeaponBulletDrawer()
 * 重写DrawImGuiDebuggerExtendInfo等函数添加额外的调试信息绘制
 
 ``` cpp
-void UShootWeaponBulletDrawer::DrawImGuiDebuggerExtendInfo(const AActor* Actor, const FImGuiWorldDebuggerContext& DebuggerContext) const
+void UShootWeaponBulletDrawer::DrawImGuiDebuggerExtendInfo(const AActor* Actor, const FImGuiWorldViewportContext& DebuggerContext) const
 {
 	const AShootWeaponBullet* Bullet = CastChecked<AShootWeaponBullet>(Actor);
 	const FVector EndLocation = Bullet->GetActorLocation();
@@ -250,21 +269,3 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 调用**ImGui::InsertNotification**使用全局的冒泡消息提示  
 
 ![冒泡消息提示](Docs/Notification.gif)  
-
-## 录制绘制数据与回放
-
-### 录制方式
-
-开始录制：
-
-* 菜单->ImGui_WS->Start Record
-* 控制台输入ImGui.WS.StartRecord
-
-结束录制：
-
-* 菜单->ImGui_WS->Stop Record
-* 控制台输入ImGui.WS.StopRecord
-
-### 回放录制数据
-
-菜单->ImGui_WS->Load Record，选择录制的文件进行回看
