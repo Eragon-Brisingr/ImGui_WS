@@ -53,7 +53,7 @@ namespace ImGuiWorldDebuggerBootstrap
 	}
 
 	static bool bEnableImGuiWorldDebugger = false;
-	FAutoConsoleVariableRef EnableImGuiWorldDebugger
+	FAutoConsoleVariable EnableImGuiWorldDebugger
 	{
 		TEXT("ImGui.DebugGameWorld"),
 		bEnableImGuiWorldDebugger,
@@ -63,6 +63,11 @@ namespace ImGuiWorldDebuggerBootstrap
 		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
 		{
 			const bool Enable = ConsoleVariable->GetBool();
+			if (bEnableImGuiWorldDebugger == Enable)
+			{
+				return;
+			}
+			bEnableImGuiWorldDebugger = Enable;
 			for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
 			{
 				if (UWorld* World = WorldContext.World())
