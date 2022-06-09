@@ -14,21 +14,25 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
+	"SupportedTargetPlatforms": [ "Win64", "Linux" ],
 	"Modules": [
 		{
 			"Name": "ImGui",
 			"Type": "DeveloperTool",
-			"LoadingPhase": "PreDefault"
+			"LoadingPhase": "PreDefault",
+			"PlatformAllowList": [ "Win64", "Linux" ]
 		},
 		{
 			"Name": "ImGui_Editor",
 			"Type": "Editor",
-			"LoadingPhase": "PreDefault"
+			"LoadingPhase": "PreDefault",
+			"PlatformAllowList": [ "Win64", "Linux" ]
 		},
 		{
 			"Name": "ImGui_WS",
 			"Type": "DeveloperTool",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [ "Win64", "Linux" ]
 		}
 	]
 }
