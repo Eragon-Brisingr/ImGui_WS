@@ -30,6 +30,10 @@
 
 点击右下角的ImGui按钮开启对应的网页，或者控制台输入**ImGui.WS.LaunchWeb**打开网页
 
+> ImGui_WS绘制只在编辑器下默认启用，打包后的DS或者客户端在启动参数添加  
+> -ExecCmds="ImGui.WS.Enable 1"  
+> 来启用绘制
+
 ### 端口号配置
 
 可以通过Config或者命令行来设置端口号

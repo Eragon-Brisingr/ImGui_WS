@@ -42,6 +42,7 @@ public:
 	}
 
 	// Editor
+	// 启动参数添加 -ExecCmds="ImGui.WS.Enable 1" 可控制是否启用
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Editor Enable ImGui WS"))
 	bool bEditorEnableImGui_WS = true;
 	// ImGui-WS Web Port, Only Valid When Pre Game Start. Set In

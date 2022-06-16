@@ -81,26 +81,24 @@ public:
 
 	NOTIFY_INLINE auto get_title() -> char* { return this->title; };
 
-	NOTIFY_INLINE auto get_default_title() -> char*
+	NOTIFY_INLINE auto get_default_title() -> const char*
 	{
 		if (!strlen(this->title))
 		{
-			static char success_title[] = "Success";
-			static char warning_title[] = "Warning";
-			static char error_title[] = "Error";
-			static char info_title[] = "Info";
 			switch (this->type)
 			{
 			case ImGuiToastType_None:
-				return NULL;
+				return nullptr;
 			case ImGuiToastType_Success:
-				return success_title;
+				return "Success";
 			case ImGuiToastType_Warning:
-				return warning_title;
+				return "Warning";
 			case ImGuiToastType_Error:
-				return error_title;
+				return "Error";
 			case ImGuiToastType_Info:
-				return info_title;
+				return "Info";
+			default:
+				return nullptr;
 			}
 		}
 

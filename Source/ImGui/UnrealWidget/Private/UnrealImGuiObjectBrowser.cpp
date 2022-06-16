@@ -59,7 +59,7 @@ void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
 	if (ImGui::Begin("ObjectBrowserContent"))
 	{
 		static UnrealImGui::FUTF8String FilterString;
-		const bool bInvokeSearch = UnrealImGui::InputTextWithHint("##Filter", "Filer", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool bInvokeSearch = UnrealImGui::InputTextWithHint("##Filter", "Filter (Input full path then press Enter to search object)", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 		if (bInvokeSearch && ImGui::IsItemDeactivatedAfterEdit())
 		{
 			SelectedObject = FindObject<UObject>(nullptr, *FilterString.ToString());
@@ -77,59 +77,65 @@ void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
 			}
 			FilterString.Empty();
 		}
-		ImGui::Separator();
-		
-		const FString Filter = FilterString.ToString();
-		if (ImGui::BeginChild("Content"))
+		TArray<UObject*> DisplayObjects;
+		int32 AllObjectCount = 0;
 		{
+			const FString Filter = FilterString.ToString();
 			if (SelectedObject == nullptr)
 			{
-				TArray<UObject*> Objects;
-				GetObjectsOfClass(UPackage::StaticClass(), Objects);
+				GetObjectsOfClass(UPackage::StaticClass(), DisplayObjects);
+				AllObjectCount = DisplayObjects.Num();
 				if (Filter.Len() > 0)
 				{
-					Objects.RemoveAllSwap([&Filter](const UObject* E){ return E->GetName().Contains(Filter) == false; });
-				}
-
-				ImGuiListClipper ListClipper{ Objects.Num() };
-				while (ListClipper.Step())
-				{
-					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
-					{
-						UObject* Object = Objects[Idx];
-						if (ImGui::Button(TCHAR_TO_UTF8(*Object->GetName())))
-						{
-							SelectedObject = Object;
-						}
-					}
+					DisplayObjects.RemoveAllSwap([&Filter](const UObject* E){ return E->GetName().Contains(Filter) == false; });
 				}
 			}
 			else
 			{
-				TArray<UObject*, TInlineAllocator<256>> SubObjects;
-				ForEachObjectWithOuter(SelectedObject, [&SubObjects, &Filter](UObject* SubObject)
+				ForEachObjectWithOuter(SelectedObject, [&](UObject* SubObject)
 				{
+					AllObjectCount += 1;
 					if (Filter.Len() > 0 && SubObject->GetName().Contains(Filter) == false)
 					{
 						return;
 					}
-					SubObjects.Add(SubObject);
+					DisplayObjects.Add(SubObject);
 				}, false);
-	
-				ImGuiListClipper ListClipper{ SubObjects.Num() };
-				while (ListClipper.Step())
+			}
+		}
+		ImGui::SameLine();
+		ImGui::Text("Filter %d | Total %d", AllObjectCount, DisplayObjects.Num());
+		ImGui::Separator();
+		
+		const FString Filter = FilterString.ToString();
+
+		constexpr ImGuiTableFlags OutlinerTableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
+			ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody | ImGuiTableFlags_ScrollY;
+
+		if (ImGui::BeginTable("ContentTable", 1, OutlinerTableFlags))
+		{
+			ImGuiListClipper ListClipper{ DisplayObjects.Num() };
+			while (ListClipper.Step())
+			{
+				for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
 				{
-					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					ImGui::TableNextColumn();
+					UObject* Object = DisplayObjects[Idx];
+					if (ImGui::Selectable(TCHAR_TO_UTF8(*Object->GetName())))
 					{
-						UObject* Object = SubObjects[Idx];
-						if (ImGui::Button(TCHAR_TO_UTF8(*Object->GetName())))
-						{
-							SelectedObject = Object;
-						}
+						SelectedObject = Object;
+						FilterString.Empty();
+					}
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::BeginTooltip();
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*FString::Printf(TEXT("Class: %s"), *Object->GetClass()->GetName())));
+						ImGui::Text("InPackage: %s", Object->HasAnyFlags(RF_Load) ? "true" : "false");
+						ImGui::EndTooltip();
 					}
 				}
 			}
-			ImGui::EndChild();
+			ImGui::EndTable();
 		}
 		ImGui::End();
 	}

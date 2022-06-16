@@ -96,7 +96,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 					| ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_NoBordersInBody
 					| ImGuiTableFlags_ScrollY;
 
-		if (ImGui::BeginTable("OutlinerTable", 2, OutlinerTableFlags))
+		if (ImGui::BeginTable("OutlinerTable", OutlinerTableColumnID_Max, OutlinerTableFlags))
 		{
 			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed, 0.f, OutlinerTableColumnID_Name);
 			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 0.f, OutlinerTableColumnID_Type);
@@ -130,25 +130,31 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 					{
 						continue;
 					}
-					ImGui::TableNextColumn();
-					if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), Viewport->SelectedActors.Contains(Actor)))
+					// OutlinerTableColumnID_Name
+					if (ImGui::TableNextColumn())
 					{
-						Viewport->SetSelectedEntities({ Actor });
-						Viewport->FocusActor(Actor);
+						if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), Viewport->SelectedActors.Contains(Actor)))
+						{
+							Viewport->SetSelectedEntities({ Actor });
+							Viewport->FocusActor(Actor);
+						}
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::BeginTooltip();
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetName()));
+							ImGui::EndTooltip();
+						}
 					}
-					if (ImGui::IsItemHovered())
+					// OutlinerTableColumnID_Type
+					if (ImGui::TableNextColumn())
 					{
-						ImGui::BeginTooltip();
-						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetName()));
-						ImGui::EndTooltip();
-					}
-					ImGui::TableNextColumn();
-					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
-					if (ImGui::IsItemHovered())
-					{
-						ImGui::BeginTooltip();
 						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
-						ImGui::EndTooltip();
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::BeginTooltip();
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
+							ImGui::EndTooltip();
+						}
 					}
 				}
 			}

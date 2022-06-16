@@ -27,6 +27,8 @@ private:
 	{
 		OutlinerTableColumnID_Name,
 		OutlinerTableColumnID_Type,
+
+		OutlinerTableColumnID_Max
 	};
 
 	TArray<TWeakObjectPtr<AActor>> DisplayActors;
