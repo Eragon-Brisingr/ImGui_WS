@@ -13,117 +13,153 @@ namespace UnrealImGui
 	class IMGUI_API FHeatMapBase
 	{
 	public:
-		FHeatMapBase(const float UnitSize, const int32 PreCellUnitCount, const uint32 UnitTypeSize)
+		FHeatMapBase(const float UnitSize, const int32 PreGridUnitCount, const uint32 UnitTypeSize)
 			: UnitSize(UnitSize)
-			, PreCellUnitCount(PreCellUnitCount)
-			, CellSize(UnitSize * PreCellUnitCount)
+			, PreGridUnitCount(PreGridUnitCount)
+			, GridSize(UnitSize * PreGridUnitCount)
 			, UnitTypeSize(UnitTypeSize)
 		{}
 		virtual ~FHeatMapBase();
 
+		using FGridLocation = FIntPoint;
+		using FUnitLocation = FIntVector2;
+
 		const float UnitSize;
-		const int32 PreCellUnitCount;
-		const float CellSize;
+		const int32 PreGridUnitCount;
+		const float GridSize;
 		const uint32 UnitTypeSize;
 		using FUnit = FHeatMapUnit;
-		struct FCell
+		FGridLocation ToGridLocation(const FVector2D& WorldLocation) const { return { FMath::FloorToInt(WorldLocation.X / GridSize), FMath::FloorToInt(WorldLocation.Y / GridSize) }; }
+		FUnitLocation ToUnitLocation(const FGridLocation& GridLocation, const FVector2D& WorldLocation) const
 		{
-			~FCell()
+			const int32 UnitX = FMath::FloorToInt((WorldLocation.X - GridLocation.X * GridSize) / UnitSize);
+			const int32 UnitY = FMath::FloorToInt((WorldLocation.Y - GridLocation.Y * GridSize) / UnitSize);
+			return { UnitX, UnitY };
+		}
+		FVector2D ToWorldLocation(const FGridLocation& GridLocation, const FUnitLocation& UnitLocation) const { return { GridLocation.X * GridSize + UnitLocation.X * UnitSize, GridLocation.Y * GridSize + UnitLocation.Y * UnitSize }; }
+
+		void DrawHeatMap(const FBox2D& ViewBounds, const FBox2D& CullRect, const float Zoom, const FTransform2D& WorldToMapTransform) const;
+	protected:
+		struct FGridBase
+		{
+			~FGridBase()
 			{
 				delete[] Units;
 			}
 			FUnit* Units = nullptr;
 		};
-		FIntVector2 ToCellLocation(const FVector2D& WorldLocation) const { return { FMath::FloorToInt(WorldLocation.X / CellSize), FMath::FloorToInt(WorldLocation.Y / CellSize) }; }
-
-		void DrawHeatMap(const FBox2D& ViewBounds, const FBox2D& CullRect, const float Zoom, const FTransform2D& WorldToMapTransform) const;
-	protected:
-		using KeyType = FIntVector2;
-		using ValueType = FCell;
-		struct FGridKeyFunc : BaseKeyFuncs<TPair<KeyType, ValueType>, KeyType, false>
-		{
-			typedef typename TTypeTraits<KeyType>::ConstPointerType KeyInitType;
-			typedef const TPairInitializer<typename TTypeTraits<KeyType>::ConstInitType, typename TTypeTraits<ValueType>::ConstInitType>& ElementInitType;
-
-			static FORCEINLINE KeyInitType GetSetKey(ElementInitType Element)
-			{
-				return Element.Key;
-			}
-
-			static FORCEINLINE bool Matches(KeyInitType A, KeyInitType B)
-			{
-				return A == B;
-			}
-
-			template<typename ComparableKey>
-			static FORCEINLINE bool Matches(KeyInitType A, ComparableKey B)
-			{
-				return A == B;
-			}
-
-			static FORCEINLINE uint32 GetKeyHash(KeyInitType Key)
-			{
-				return HashCombine(GetTypeHash(Key.X), GetTypeHash(Key.Y));
-			}
-
-			template<typename ComparableKey>
-			static FORCEINLINE uint32 GetKeyHash(ComparableKey Key)
-			{
-				return GetTypeHash(Key);
-			}
-		};
-		TMap<KeyType, ValueType, FDefaultSetAllocator, FGridKeyFunc> Cells;
+		TMap<FGridLocation, FGridBase> Grids;
 
 		virtual float GetUnitValueT_Impl(const FUnit& Unit) const = 0;
 
 		static void StatMemoryInc(int64 Value);
 	};
 
-	template<typename TUnit, typename TVisitor>
+	template<typename TUnit, typename THeatMapFinalType>
 	class THeatMap : public FHeatMapBase
 	{
 		static_assert(TIsDerivedFrom<TUnit, FUnit>::Value);
 	public:
-		THeatMap(const float UnitSize, const int32 PreCellUnitCount)
-			: FHeatMapBase(UnitSize, PreCellUnitCount, sizeof(TUnit))
+		THeatMap(const float UnitSize, const int32 PreGridUnitCount)
+			: FHeatMapBase(UnitSize, PreGridUnitCount, sizeof(TUnit))
 		{}
-		TUnit& AddOrFindValue(const FVector2D& WorldLocation)
+		struct FGrid : protected FGridBase
 		{
-			FCell& Cell = Cells.FindOrAdd(ToCellLocation(WorldLocation));
-			if (Cell.Units == nullptr)
+			TUnit& GetUnit(int32 Index) { return static_cast<TUnit*>(Units)[Index]; }
+		};
+
+		FGrid& AddOrFindGrid(const FGridLocation& GridLocation)
+		{
+			FGridBase& Grid = Grids.FindOrAdd(GridLocation);
+			if (Grid.Units == nullptr)
 			{
-				StatMemoryInc(PreCellUnitCount * PreCellUnitCount * sizeof(TUnit));
-				Cell.Units = new TUnit[PreCellUnitCount * PreCellUnitCount]{};
+				StatMemoryInc(PreGridUnitCount * PreGridUnitCount * sizeof(TUnit));
+				Grid.Units = new TUnit[PreGridUnitCount * PreGridUnitCount]{};
 			}
-			static auto FMod = [](double X, float Y)
+			return static_cast<FGrid&>(Grid);
+		}
+		TUnit& GetUnit(FGrid& Grid, const FGridLocation GridLocation, const FVector2D& WorldLocation) const
+		{
+			const FUnitLocation UnitLocation = ToUnitLocation(GridLocation, WorldLocation);
+			const int32 Index = UnitLocation.Y * PreGridUnitCount + UnitLocation.X;
+			check(Index >= 0 && Index < PreGridUnitCount * PreGridUnitCount);
+			return Grid.GetUnit(Index);
+		}
+		TUnit& AddOrFindUnit(const FVector2D& WorldLocation)
+		{
+			const FGridLocation GridLocation = ToGridLocation(WorldLocation);
+			FGrid& Grid = AddOrFindGrid(GridLocation);
+			return GetUnit(Grid, GridLocation, WorldLocation);
+		}
+		template<bool bAddGridWhenNotFind = true, typename TFunc>
+		void ForEachUnit(const FBox2D& Bounds, TFunc Func)
+		{
+			const FGridLocation GridMin = ToGridLocation(Bounds.Min);
+			const FGridLocation GridMax = ToGridLocation(Bounds.Max);
+			for (int32 GridX = GridMin.X; GridX <= GridMax.X; ++GridX)
 			{
-				if (X > 0)
+				for (int32 GridY = GridMin.Y; GridY <= GridMax.Y; ++GridY)
 				{
-					return FMath::Fmod(X, Y);
+					FGrid* Grid;
+					if constexpr (bAddGridWhenNotFind)
+					{
+						Grid = &AddOrFindGrid(FGridLocation{GridX, GridY});
+					}
+					else
+					{
+						Grid = static_cast<FGrid*>(Grids.Find({GridX, GridY}));
+						if (Grid == nullptr)
+						{
+							continue;
+						}
+					}
+
+					const FVector2D Min{ FMath::Max(GridX * GridSize, Bounds.Min.X), FMath::Max(GridY * GridSize, Bounds.Min.Y) };
+					const FVector2D Max{ FMath::Min((GridX + 1) * GridSize, Bounds.Max.X), FMath::Min((GridY + 1) * GridSize, Bounds.Max.Y) };
+					const FUnitLocation UnitMin = ToUnitLocation({ GridX, GridY }, Min);
+					const FUnitLocation UnitMax = ToUnitLocation({ GridX, GridY }, Max);
+					for (int32 UnitX = UnitMin.X; UnitX < UnitMax.X; ++UnitX)
+					{
+						for (int32 UnitY = UnitMin.Y; UnitY < UnitMax.Y; ++UnitY)
+						{
+							const int32 Index = UnitY * PreGridUnitCount + UnitX;
+							check(Index >= 0 && Index < PreGridUnitCount * PreGridUnitCount);
+							Func(Grid->GetUnit(Index), FGridLocation{ GridX, GridY }, FUnitLocation{ UnitX, UnitY });
+						}
+					}
 				}
-				return FMath::Fmod(X, Y) + Y;
-			};
-			const int32 UnitX = FMath::FloorToInt(FMod(WorldLocation.X, CellSize) / UnitSize);
-			const int32 UnitY = FMath::FloorToInt(FMod(WorldLocation.Y, CellSize) / UnitSize);
-			const int32 Index = UnitY * PreCellUnitCount + UnitX;
-			return static_cast<TUnit*>(Cell.Units)[Index];
+			}
+		}
+		template<bool bAddGridWhenNotFind = true, typename TFunc>
+		void ForEachUnit(const FSphere& Bounds, TFunc Func)
+		{
+			const FVector2D BoundsMin{ Bounds.Center.X - Bounds.W, Bounds.Center.Y - Bounds.W };
+			const FVector2D BoundsMax{ Bounds.Center.X + Bounds.W, Bounds.Center.Y + Bounds.W };
+			ForEachUnit<bAddGridWhenNotFind>(FBox2D{ BoundsMin, BoundsMax }, [&](TUnit& Unit, const FGridLocation& GridLocation, const FUnitLocation& UnitLocation)
+			{
+				const FVector2D UnitWorldLocation = ToWorldLocation(GridLocation, UnitLocation);
+				if (Bounds.IsInside(FVector{ UnitWorldLocation.X, UnitWorldLocation.Y, Bounds.Center.Z }))
+				{
+					Func(Unit, GridLocation, UnitLocation);
+				}
+			});
 		}
 
 		template<typename TFunc>
 		void ForEachUnit(TFunc Func)
 		{
-			for (auto& [_, Cell] : Cells)
+			for (auto& [_, Grid] : Grids)
 			{
-				for (int32 Idx = 0; Idx < PreCellUnitCount * PreCellUnitCount; ++Idx)
+				for (int32 Idx = 0; Idx < PreGridUnitCount * PreGridUnitCount; ++Idx)
 				{
-					Func(static_cast<TUnit*>(Cell.Units)[Idx]);
+					Func(static_cast<FGrid&>(Grid).GetUnit(Idx));
 				}
 			}
 		}
 	private:
 		float GetUnitValueT_Impl(const FUnit& Unit) const override final
 		{
-			return TVisitor::GetUnitValueT((const TUnit&)Unit);
+			return static_cast<const THeatMapFinalType*>(this)->GetUnitValueT(static_cast<const TUnit&>(Unit));
 		}
 	};
 }

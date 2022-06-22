@@ -10,6 +10,7 @@
 #include "ImGuiWorldDebuggerViewportPanel.h"
 
 UImGuiWorldDebuggerOutlinerPanel::UImGuiWorldDebuggerOutlinerPanel()
+	: bInvokeRefreshSortOrder(false)
 {
 	Title = NSLOCTEXT("ImGuiWorldDebugger", "Outliner", "Outliner");
 	DefaultDockSpace =
@@ -37,7 +38,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 				Actor->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
 			}
 		}
-		RefreshSortOrder();
+		bInvokeRefreshSortOrder |= true;
 	});
 	OnActorSpawnedHandler = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
 	{
@@ -45,7 +46,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 		{
 			DisplayActors.Add(Actor);
 			Actor->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
-			RefreshSortOrder();
+			bInvokeRefreshSortOrder |= true;
 		}
 	}));
 }
@@ -73,7 +74,13 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 	{
 		return;
 	}
-	
+
+	if (bInvokeRefreshSortOrder)
+	{
+		bInvokeRefreshSortOrder = false;
+		RefreshSortOrder();
+	}
+
 	ImGui::Text("Filter:");
 	ImGui::SameLine();
 	TArray<ANSICHAR, TInlineAllocator<256>> FilterStringArray;

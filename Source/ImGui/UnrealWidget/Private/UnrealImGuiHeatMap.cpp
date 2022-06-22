@@ -116,7 +116,7 @@ constexpr ImU32 GetHeatColor(float T)
 FHeatMapBase::~FHeatMapBase()
 {
 #if STATS
-	const int64 ReleaseUnitSize = Cells.Num() * PreCellUnitCount * PreCellUnitCount * UnitTypeSize;
+	const int64 ReleaseUnitSize = Grids.Num() * PreGridUnitCount * PreGridUnitCount * UnitTypeSize;
 	DEC_MEMORY_STAT_BY(Stat_UnrealImGuiHeatMap_UnitSize, ReleaseUnitSize);
 #endif
 }
@@ -125,80 +125,80 @@ void FHeatMapBase::DrawHeatMap(const FBox2D& ViewBounds, const FBox2D& CullRect,
 {
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UnrealImGuiHeatMap_Draw"), STAT_UnrealImGuiHeatMap_Draw, STATGROUP_ImGui);
 
-	struct FToDrawCell
+	struct FToDrawGrid
 	{
-		FIntVector2 Location;
-		const FCell* Cell;
+		FGridLocation Location;
+		const FGridBase* Grid;
 	};
-	TArray64<FToDrawCell> ToDrawCells;
+	TArray64<FToDrawGrid> ToDrawGrids;
 
 	ImDrawList& DrawList = *ImGui::GetWindowDrawList();
 
-	const FIntVector2 CellMin = ToCellLocation(ViewBounds.Min);
-	const FIntVector2 CellMax = ToCellLocation(ViewBounds.Max);
+	const FGridLocation GridMin = ToGridLocation(ViewBounds.Min);
+	const FGridLocation GridMax = ToGridLocation(ViewBounds.Max);
 	const FVector2D OffsetPixel = WorldToMapTransform.TransformPoint(ViewBounds.GetCenter()) - ViewBounds.GetCenter() * Zoom;
 
-	for (int32 CellX = CellMin.X; CellX <= CellMax.X; ++CellX)
+	for (int32 GridX = GridMin.X; GridX <= GridMax.X; ++GridX)
 	{
-		for (int32 CellY = CellMin.Y; CellY <= CellMax.Y; ++CellY)
+		for (int32 GridY = GridMin.Y; GridY <= GridMax.Y; ++GridY)
 		{
-			if (const FCell* Cell = Cells.Find({ CellX, CellY }))
+			if (const FGridBase* Grid = Grids.Find({ GridX, GridY }))
 			{
-				ToDrawCells.Add({ FIntVector2{ CellX, CellY }, Cell });
+				ToDrawGrids.Add({ FGridLocation{ GridX, GridY }, Grid });
 			}
 			else
 			{
-				DrawList.AddRectFilled({ (float)OffsetPixel.X + CellX * CellSize * Zoom, (float)OffsetPixel.Y + CellY * CellSize * Zoom },
-						{(float)OffsetPixel.X + (CellX + 1) * CellSize * Zoom, (float)OffsetPixel.Y + (CellY + 1) * CellSize * Zoom }, GetHeatColor(0.f));
+				DrawList.AddRectFilled({ (float)OffsetPixel.X + GridX * GridSize * Zoom, (float)OffsetPixel.Y + GridY * GridSize * Zoom },
+						{(float)OffsetPixel.X + (GridX + 1) * GridSize * Zoom, (float)OffsetPixel.Y + (GridY + 1) * GridSize * Zoom }, GetHeatColor(0.f));
 			}
 		}
 	}
 	struct FUnitGetter
 	{
-		FUnitGetter(const FHeatMapBase& HeatMap, const TArray64<FToDrawCell>& ToDrawCells, int32 PreCellUnitCount, const float CellSize, const float UnitSize, const FVector2D& OffsetPixel)
+		FUnitGetter(const FHeatMapBase& HeatMap, const TArray64<FToDrawGrid>& ToDrawGrids, int32 PreGridUnitCount, const float GridSize, const float UnitSize, const FVector2D& OffsetPixel)
 			: HeatMap(HeatMap)
-			, ToDrawCells(ToDrawCells)
-			, PreCellUnitCount(PreCellUnitCount)
-			, PreCellUnitCountSquared(PreCellUnitCount * PreCellUnitCount)
-			, Count(ToDrawCells.Num() * PreCellUnitCountSquared)
-			, CellSize(CellSize)
+			, ToDrawGrids(ToDrawGrids)
+			, PreGridUnitCount(PreGridUnitCount)
+			, PreGridUnitCountSquared(PreGridUnitCount * PreGridUnitCount)
+			, Count(ToDrawGrids.Num() * PreGridUnitCountSquared)
+			, GridSize(GridSize)
 			, UnitSize(UnitSize)
 			, OffsetPixel(OffsetPixel.X, OffsetPixel.Y)
 		{}
 
 		const FHeatMapBase& HeatMap;
-		const TArray64<FToDrawCell>& ToDrawCells;
-		const uint32 PreCellUnitCount;
-		const uint32 PreCellUnitCountSquared;
+		const TArray64<FToDrawGrid>& ToDrawGrids;
+		const uint32 PreGridUnitCount;
+		const uint32 PreGridUnitCountSquared;
 		const uint32 Count;
-		const float CellSize;
+		const float GridSize;
 		const float UnitSize;
 		const FVector2f OffsetPixel;
 		FRectInfo operator()(uint32 TotalUnitIndex) const
 		{
-			const uint32 CellIndex = TotalUnitIndex / PreCellUnitCountSquared;
-			const uint32 UnitIndex = TotalUnitIndex % PreCellUnitCountSquared;
-			const uint32 UnitX = UnitIndex % PreCellUnitCount;
-			const uint32 UnitY = UnitIndex / PreCellUnitCount;
-			const FToDrawCell& ToDrawCell = ToDrawCells[CellIndex];
-			const float T = HeatMap.GetUnitValueT_Impl((FUnit&)reinterpret_cast<const uint8*>(ToDrawCell.Cell->Units)[UnitIndex * HeatMap.UnitTypeSize]);
+			const uint32 GridIndex = TotalUnitIndex / PreGridUnitCountSquared;
+			const uint32 UnitIndex = TotalUnitIndex % PreGridUnitCountSquared;
+			const uint32 UnitX = UnitIndex % PreGridUnitCount;
+			const uint32 UnitY = UnitIndex / PreGridUnitCount;
+			const FToDrawGrid& ToDrawGrid = ToDrawGrids[GridIndex];
+			const float T = HeatMap.GetUnitValueT_Impl((FUnit&)reinterpret_cast<const uint8*>(ToDrawGrid.Grid->Units)[UnitIndex * HeatMap.UnitTypeSize]);
 
-			// TODO：处理跨Cell的Lerp
-			auto GetUnitT = [this, &ToDrawCell](uint32 UnitX, uint32 UnitY)
+			// TODO：处理跨Grid的Lerp
+			auto GetUnitT = [this, &ToDrawGrid](uint32 UnitX, uint32 UnitY)
 			{
-				const int32 Index = UnitY * PreCellUnitCount + UnitX;
-				return HeatMap.GetUnitValueT_Impl((FUnit&)reinterpret_cast<const uint8*>(ToDrawCell.Cell->Units)[Index * HeatMap.UnitTypeSize]);
+				const int32 Index = UnitY * PreGridUnitCount + UnitX;
+				return HeatMap.GetUnitValueT_Impl((FUnit&)reinterpret_cast<const uint8*>(ToDrawGrid.Grid->Units)[Index * HeatMap.UnitTypeSize]);
 			};
-			const float RightT = UnitX + 1 < PreCellUnitCount ? GetUnitT(UnitX + 1, UnitY) : T;
+			const float RightT = UnitX + 1 < PreGridUnitCount ? GetUnitT(UnitX + 1, UnitY) : T;
 			const float TopT = UnitY >= 1 ? GetUnitT(UnitX, UnitY - 1) : T;
-			const float TopRightT = UnitX + 1 < PreCellUnitCount && UnitY >= 1 ? GetUnitT(UnitX + 1, UnitY - 1) : T;
+			const float TopRightT = UnitX + 1 < PreGridUnitCount && UnitY >= 1 ? GetUnitT(UnitX + 1, UnitY - 1) : T;
 
-			const ImVec2 Min{ OffsetPixel.X + ToDrawCell.Location.X * CellSize + UnitX * UnitSize, OffsetPixel.Y + ToDrawCell.Location.Y * CellSize + UnitY * UnitSize };
+			const ImVec2 Min{ OffsetPixel.X + ToDrawGrid.Location.X * GridSize + UnitX * UnitSize, OffsetPixel.Y + ToDrawGrid.Location.Y * GridSize + UnitY * UnitSize };
 			const ImVec2 Max{ Min.x + UnitSize, Min.y + UnitSize };
 			return FRectInfo{ Min, Max, { GetHeatColor(TopT), GetHeatColor(T), GetHeatColor(RightT), GetHeatColor(TopRightT) } };
 		}
 	};
-	const FUnitGetter UnitGetter{ *this, ToDrawCells, PreCellUnitCount, CellSize * Zoom, UnitSize * Zoom, OffsetPixel };
+	const FUnitGetter UnitGetter{ *this, ToDrawGrids, PreGridUnitCount, GridSize * Zoom, UnitSize * Zoom, OffsetPixel };
 	RenderPrimitives(RectRenderer{ UnitGetter }, DrawList, ImRect{ { (float)CullRect.Min.X, (float)CullRect.Min.Y }, { (float)CullRect.Max.X, (float)CullRect.Max.Y } });
 }
 

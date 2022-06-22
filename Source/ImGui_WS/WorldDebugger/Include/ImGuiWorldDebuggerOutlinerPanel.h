@@ -39,6 +39,7 @@ private:
 	void RefreshSortOrder();
 
 	FString FilterString;
+	uint8 bInvokeRefreshSortOrder : 1;
 	bool CanActorDisplay(const AActor* Actor) const;
 
 	UFUNCTION()
