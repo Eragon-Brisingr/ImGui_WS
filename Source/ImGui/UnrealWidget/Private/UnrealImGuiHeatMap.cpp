@@ -36,6 +36,11 @@ struct RectRenderer
         const ImVec2 P1 = rect.Min;
         const ImVec2 P2 = rect.Max;
 
+    	if (((rect.Color[0] | rect.Color[1] | rect.Color[2] | rect.Color[3]) & IM_COL32_A_MASK) == 0)
+    	{
+    		return false;
+    	}
+
 		if ((!cull_rect.Overlaps(ImRect(ImMin(P1, P2), ImMax(P1, P2)))))
             return false;
 
@@ -109,8 +114,9 @@ void RenderPrimitives(const Renderer& renderer, ImDrawList& DrawList, const ImRe
 
 constexpr ImU32 GetHeatColor(float T)
 {
-	constexpr ImU32 Jet[] = {4289331200, 4294901760, 4294923520, 4294945280, 4294967040, 4289396565, 4283826090, 4278255615, 4278233855, 4278212095, 4278190335 };
-	return Jet[(int)((UE_ARRAY_COUNT(Jet) - 1) * T + 0.5f)];
+	// constexpr ImU32 Jet[] = {0xffaa0000, 0xffff0000, 0xffff5500, 0xffffaa00, 0xffffff00, 0xffaaff55, 0xff55ffaa, 0xff00ffff, 0xff00aaff, 0xff0055ff, 0xff0000ff };
+	constexpr ImU32 JetWithAlpha[] = {0x00aa0000, 0x1aff0000, 0x33ff5500, 0x4dffaa00, 0x66ffff00, 0x80aaff55, 0x9955ffaa, 0xb300ffff, 0xcc00aaff, 0xff0055ff, 0xe60000ff };
+	return JetWithAlpha[(int)((UE_ARRAY_COUNT(JetWithAlpha) - 1) * T + 0.5f)];
 }
 
 FHeatMapBase::~FHeatMapBase()
