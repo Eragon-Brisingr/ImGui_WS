@@ -72,11 +72,11 @@ namespace UnrealImGui
 		virtual ~IUnrealStructCustomization() {}
 	};
 
-	struct IMGUI_API IUnrealClassCustomization : public TSharedFromThis<IUnrealClassCustomization>
+	struct IMGUI_API IUnrealDetailsCustomization : public TSharedFromThis<IUnrealDetailsCustomization>
 	{
 		virtual void CreateClassDetails(const UClass* Class, const FObjectArray& Containers, int32 Offset) const;
 
-		virtual ~IUnrealClassCustomization() {}
+		virtual ~IUnrealDetailsCustomization() {}
 	};
 	
 	struct IMGUI_API UnrealPropertyCustomizeFactory
@@ -84,9 +84,9 @@ namespace UnrealImGui
 	public:
 		using PropertyCustomizeFunc = TFunction<void(const FProperty * Property, const FStructArray & Containers, int32 Offset)>;
 
-		static TSharedPtr<IUnrealPropertyCustomization> FindCustomizer(const FProperty* Property);
-		static TSharedPtr<IUnrealStructCustomization> FindCustomizer(const UStruct* Struct);
-		static TSharedPtr<IUnrealClassCustomization> FindCustomizer(const UClass* Class);
+		static TSharedPtr<IUnrealPropertyCustomization> FindPropertyCustomizer(const FProperty* Property);
+		static TSharedPtr<IUnrealStructCustomization> FindPropertyCustomizer(const UStruct* Struct);
+		static TSharedPtr<IUnrealDetailsCustomization> FindDetailsCustomizer(const UClass* Class);
 
 		static void AddPropertyCustomizer(FFieldClass* FieldClass, const TSharedRef<IUnrealPropertyCustomization>& Customization)
 		{
@@ -97,7 +97,7 @@ namespace UnrealImGui
 			check(Struct);
 			StructCustomizeMap.Add(Struct, Customization);
 		}
-		static void AddClassCustomizer(UClass* Class, const TSharedRef<IUnrealClassCustomization>& Customization)
+		static void AddClassCustomizer(UClass* Class, const TSharedRef<IUnrealDetailsCustomization>& Customization)
 		{
 			ClassCustomizeMap.Add(Class, Customization);
 		}
@@ -159,12 +159,12 @@ namespace UnrealImGui
 		struct FClassCustomizerScoped
 		{
 			UClass* Class;
-			TSharedPtr<IUnrealClassCustomization> Customization;
+			TSharedPtr<IUnrealDetailsCustomization> Customization;
 
-			FClassCustomizerScoped(UClass* Class, const TSharedRef<IUnrealClassCustomization>& InCustomization)
+			FClassCustomizerScoped(UClass* Class, const TSharedRef<IUnrealDetailsCustomization>& InCustomization)
 				: Class(Class)
 			{
-				if (TSharedRef<IUnrealClassCustomization>* ExistedCustomization = ClassCustomizeMap.Find(Class))
+				if (TSharedRef<IUnrealDetailsCustomization>* ExistedCustomization = ClassCustomizeMap.Find(Class))
 				{
 					Customization = *ExistedCustomization;
 				}
@@ -186,7 +186,7 @@ namespace UnrealImGui
 	private:
 		static TMap<FFieldClass*, TSharedRef<IUnrealPropertyCustomization>> PropertyCustomizeMap;
 		static TMap<UStruct*, TSharedRef<IUnrealStructCustomization>> StructCustomizeMap;
-		static TMap<UClass*, TSharedRef<IUnrealClassCustomization>> ClassCustomizeMap;
+		static TMap<UClass*, TSharedRef<IUnrealDetailsCustomization>> ClassCustomizeMap;
 	};
 
 	DECLARE_DELEGATE_OneParam(FPostPropertyValueChanged, const FProperty*);

@@ -7,18 +7,33 @@
 #include <EngineUtils.h>
 
 #include "imgui.h"
-#include "imgui_internal.h"
 #include "UnrealImGuiUtils.h"
 #include "UnrealImGuiWrapper.h"
 
 namespace UnrealImGui
 {
-	FPropertyDisableScope::FPropertyDisableScope(bool IsDisable)
-		: Disable(GlobalValue::GEnableEditVisibleProperty == false && IsDisable)
+	uint32 PropertyDisableCounter = 0;
+	FPropertyDisableScope::FPropertyDisableScope(const FProperty* Property)
 	{
+		if (GlobalValue::GEnableEditVisibleProperty)
+		{
+			Disable = false;
+		}
+		else if (Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance))
+		{
+			Disable = true;
+		}
+		else if (Property->HasAllPropertyFlags(CPF_Edit) == false)
+		{
+			Disable = true;
+		}
 		if (Disable)
 		{
-			ImGui::BeginDisabled(true);
+			if (PropertyDisableCounter == 0)
+			{
+				ImGui::BeginDisabled(true);
+			}
+			PropertyDisableCounter += 1;
 		}
 	}
 
@@ -26,14 +41,34 @@ namespace UnrealImGui
 	{
 		if (Disable)
 		{
+			PropertyDisableCounter -= 1;
+			if (PropertyDisableCounter == 0)
+			{
+				ImGui::EndDisabled();
+			}
+		}
+	}
+
+	FPropertyEnableScope::FPropertyEnableScope()
+	{
+		if (PropertyDisableCounter > 0)
+		{
 			ImGui::EndDisabled();
+		}
+	}
+
+	FPropertyEnableScope::~FPropertyEnableScope()
+	{
+		if (PropertyDisableCounter > 0)
+		{
+			ImGui::BeginDisabled(true);
 		}
 	}
 
 	template<typename TNameCustomizer, typename TValueExtend>
 	void AddUnrealContainerPropertyInner(const FProperty* Property, const FStructArray& Containers, int32 Offset, const TNameCustomizer& NameCustomizer, const TValueExtend& ValueExtend)
 	{
-		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindCustomizer(Property);
+		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(Property);
 		if (!PropertyCustomization)
 		{
 			return;
@@ -44,7 +79,11 @@ namespace UnrealImGui
 		TSharedPtr<IUnrealStructCustomization> Customization = nullptr;
 		if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 		{
-			Customization = UnrealPropertyCustomizeFactory::FindCustomizer(StructProperty->Struct);
+			Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(StructProperty->Struct);
+		}
+		else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+		{
+			Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
 		}
 
 		ImGui::TableNextRow();
@@ -55,10 +94,12 @@ namespace UnrealImGui
 		ImGui::SetNextItemWidth(InnerValue::ContainerValueRightWidth - (Customization ? Customization->ValueAdditiveRightWidth : 0.f));
 		if (Customization)
 		{
+			FPropertyDisableScope ImGuiDisableScope{ Property };
 			Customization->CreateValueWidget(Property, Containers, Offset, IsIdentical);
 		}
 		else
 		{
+			FPropertyDisableScope ImGuiDisableScope{ Property };
 			PropertyCustomization->CreateValueWidget(Property, Containers, Offset, IsIdentical);
 		}
 		ValueExtend(Property, Containers, Offset, IsIdentical);
@@ -67,10 +108,12 @@ namespace UnrealImGui
 		{
 			if (Customization)
 			{
+				FPropertyDisableScope ImGuiDisableScope{ Property };
 				Customization->CreateChildrenWidget(Property, Containers, Offset, IsIdentical);
 			}
 			else
 			{
+				FPropertyDisableScope ImGuiDisableScope{ Property };
 				PropertyCustomization->CreateChildrenWidget(Property, Containers, Offset, IsIdentical);
 			}
 			ImGui::TreePop();
@@ -81,8 +124,6 @@ namespace UnrealImGui
 
 	void FBoolPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		const FBoolProperty* BoolProperty = CastFieldChecked<FBoolProperty>(Property);
 		bool FirstValue = BoolProperty->GetPropertyValue(FirstValuePtr);
@@ -98,8 +139,6 @@ namespace UnrealImGui
 
 	void FNumericPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FNumericProperty* NumericProperty = CastFieldChecked<FNumericProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		const auto PropertyLabelName = TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical));
@@ -164,14 +203,12 @@ namespace UnrealImGui
 	bool FObjectPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		return ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference) && ObjectProperty->GetObjectPropertyValue(FirstValuePtr) != nullptr;
 	}
 
 	void FObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-
 		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
 		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference))
 		{
@@ -404,7 +441,7 @@ namespace UnrealImGui
 		const UClass* TopClass = GetTopClass(Instances);
 		TGuardValue<FObjectArray> GOutersGuard{InnerValue::GOuters, Instances};
 
-		const TSharedPtr<IUnrealClassCustomization> Customizer = UnrealPropertyCustomizeFactory::FindCustomizer(TopClass);
+		const TSharedPtr<IUnrealDetailsCustomization> Customizer = UnrealPropertyCustomizeFactory::FindDetailsCustomizer(TopClass);
 		if (Customizer)
 		{
 			Customizer->CreateClassDetails(TopClass, Instances, 0);
@@ -417,8 +454,8 @@ namespace UnrealImGui
 
 	void FSoftObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
+		FPropertyDisableScope ImGuiDisableScope{ Property };
+
 		const FSoftObjectProperty* SoftObjectProperty = CastFieldChecked<FSoftObjectProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		const FSoftObjectPtr& FirstValue = *SoftObjectProperty->GetPropertyValuePtr(FirstValuePtr);
@@ -627,8 +664,6 @@ namespace UnrealImGui
 
 	void FClassPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FClassProperty* ClassProperty = CastFieldChecked<FClassProperty>(Property);
 		const UObject* FirstValue = ClassProperty->GetPropertyValue(Containers[0] + Offset);
 
@@ -734,8 +769,6 @@ namespace UnrealImGui
 
 	void FSoftClassPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FSoftClassProperty* SoftClassProperty = CastFieldChecked<FSoftClassProperty>(Property);
 		const FSoftObjectPtr FirstValue = SoftClassProperty->GetPropertyValue(Containers[0] + Offset);
 	
@@ -842,8 +875,6 @@ namespace UnrealImGui
 
 	void FStringPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FStrProperty* StringProperty = CastFieldChecked<FStrProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		const FString FirstValue = StringProperty->GetPropertyValue(FirstValuePtr);
@@ -864,8 +895,6 @@ namespace UnrealImGui
 
 	void FNamePropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FNameProperty* NameProperty = CastFieldChecked<FNameProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		const auto PropertyLabelName = TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical));
@@ -887,8 +916,6 @@ namespace UnrealImGui
 
 	void FTextPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FTextProperty* TextProperty = CastFieldChecked<FTextProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		const FText FirstValue = TextProperty->GetPropertyValue(FirstValuePtr);
@@ -909,8 +936,6 @@ namespace UnrealImGui
 
 	void FEnumPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FEnumProperty* EnumProperty = CastFieldChecked<FEnumProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		UEnum* EnumDef = EnumProperty->GetEnum();
@@ -969,8 +994,6 @@ namespace UnrealImGui
 
 	void FArrayPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		if (IsIdentical)
@@ -1013,10 +1036,8 @@ namespace UnrealImGui
 
 	void FArrayPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-
 		const FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(Property);
-		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindCustomizer(ArrayProperty->Inner);
+		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ArrayProperty->Inner);
 		if (!PropertyCustomization)
 		{
 			return;
@@ -1102,8 +1123,6 @@ namespace UnrealImGui
 
 	void FSetPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FSetProperty* SetProperty = CastFieldChecked<FSetProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		if (IsIdentical)
@@ -1149,10 +1168,8 @@ namespace UnrealImGui
 
 	void FSetPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-
 		const FSetProperty* SetProperty = CastFieldChecked<FSetProperty>(Property);
-		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindCustomizer(SetProperty->ElementProp);
+		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(SetProperty->ElementProp);
 		if (!PropertyCustomization)
 		{
 			return;
@@ -1229,8 +1246,6 @@ namespace UnrealImGui
 
 	void FMapPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FMapProperty* MapProperty = CastFieldChecked<FMapProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		if (IsIdentical)
@@ -1283,11 +1298,9 @@ namespace UnrealImGui
 
 	void FMapPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-
 		const FMapProperty* MapProperty = CastFieldChecked<FMapProperty>(Property);
-		const TSharedPtr<IUnrealPropertyCustomization> KeyPropertyCustomization = UnrealPropertyCustomizeFactory::FindCustomizer(MapProperty->KeyProp);
-		const TSharedPtr<IUnrealPropertyCustomization> ValuePropertyCustomization = UnrealPropertyCustomizeFactory::FindCustomizer(MapProperty->ValueProp);
+		const TSharedPtr<IUnrealPropertyCustomization> KeyPropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(MapProperty->KeyProp);
+		const TSharedPtr<IUnrealPropertyCustomization> ValuePropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(MapProperty->ValueProp);
 		if (!KeyPropertyCustomization || !ValuePropertyCustomization)
 		{
 			return;
@@ -1315,7 +1328,11 @@ namespace UnrealImGui
 			TSharedPtr<IUnrealStructCustomization> Customization = nullptr;
 			if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 			{
-				Customization = UnrealPropertyCustomizeFactory::FindCustomizer(StructProperty->Struct);
+				Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(StructProperty->Struct);
+			}
+			else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+			{
+				Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
 			}
 
 			ImGui::TableNextRow();
@@ -1340,20 +1357,24 @@ namespace UnrealImGui
 				ImGui::SameLine();
 				if (Customization)
 				{
+					FPropertyDisableScope ImGuiDisableScope{ Property };
 					Customization->CreateValueWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 				}
 				else
 				{
+					FPropertyDisableScope ImGuiDisableScope{ Property };
 					KeyPropertyCustomization->CreateValueWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 				}
 				if (KeyHasChildProperties && IsShowChildren)
 				{
 					if (Customization)
 					{
+						FPropertyDisableScope ImGuiDisableScope{ Property };
 						Customization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 					}
 					else
 					{
+						FPropertyDisableScope ImGuiDisableScope{ Property };
 						KeyPropertyCustomization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 					}
 					ImGui::TreePop();
@@ -1365,10 +1386,12 @@ namespace UnrealImGui
 				const FString Name = FString::Printf(TEXT("%d##V%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
 				if (Customization)
 				{
+					FPropertyDisableScope ImGuiDisableScope{ Property };
 					Customization->CreateValueWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 				}
 				else
 				{
+					FPropertyDisableScope ImGuiDisableScope{ Property };
 					ValuePropertyCustomization->CreateValueWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 				}
 				ImGui::SameLine();
@@ -1394,10 +1417,12 @@ namespace UnrealImGui
 				{
 					if (Customization)
 					{
+						FPropertyDisableScope ImGuiDisableScope{ Property };
 						Customization->CreateChildrenWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 					}
 					else
 					{
+						FPropertyDisableScope ImGuiDisableScope{ Property };
 						ValuePropertyCustomization->CreateChildrenWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 					}
 					ImGui::TreePop();
@@ -1410,8 +1435,6 @@ namespace UnrealImGui
 
 	void FStructPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-		
 		const FStructProperty* StructProperty = CastFieldChecked<FStructProperty>(Property);
 		int32 ElementCount = 0;
 		for (FProperty* ChildProperty = StructProperty->Struct->PropertyLink; ChildProperty; ChildProperty = ChildProperty->PropertyLinkNext)
@@ -1426,8 +1449,6 @@ namespace UnrealImGui
 
 	void FStructPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnInstance) };
-
 		const FStructProperty* StructProperty = CastFieldChecked<FStructProperty>(Property);
 		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);
 		DrawDefaultStructDetails(StructProperty->Struct, Containers, Offset);

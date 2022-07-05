@@ -12,10 +12,16 @@ namespace UnrealImGui
 {
 	struct IMGUI_API FPropertyDisableScope
 	{
-		FPropertyDisableScope(bool IsDisable);
+		FPropertyDisableScope(const FProperty* Property);
 		~FPropertyDisableScope();
 	private:
-		bool Disable;
+		bool Disable = false;
+	};
+
+	struct IMGUI_API FPropertyEnableScope
+	{
+		FPropertyEnableScope();
+		~FPropertyEnableScope();
 	};
 
 	struct IMGUI_API FBoolPropertyCustomization : public IUnrealPropertyCustomization
