@@ -12,7 +12,8 @@
 
 namespace UnrealImGui
 {
-	uint32 PropertyDisableCounter = 0;
+	bool bPropertyDisable = false;
+	int32 PropertyDisableCounter = 0;
 	FPropertyDisableScope::FPropertyDisableScope(const FProperty* Property)
 	{
 		if (GlobalValue::GEnableEditVisibleProperty)
@@ -29,8 +30,9 @@ namespace UnrealImGui
 		}
 		if (Disable)
 		{
-			if (PropertyDisableCounter == 0)
+			if (bPropertyDisable == false)
 			{
+				bPropertyDisable = true;
 				ImGui::BeginDisabled(true);
 			}
 			PropertyDisableCounter += 1;
@@ -42,8 +44,9 @@ namespace UnrealImGui
 		if (Disable)
 		{
 			PropertyDisableCounter -= 1;
-			if (PropertyDisableCounter == 0)
+			if (bPropertyDisable)
 			{
+				bPropertyDisable = false;
 				ImGui::EndDisabled();
 			}
 		}
@@ -51,17 +54,28 @@ namespace UnrealImGui
 
 	FPropertyEnableScope::FPropertyEnableScope()
 	{
-		if (PropertyDisableCounter > 0)
+		Enable = PropertyDisableCounter > 0;
+		if (Enable)
 		{
-			ImGui::EndDisabled();
+			PropertyDisableCounter -= 1;
+			if (bPropertyDisable)
+			{
+				bPropertyDisable = false;
+				ImGui::EndDisabled();
+			}
 		}
 	}
 
 	FPropertyEnableScope::~FPropertyEnableScope()
 	{
-		if (PropertyDisableCounter > 0)
+		if (Enable)
 		{
-			ImGui::BeginDisabled(true);
+			if (bPropertyDisable == false)
+			{
+				bPropertyDisable = true;
+				ImGui::BeginDisabled(true);
+			}
+			PropertyDisableCounter += 1;
 		}
 	}
 
@@ -94,12 +108,10 @@ namespace UnrealImGui
 		ImGui::SetNextItemWidth(InnerValue::ContainerValueRightWidth - (Customization ? Customization->ValueAdditiveRightWidth : 0.f));
 		if (Customization)
 		{
-			FPropertyDisableScope ImGuiDisableScope{ Property };
 			Customization->CreateValueWidget(Property, Containers, Offset, IsIdentical);
 		}
 		else
 		{
-			FPropertyDisableScope ImGuiDisableScope{ Property };
 			PropertyCustomization->CreateValueWidget(Property, Containers, Offset, IsIdentical);
 		}
 		ValueExtend(Property, Containers, Offset, IsIdentical);
@@ -108,12 +120,10 @@ namespace UnrealImGui
 		{
 			if (Customization)
 			{
-				FPropertyDisableScope ImGuiDisableScope{ Property };
 				Customization->CreateChildrenWidget(Property, Containers, Offset, IsIdentical);
 			}
 			else
 			{
-				FPropertyDisableScope ImGuiDisableScope{ Property };
 				PropertyCustomization->CreateChildrenWidget(Property, Containers, Offset, IsIdentical);
 			}
 			ImGui::TreePop();
@@ -454,8 +464,6 @@ namespace UnrealImGui
 
 	void FSoftObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		FPropertyDisableScope ImGuiDisableScope{ Property };
-
 		const FSoftObjectProperty* SoftObjectProperty = CastFieldChecked<FSoftObjectProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
 		const FSoftObjectPtr& FirstValue = *SoftObjectProperty->GetPropertyValuePtr(FirstValuePtr);
@@ -1357,24 +1365,20 @@ namespace UnrealImGui
 				ImGui::SameLine();
 				if (Customization)
 				{
-					FPropertyDisableScope ImGuiDisableScope{ Property };
 					Customization->CreateValueWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 				}
 				else
 				{
-					FPropertyDisableScope ImGuiDisableScope{ Property };
 					KeyPropertyCustomization->CreateValueWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 				}
 				if (KeyHasChildProperties && IsShowChildren)
 				{
 					if (Customization)
 					{
-						FPropertyDisableScope ImGuiDisableScope{ Property };
 						Customization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 					}
 					else
 					{
-						FPropertyDisableScope ImGuiDisableScope{ Property };
 						KeyPropertyCustomization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, KeyIsIdentical);
 					}
 					ImGui::TreePop();
@@ -1386,12 +1390,10 @@ namespace UnrealImGui
 				const FString Name = FString::Printf(TEXT("%d##V%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
 				if (Customization)
 				{
-					FPropertyDisableScope ImGuiDisableScope{ Property };
 					Customization->CreateValueWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 				}
 				else
 				{
-					FPropertyDisableScope ImGuiDisableScope{ Property };
 					ValuePropertyCustomization->CreateValueWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 				}
 				ImGui::SameLine();
@@ -1417,12 +1419,10 @@ namespace UnrealImGui
 				{
 					if (Customization)
 					{
-						FPropertyDisableScope ImGuiDisableScope{ Property };
 						Customization->CreateChildrenWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 					}
 					else
 					{
-						FPropertyDisableScope ImGuiDisableScope{ Property };
 						ValuePropertyCustomization->CreateChildrenWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 					}
 					ImGui::TreePop();

@@ -22,6 +22,8 @@ namespace UnrealImGui
 	{
 		FPropertyEnableScope();
 		~FPropertyEnableScope();
+	private:
+		bool Enable = false;
 	};
 
 	struct IMGUI_API FBoolPropertyCustomization : public IUnrealPropertyCustomization

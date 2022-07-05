@@ -60,12 +60,10 @@ namespace UnrealImGui
 		ImGui::SetNextItemWidth(InnerValue::ValueRightBaseWidth - (Customization ? Customization->ValueAdditiveRightWidth : PropertyCustomization->ValueAdditiveRightWidth));
 		if (Customization)
 		{
-			FPropertyDisableScope ImGuiDisableScope{ Property };
 			Customization->CreateValueWidget(Property, Containers, Offset, IsIdentical);
 		}
 		else
 		{
-			FPropertyDisableScope ImGuiDisableScope{ Property };
 			PropertyCustomization->CreateValueWidget(Property, Containers, Offset, IsIdentical);
 		}
 
@@ -73,12 +71,10 @@ namespace UnrealImGui
 		{
 			if (Customization)
 			{
-				FPropertyDisableScope ImGuiDisableScope{ Property };
 				Customization->CreateChildrenWidget(Property, Containers, Offset, IsIdentical);
 			}
 			else
 			{
-				FPropertyDisableScope ImGuiDisableScope{ Property };
 				PropertyCustomization->CreateChildrenWidget(Property, Containers, Offset, IsIdentical);
 			}
 			ImGui::TreePop();
@@ -267,6 +263,8 @@ namespace UnrealImGui
 
 void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride)
 {
+	FPropertyEnableScope PropertyEnableScope;
+
 	const FString Name = FString::Printf(TEXT("%s##%d"), *(NameOverride ? *NameOverride : Property->GetName()), InnerValue::GPropertyDepth);
 	if (HasChildProperties)
 	{
@@ -291,6 +289,7 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 
 void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArray& Containers, int32 Offset)
 {
+	FPropertyDisableScope ImGuiDisableScope{ Property };
 	if (Property->ArrayDim == 1)
 	{
 		AddUnrealPropertyInner(Property, Containers, Offset + Property->GetOffset_ForInternal());
@@ -360,12 +359,10 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 				ImGui::SetNextItemWidth(InnerValue::ValueRightBaseWidth - (Customization ? Customization->ValueAdditiveRightWidth : 0.f));
 				if (Customization)
 				{
-					FPropertyDisableScope ImGuiDisableScope{ Property };
 					Customization->CreateValueWidget(Property, Containers, ElementOffset, IsElementIdentical);
 				}
 				else
 				{
-					FPropertyDisableScope ImGuiDisableScope{ Property };
 					PropertyCustomization->CreateValueWidget(Property, Containers, ElementOffset, IsElementIdentical);
 				}
 
@@ -373,12 +370,10 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 				{
 					if (Customization)
 					{
-						FPropertyDisableScope ImGuiDisableScope{ Property };
 						Customization->CreateChildrenWidget(Property, Containers, ElementOffset, IsElementIdentical);
 					}
 					else
 					{
-						FPropertyDisableScope ImGuiDisableScope{ Property };
 						PropertyCustomization->CreateChildrenWidget(Property, Containers, ElementOffset, IsElementIdentical);
 					}
 					ImGui::TreePop();
