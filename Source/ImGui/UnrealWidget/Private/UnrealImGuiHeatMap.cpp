@@ -11,11 +11,21 @@ namespace UnrealImGui
 {
 DECLARE_MEMORY_STAT(TEXT("UnrealImGuiHeatMap_UnitSize"), Stat_UnrealImGuiHeatMap_UnitSize, STATGROUP_ImGui);
 
-constexpr ImU32 GetHeatColor(float T)
+ImU32 GetHeatColor(float T)
 {
-	// constexpr ImU32 Jet[] = {0xffaa0000, 0xffff0000, 0xffff5500, 0xffffaa00, 0xffffff00, 0xffaaff55, 0xff55ffaa, 0xff00ffff, 0xff00aaff, 0xff0055ff, 0xff0000ff };
-	constexpr ImU32 JetWithAlpha[] = {0x00aa0000, 0x1aff0000, 0x33ff5500, 0x4dffaa00, 0x66ffff00, 0x80aaff55, 0x9955ffaa, 0xb300ffff, 0xcc00aaff, 0xff0055ff, 0xe60000ff };
-	return JetWithAlpha[(int)((UE_ARRAY_COUNT(JetWithAlpha) - 1) * T + 0.5f)];
+	static TArray64<ImU32> HeatColor = []
+	{
+		TArray64<ImU32> ReturnColors;
+		ReturnColors.SetNum(30);
+		for (int32 Idx = 0; Idx < ReturnColors.Num(); ++Idx)
+		{
+			const float Weight = Idx / (ReturnColors.Num() - 1.f);
+			const FLinearColor Color = FLinearColor{ (1.f - Weight) * 270.f, 1.f, 1.f, FMath::Pow(Weight, 0.5f) }.HSVToLinearRGB();
+			ReturnColors[Idx] = ImGui::ColorConvertFloat4ToU32((ImVec4&)Color);
+		}
+		return ReturnColors;
+	}();
+	return HeatColor[static_cast<int32>((HeatColor.Num() - 1) * T + 0.5f)];
 }
 
 FHeatMapBase::~FHeatMapBase()

@@ -13,7 +13,7 @@ public class ImGui : ModuleRules
 		}
 
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
+
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core",

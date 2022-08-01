@@ -848,11 +848,13 @@ CODE
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+#include "Windows/AllowWindowsPlatformTypes.h"
 #ifndef __MINGW32__
 #include <Windows.h>        // _wfopen, OpenClipboard
 #else
 #include <windows.h>
 #endif
+#include "Windows/HideWindowsPlatformTypes.h"
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP) // UWP doesn't have all Win32 functions
 #define IMGUI_DISABLE_WIN32_DEFAULT_CLIPBOARD_FUNCTIONS
 #define IMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS
