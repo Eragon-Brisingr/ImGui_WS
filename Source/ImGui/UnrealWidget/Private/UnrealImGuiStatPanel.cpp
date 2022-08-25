@@ -1,18 +1,26 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UnrealImGuiStatDevice.h"
+#include "UnrealImGuiStatPanel.h"
 #include <Stats/StatsData.h>
 
 #include "imgui.h"
 #include "UnrealImGuiStat.h"
 
-// RenderGroupedWithHierarchy
-void FUnrealImGuiStatDevice::Draw(UObject* Owner)
+#define LOCTEXT_NAMESPACE "UnrealImGui"
+
+UUnrealImGuiStatPanel::UUnrealImGuiStatPanel()
+{
+	DefaultState = FDefaultPanelState{ false, false };
+	Title = LOCTEXT("Stat", "Stat");
+}
+
+void UUnrealImGuiStatPanel::Draw(UObject* Owner, float DeltaSeconds)
 {
 #if STATS
+	// From RenderGroupedWithHierarchy
 	const FGameThreadStatsData* ViewData = FLatestGameThreadStatsData::Get().Latest;
-	
+
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UnrealImGuiStatDevice_Draw"), STAT_UnrealImGuiStatDevice_Draw, STATGROUP_ImGui);
 	if (ImGui::BeginMenuBar())
 	{
@@ -326,3 +334,5 @@ void FUnrealImGuiStatDevice::Draw(UObject* Owner)
 	ImGui::Text("Stat Not Enable");
 #endif
 }
+
+#undef LOCTEXT_NAMESPACE

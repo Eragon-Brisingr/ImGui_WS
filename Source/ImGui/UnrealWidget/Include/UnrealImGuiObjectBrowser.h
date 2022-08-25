@@ -3,23 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UnrealImGuiPanel.h"
 #include "UnrealImGuiObjectBrowser.generated.h"
 
 /**
  * 
  */
-USTRUCT()
-struct IMGUI_API FUnrealImGuiObjectBrowser
+UCLASS()
+class IMGUI_API UUnrealImGuiObjectBrowserPanel : public UUnrealImGuiPanelBase
 {
 	GENERATED_BODY()
 public:
-	FUnrealImGuiObjectBrowser()
-		: bDisplayAllProperties(true)
-		, bEnableEditVisibleProperty(false)
-	{}
+	UUnrealImGuiObjectBrowserPanel();
 	
-	void Draw(UObject* Owner);
-
 	UPROPERTY(Transient)
 	TObjectPtr<UObject> SelectedObject = nullptr;
 	uint32 DockSpaceId = INDEX_NONE;
@@ -27,4 +23,6 @@ public:
 	uint8 bDisplayAllProperties : 1;
 	UPROPERTY(Config)
 	uint8 bEnableEditVisibleProperty : 1;
+	
+	void Draw(UObject* Owner, float DeltaSeconds) override;
 };

@@ -23,8 +23,8 @@ public:
 	FText Title;
 	struct FDefaultPanelState
 	{
-		const bool bOpen;
-		const bool bEnableDock;
+		bool bOpen;
+		bool bEnableDock;
 	};
 	struct FDefaultDockLayout : FDefaultPanelState
 	{
@@ -39,7 +39,7 @@ public:
 			: FDefaultPanelState{ DefaultPanelState }
 			, DockId(DockId)
 		{}
-		const int32 DockId;
+		int32 DockId;
 	};
 	FDefaultPanelState DefaultState{ false, true };
 	// Key为类型名

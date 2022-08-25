@@ -17,6 +17,14 @@ public:
 	FOnImGui_WS_Draw OnDraw;
 };
 
+USTRUCT()
+struct IMGUI_WS_API FImGui_WS_EditorContext : public FImGui_WS_Context
+{
+	GENERATED_BODY()
+public:
+	bool bAlwaysDrawDefaultLayout = false;
+};
+
 UCLASS()
 class UImGui_WS_WorldSubsystem : public UWorldSubsystem
 {
@@ -73,7 +81,7 @@ class IMGUI_WS_API UImGui_WS_Manager : public UEngineSubsystem
 public:
 	static UImGui_WS_Manager* GetChecked();
 	static FImGui_WS_Context* GetImGuiContext(const UWorld* World);
-	static FImGui_WS_Context* GetImGuiEditorContext();
+	static FImGui_WS_EditorContext* GetImGuiEditorContext();
 
 	static bool IsSettingsEnable();
 	bool IsEnable() const { return Drawer != nullptr; }
@@ -94,7 +102,7 @@ private:
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY()
-	FImGui_WS_Context EditorContext;
+	FImGui_WS_EditorContext EditorContext;
 #endif
 	
 	UPROPERTY(Transient)

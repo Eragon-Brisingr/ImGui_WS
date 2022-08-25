@@ -10,9 +10,19 @@
 #include "UnrealImGuiUtils.h"
 #include "UnrealImGuiWrapper.h"
 
-void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
+#define LOCTEXT_NAMESPACE "UnrealImGui"
+
+UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
+	: bDisplayAllProperties(true)
+	, bEnableEditVisibleProperty(false)
 {
-	if (ImGui::BeginChild("ObjectPathViewer", { 0.f, 30.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar))
+	DefaultState = FDefaultPanelState{ false, false };
+	Title = LOCTEXT("Object Browser", "Object Browser");
+}
+
+void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, float DeltaSeconds)
+{
+		if (ImGui::BeginChild("ObjectPathViewer", { 0.f, 30.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar))
 	{
 		if (ImGui::Button("Root"))
 		{
@@ -182,3 +192,5 @@ void FUnrealImGuiObjectBrowser::Draw(UObject* Owner)
 		ImGui::End();
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

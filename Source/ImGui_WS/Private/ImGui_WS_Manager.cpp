@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "implot.h"
 #include "imgui-ws.h"
+#include "ImGuiEditorDefaultLayout.h"
 #include "ImGuiFileDialog.h"
 #include "imgui_notify.h"
 #include "UnrealImGuiStat.h"
@@ -737,7 +738,13 @@ private:
 #if WITH_EDITOR
 		if (Manager.DrawContextIndex == EditorIndex || Manager.DrawContextIndex >= Manager.WorldSubsystems.Num())
 		{
-			Manager.EditorContext.OnDraw.Broadcast(DeltaTime);	
+			const FImGui_WS_EditorContext& DrawContext = Manager.EditorContext;
+			if (DrawContext.bAlwaysDrawDefaultLayout || DrawContext.OnDraw.IsBound() == false)
+			{
+				static FImGuiEditorDefaultLayoutBuilder DefaultLayoutBuilder;
+				DefaultLayoutBuilder.Draw(DeltaTime);
+			}
+			DrawContext.OnDraw.Broadcast(DeltaTime);	
 		}
 		else
 #endif
@@ -930,11 +937,15 @@ UImGui_WS_Manager* UImGui_WS_Manager::GetChecked()
 
 FImGui_WS_Context* UImGui_WS_Manager::GetImGuiContext(const UWorld* World)
 {
-	UImGui_WS_WorldSubsystem* WorldSubsystem = World->GetSubsystem<UImGui_WS_WorldSubsystem>();
-	return WorldSubsystem ? &WorldSubsystem->Context : nullptr;
+	if (World->IsGameWorld())
+	{
+		UImGui_WS_WorldSubsystem* WorldSubsystem = World->GetSubsystem<UImGui_WS_WorldSubsystem>();
+		return WorldSubsystem ? &WorldSubsystem->Context : nullptr;
+	}
+	return GetImGuiEditorContext();
 }
 
-FImGui_WS_Context* UImGui_WS_Manager::GetImGuiEditorContext()
+FImGui_WS_EditorContext* UImGui_WS_Manager::GetImGuiEditorContext()
 {
 #if WITH_EDITOR
 	UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();

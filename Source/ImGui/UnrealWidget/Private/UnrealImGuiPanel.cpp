@@ -36,7 +36,7 @@ void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* 
 	}
 	
 	bool IsOpen = bIsOpen;
-	const FString WindowName = GetLayoutPanelName(Layout->LayoutName.ToString());
+	const FString WindowName = GetLayoutPanelName(Layout->GetName());
 	if (ImGui::Begin(TCHAR_TO_UTF8(*WindowName), &IsOpen, ImGuiWindowFlags))
 	{
 		Draw(Owner, DeltaSeconds);

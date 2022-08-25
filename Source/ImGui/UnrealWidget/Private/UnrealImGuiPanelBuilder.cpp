@@ -5,7 +5,19 @@
 
 #include "imgui.h"
 #include "UnrealImGuiLayout.h"
+#include "UnrealImGuiLogPanel.h"
+#include "UnrealImGuiObjectBrowser.h"
 #include "UnrealImGuiPanel.h"
+#include "UnrealImGuiStatPanel.h"
+
+FUnrealImGuiPanelBuilder::FUnrealImGuiPanelBuilder()
+{
+	ExternSupportPanelTypes.Append({
+		UUnrealImGuiObjectBrowserPanel::StaticClass(),
+		UUnrealImGuiStatPanel::StaticClass(),
+		UUnrealImGuiLogPanel::StaticClass(),
+	});
+}
 
 void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 {
@@ -67,9 +79,13 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	{
 		TArray<UClass*> PanelClasses;
 		GetDerivedClasses(SupportPanelType, PanelClasses);
+		for (const TSubclassOf<UUnrealImGuiPanelBase>& ExternSupportPanelType : ExternSupportPanelTypes)
+		{
+			PanelClasses.AddUnique(ExternSupportPanelType);
+		}
 		RemoveNotLeafClass(PanelClasses);
 		TSet<FName> ExistPanelNames;
-		for (UClass* Class : PanelClasses)
+		for (const UClass* Class : PanelClasses)
 		{
 			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
 			{

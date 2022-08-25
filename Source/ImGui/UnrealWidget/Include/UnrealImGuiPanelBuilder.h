@@ -16,6 +16,8 @@ struct IMGUI_API FUnrealImGuiPanelBuilder
 {
 	GENERATED_BODY()
 public:
+	FUnrealImGuiPanelBuilder();
+	
 	// 该布局系统的名称
 	FName DockSpaceName = NAME_None;
 	// 支持的布局类型，该布局的子类都会被搜集至该布局系统
@@ -24,6 +26,9 @@ public:
 	// 支持的面板类型，该面板的子类都会被搜集至该布局系统
 	UPROPERTY(Transient)
 	TSubclassOf<UUnrealImGuiPanelBase> SupportPanelType;
+	// 额外支持的面板类型，不用为SupportPanelType的子类
+	UPROPERTY(Transient)
+	TArray<TSubclassOf<UUnrealImGuiPanelBase>> ExternSupportPanelTypes;
 
 	void Register(UObject* Owner);
 	void Unregister(UObject* Owner);

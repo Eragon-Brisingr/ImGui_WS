@@ -18,7 +18,7 @@ void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuild
 		const ImGuiID* MappedDockId = DockIdMap.Find(PanelDockKey);
 		if (DefaultPanelState.bEnableDock && MappedDockId)
 		{
-			const FString PanelName = Panel->GetLayoutPanelName(LayoutName.ToString());
+			const FString PanelName = Panel->GetLayoutPanelName(GetName());
 			ImGui::DockBuilderDockWindow(TCHAR_TO_UTF8(*PanelName), *MappedDockId);
 			
 			Panel->PanelOpenState.Add(GetClass()->GetFName(), Panel->bIsOpen);
@@ -37,11 +37,11 @@ void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const FUnrealImGuiP
 	const bool IsNew = DockSpaceId == INDEX_NONE;
 	if (IsNew)
 	{
-		const_cast<uint32&>(DockSpaceId) = ImGui::GetID(TCHAR_TO_UTF8(*LayoutName.ToString()));
+		const_cast<uint32&>(DockSpaceId) = ImGui::GetID(TCHAR_TO_UTF8(*GetName()));
 
 		for (const UUnrealImGuiPanelBase* Panel : LayoutBuilder.Panels)
 		{
-			const FString PanelName = Panel->GetLayoutPanelName(LayoutName.ToString());
+			const FString PanelName = Panel->GetLayoutPanelName(GetName());
 			const ImGuiID WindowId = ImHashStr(TCHAR_TO_UTF8(*PanelName));
 			const ImGuiWindowSettings* Settings = ImGui::FindWindowSettings(WindowId);
 			if (Settings == nullptr)
