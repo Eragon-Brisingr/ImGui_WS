@@ -12,7 +12,7 @@
 UUnrealImGuiStatPanel::UUnrealImGuiStatPanel()
 {
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
-	DefaultState = FDefaultPanelState{ false, false };
+	DefaultState = FDefaultPanelState{ false, true };
 	Title = LOCTEXT("Stat", "Stat");
 }
 

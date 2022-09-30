@@ -66,6 +66,8 @@ World Debugger为本插件提供的默认运行时虚幻世界调试器，提供
 
 ## 虚幻俯视图
 
+> 为了避免无关的Actor显示太多，默认预览只会显示继承UImGuiWorldDebuggerDrawerBase声明绘制的Actor
+
 ![俯视图](Docs/Viewport.png)  
 
 ### 根据类型筛选Actor

@@ -16,7 +16,7 @@ UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
 	: bDisplayAllProperties(true)
 	, bEnableEditVisibleProperty(false)
 {
-	DefaultState = FDefaultPanelState{ false, false };
+	DefaultState = FDefaultPanelState{ false, true };
 	Title = LOCTEXT("Object Browser", "Object Browser");
 }
 

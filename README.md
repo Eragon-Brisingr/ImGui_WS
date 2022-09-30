@@ -66,6 +66,8 @@ World Debugger is the default runtime unreal world debugger provided by this plu
 
 ## Unreal top view
 
+> In order to avoid displaying too many unrelated Actors, the default preview will only display Actors that inherit the UImGuiWorldDebuggerDrawerBase declaration.
+
 ![俯视图](Docs/Viewport.png)  
 
 ### Filter Actors by Type
