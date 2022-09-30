@@ -8,13 +8,13 @@
 
 The ImGui_WS plugin provides the ability to display Unreal debugging information on a remote web page, also supports packaged game. (e.g. standalone DS processes can use this debugger to visualize in-game data)
 
-## feature
+## Feature
 
 * ImGui web drawing
 * Unreal World Debugger
   * Unreal world top view
   * Details panel
-  * world outline view
+  * World outline view
   * Log and console
 * Panel layout system
 * ImPlot data visualization library
@@ -25,7 +25,7 @@ Select ImGui_WS on the ImGui webpage, check ImGuiDemo to open the Demo panel
 For code viewing **ImGuiDemo.cpp**, refer to the widget drawing method required for copying the Demo panel  
 > [imgui_manual](https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html) demo网页版  
 
-## web drawing
+## Web drawing
 
 Click the ImGui button in the lower right corner to open the corresponding webpage, or enter **ImGui.WS.LaunchWeb** in the console to open the webpage
 
@@ -166,7 +166,7 @@ FUnrealImGuiPanelBuilder is used to build the layout of its own window, and the 
 | SupportLayoutType | Supported layout types, subclasses of the layout will be collected to the layout system |
 | SupportPanelType  | Supported panel types, subclasses of this panel will be collected to this layout system |
 
-配置完布局系统的描述信息后调用以下方法进行面板的绘制
+After configuring the description information of the layout system, call the following method to draw the panel
 
 | method            | describe                                                  |
 |-------------------|-----------------------------------------------------------|
@@ -263,13 +263,13 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 }
 ```
 
-## Bubbling message prompt
+## Bubbling message
 
 [imgui-notify](https://github.com/patrickcjk/imgui-notify)
 
-Call **ImGui::InsertNotification** to use the global bubbling message prompt  
+Call **ImGui::InsertNotification** to use the global bubbling message  
 
-![冒泡消息提示](Docs/Notification.gif)  
+![Bubbling message](Docs/Notification.gif)  
 
 ## Record drawing data and playback (experimental)
 
