@@ -2,11 +2,9 @@
 
 [中文ReadMe点击这里](README_ZH.md)
 
-[[toc]]
-
 ![Overview](Docs/Overview.gif)
 
-The ImGui_WS plugin provides the ability to display Unreal debugging information on a remote web page, also supports packaged game. (e.g. standalone DS processes can use this debugger to visualize in-game data)
+The Unreal ImGui WS plugin provides the ability to display Unreal debugging information on a remote web page, also supports packaged game. (e.g. standalone DS processes can use this debugger to visualize in-game data)
 
 ## Feature
 
