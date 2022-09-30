@@ -13,7 +13,7 @@ class AImGuiWorldDebuggerBase;
 namespace ImGuiWorldDebuggerBootstrap
 {
 	IMGUI_WS_API extern TSubclassOf<AImGuiWorldDebuggerBase> DebuggerClass;
-	IMGUI_WS_API bool GetIsEnable();
+	IMGUI_WS_API extern bool bLaunchImGuiWorldDebugger;
 	void PostWorldInitialization(UWorld* World, const UWorld::InitializationValues);
 }
 

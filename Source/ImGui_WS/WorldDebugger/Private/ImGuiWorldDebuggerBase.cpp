@@ -52,22 +52,22 @@ namespace ImGuiWorldDebuggerBootstrap
 		}
 	}
 
-	static bool bEnableImGuiWorldDebugger = false;
+	bool bLaunchImGuiWorldDebugger = true;
 	FAutoConsoleVariable EnableImGuiWorldDebugger
 	{
 		TEXT("ImGui.DebugGameWorld"),
-		bEnableImGuiWorldDebugger,
+		bLaunchImGuiWorldDebugger,
 		TEXT("Enable Draw Game World Debug Map")
 		TEXT("0: Disable")
 		TEXT("1: Enable"),
 		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
 		{
 			const bool Enable = ConsoleVariable->GetBool();
-			if (bEnableImGuiWorldDebugger == Enable)
+			if (bLaunchImGuiWorldDebugger == Enable)
 			{
 				return;
 			}
-			bEnableImGuiWorldDebugger = Enable;
+			bLaunchImGuiWorldDebugger = Enable;
 			for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
 			{
 				if (UWorld* World = WorldContext.World())
@@ -89,14 +89,9 @@ namespace ImGuiWorldDebuggerBootstrap
 		ECVF_Default
 	};
 
-	bool GetIsEnable()
-	{
-		return bEnableImGuiWorldDebugger;
-	}
-
 	void PostWorldInitialization(UWorld* World, const UWorld::InitializationValues /*IVS*/)
 	{
-		if (bEnableImGuiWorldDebugger == false)
+		if (bLaunchImGuiWorldDebugger == false)
 		{
 			return;
 		}
@@ -110,7 +105,7 @@ namespace ImGuiWorldDebuggerBootstrap
 }
 
 AImGuiWorldDebuggerBase::AImGuiWorldDebuggerBase()
-	: bEnableImGuiWorldDebugger(false)
+	: bEnableImGuiWorldDebugger(true)
 {
 	PanelBuilder.DockSpaceName = TEXT("ImGuiWorldDebuggerDockSpace");
 	PanelBuilder.SupportLayoutType = UImGuiWorldDebuggerLayoutBase::StaticClass();
@@ -159,21 +154,26 @@ void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 				bEnableImGuiWorldDebugger = bEnable;
 				SaveConfig();
 			}
-
-			PanelBuilder.DrawPanelStateMenu(this);
+			if (bEnableImGuiWorldDebugger)
+			{
+				PanelBuilder.DrawPanelStateMenu(this);
+			}
 			
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Layout"))
+		if (bEnableImGuiWorldDebugger)
 		{
-			PanelBuilder.DrawLayoutStateMenu(this);
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Reset Layout"))
+			if (ImGui::BeginMenu("Layout"))
 			{
-				PanelBuilder.LoadDefaultLayout(this);
+				PanelBuilder.DrawLayoutStateMenu(this);
+
+				ImGui::Separator();
+				if (ImGui::MenuItem("Reset Layout"))
+				{
+					PanelBuilder.LoadDefaultLayout(this);
+				}
+				ImGui::EndMenu();
 			}
-			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
 	}

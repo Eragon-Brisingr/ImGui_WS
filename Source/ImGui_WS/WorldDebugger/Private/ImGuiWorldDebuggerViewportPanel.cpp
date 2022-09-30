@@ -89,7 +89,7 @@ void UImGuiWorldDebuggerViewportPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 			if (TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawerMap.Find(TestClass))
 			{
 				DrawableActors.Add(Actor, *Drawer);
-				Actor->OnEndPlay.AddDynamic(this, &UImGuiWorldDebuggerViewportPanel::WhenActorEndPlay);
+				Actor->OnEndPlay.AddUniqueDynamic(this, &UImGuiWorldDebuggerViewportPanel::WhenActorEndPlay);
 				return;
 			}
 		}
@@ -893,12 +893,15 @@ void UImGuiWorldDebuggerViewportPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 
 #if WITH_EDITOR
 		// 编辑器下同步选择
-		static bool bPreFrameIsSelectActors = false;
-		if (bPreFrameIsSelectActors && TopSelectedActor == nullptr)
+		if (IsSelectDragging == false)
 		{
-			EditorSelectActors.ExecuteIfBound(World, SelectedActors);
+			static TSet<TWeakObjectPtr<AActor>> PreSelectedActors;
+			if (PreSelectedActors.Num() != SelectedActors.Num() || PreSelectedActors.Difference(SelectedActors).Num() > 0 || SelectedActors.Difference(PreSelectedActors).Num() > 0)
+			{
+				EditorSelectActors.ExecuteIfBound(World, SelectedActors);
+				PreSelectedActors = SelectedActors;
+			}
 		}
-		bPreFrameIsSelectActors = TopSelectedActor != nullptr;
 #endif
 
 		IsConfigDirty |= DebuggerContext.bIsConfigDirty;

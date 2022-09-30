@@ -441,11 +441,6 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 			ImGui::CloseCurrentPopup();
 		};
 
-		if (ImGui::Button("Cancel"))
-		{
-			reset_everything();
-		}
-		ImGui::SameLine();
 		if (ImGui::Button("Choose"))
 		{
 			if (Type == FileDialogType::SelectFolder)
@@ -472,6 +467,11 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 					reset_everything();
 				}
 			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel"))
+		{
+			reset_everything();
 		}
 
 		ImGui::EndPopup();

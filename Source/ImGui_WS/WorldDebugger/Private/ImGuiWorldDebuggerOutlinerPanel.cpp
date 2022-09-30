@@ -35,7 +35,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 			if (Actor && CanActorDisplay(Actor))
 			{
 				DisplayActors.Add(Actor);
-				Actor->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
+				Actor->OnDestroyed.AddUniqueDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
 			}
 		}
 		bInvokeRefreshSortOrder |= true;
@@ -45,7 +45,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 		if (CanActorDisplay(Actor) && Actor->OnDestroyed.IsAlreadyBound(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy) == false)
 		{
 			DisplayActors.Add(Actor);
-			Actor->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
+			Actor->OnDestroyed.AddUniqueDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
 			bInvokeRefreshSortOrder |= true;
 		}
 	}));

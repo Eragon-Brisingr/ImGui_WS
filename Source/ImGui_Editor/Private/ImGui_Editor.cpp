@@ -3,6 +3,9 @@
 #include "ImGui_Editor.h"
 #include <ToolMenus.h>
 #include <Selection.h>
+#include <Editor/EditorPerformanceSettings.h>
+#include <Framework/Notifications/NotificationManager.h>
+#include <Widgets/Notifications/SNotificationList.h>
 
 #include "ImGuiWorldDebuggerBase.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
@@ -29,7 +32,7 @@ void FImGui_EditorModule::StartupModule()
 	Section.AddEntry(FToolMenuEntry::InitWidget(
 		TEXT("LaunchUrlImGui_WS"),
 		SNew(SButton)
-		.ToolTipText(LOCTEXT("打开ImGui-WS提示", "打开ImGui-WS的Web页面"))
+		.ToolTipText(LOCTEXT("OpenImGui-WSTooltip", "Launch ImGui-WS Web page"))
 		.ContentPadding(0.f)
 		.ButtonStyle(&ButtonStyle)
 		.OnClicked_Lambda([this]
@@ -94,18 +97,57 @@ void FImGui_EditorModule::StartupModule()
 
 	UImGuiWorldDebuggerViewportPanel::EditorSelectActors.BindLambda([](UWorld* World, const TSet<TWeakObjectPtr<AActor>>& SelectedMetaEntities)
 	{
-		GEditor->SelectNone(true, true);
 		USelection* SelectedActors = GEditor->GetSelectedActors();
 		SelectedActors->BeginBatchSelectOperation();
+		GEditor->SelectNone(false, true, true);
 		for (const TWeakObjectPtr<AActor>& ActorPtr : SelectedMetaEntities)
 		{
 			if (AActor* Actor = ActorPtr.Get())
 			{
-				SelectedActors->Select(Actor);
+				GEditor->SelectActor(Actor, true, false, true);
 			}
 		}
-		SelectedActors->EndBatchSelectOperation();
+		SelectedActors->EndBatchSelectOperation(false);
+		GEditor->NoteSelectionChange();
 	});
+
+	static TWeakPtr<SNotificationItem> NotificationPtr;
+	if (GetDefault<UEditorPerformanceSettings>()->bThrottleCPUWhenNotForeground)
+	{
+		const FProperty* PerformanceThrottlingProperty = FindFieldChecked<FProperty>(UEditorPerformanceSettings::StaticClass(), GET_MEMBER_NAME_CHECKED(UEditorPerformanceSettings, bThrottleCPUWhenNotForeground));
+		FFormatNamedArguments Arguments;
+		Arguments.Add(TEXT("PropertyName"), PerformanceThrottlingProperty->GetDisplayNameText());
+		FNotificationInfo Info(FText::Format(LOCTEXT("ImGui-WS PerformanceWarning", "ImGui-WS: The editor setting '{PropertyName}' is currently enabled. This will stop editor windows from updating in realtime while the editor is not in focus"), Arguments));
+
+		// Add the buttons with text, tooltip and callback
+		Info.ButtonDetails.Add(FNotificationButtonInfo(
+			LOCTEXT("ImGui-WS PerformanceWarningDisable", "Disable"),
+			LOCTEXT("ImGui-WS PerformanceWarningDisableToolTip", "Disable ThrottleCPUWhenNotForeground"),
+			FSimpleDelegate::CreateLambda([this]
+			{
+				UEditorPerformanceSettings* Settings = GetMutableDefault<UEditorPerformanceSettings>();
+				Settings->bThrottleCPUWhenNotForeground = false;
+				Settings->PostEditChange();
+				Settings->SaveConfig();
+				if (const TSharedPtr<SNotificationItem> Notification = NotificationPtr.Pin())
+				{
+					Notification->SetCompletionState(SNotificationItem::CS_None);
+					Notification->ExpireAndFadeout();
+				}
+			}))
+		);
+
+		Info.bFireAndForget = false;
+		Info.WidthOverride = 500.0f;
+		Info.bUseLargeFont = false;
+		Info.bUseThrobber = false;
+		Info.bUseSuccessFailIcons = false;
+
+		// Launch notification
+		const auto Notification = FSlateNotificationManager::Get().AddNotification(Info);
+		Notification->SetCompletionState(SNotificationItem::CS_Pending);
+		NotificationPtr = Notification;
+	}
 }
 
 void FImGui_EditorModule::ShutdownModule()

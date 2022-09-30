@@ -1,105 +1,96 @@
 # ImGui_WS
 
+[中文ReadMe点击这里](README_ZH.md)
+
 [[toc]]
 
-## 引用仓库地址
+![Overview](Docs/Overview.gif)
 
-* [ImGui](https://github.com/ocornut/imgui)  
-  ImGui的仓库，里面有ImGui的Wiki
-* [imgui-ws](https://github.com/ggerganov/imgui-ws)  
-  实现了ImGui网页绘制
+The ImGui_WS plugin provides the ability to display Unreal debugging information on a remote web page, also supports packaged game. (e.g. standalone DS processes can use this debugger to visualize in-game data)
 
-## 特性
+## feature
 
-* 网页绘制
-* 录制绘制数据与回放
-* 虚幻世界俯视图绘制
-* 虚幻Object的Details面板
-* 接入ImPlot数据可视化库
-* 中文字体
-* 编辑器布局系统
-* 冒泡消息提示
+* ImGui web drawing
+* Unreal World Debugger
+  * Unreal world top view
+  * Details panel
+  * world outline view
+  * Log and console
+* Panel layout system
+* ImPlot data visualization library
 
-## 学习如何使用ImGui
+## Learn how to use ImGui
 
-在ImGui网页选择ImGui_WS，勾选ImGuiDemo打开Demo面板  
-代码查看**ImGuiDemo.cpp**可参考Demo面板复制所需的控件绘制方法  
+Select ImGui_WS on the ImGui webpage, check ImGuiDemo to open the Demo panel  
+For code viewing **ImGuiDemo.cpp**, refer to the widget drawing method required for copying the Demo panel  
 > [imgui_manual](https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html) demo网页版  
 
-## 网页绘制
+## web drawing
 
-点击右下角的ImGui按钮开启对应的网页，或者控制台输入**ImGui.WS.LaunchWeb**打开网页
+Click the ImGui button in the lower right corner to open the corresponding webpage, or enter **ImGui.WS.LaunchWeb** in the console to open the webpage
 
-> ImGui_WS绘制只在编辑器下默认启用，打包后的DS或者客户端在启动参数添加  
-> -ExecCmds="ImGui.WS.Enable 1"  
-> 来启用绘制
+> ImGui_WS drawing is only enabled by default in the editor, and the packaged DS or client is added in the startup parameters
+> -ExecCmds="ImGui.WS.Enable 1"
+> to enable drawing
 
-### 端口号配置
+### Switch world context
 
-可以通过Config或者命令行来设置端口号
+![SwitchWorldContext](Docs/SwitchWorldContext.gif)  
+The previewed world can be selected through the world context option under the ImGui_WS menu
 
-1. ProjectSettings - Plugins - ImGui_WS 中可配置端口号
-2. ImGui_WS.ini配置文件
+### Port configuration
+
+You can set the port number through Config or the command line
+
+1. Configurable port number in ProjectSettings - Plugins - ImGui_WS
+2. ImGui_WS.ini configuration file
     > [/Script/ImGui_WS.ImGui_WS_Settings]  
     GamePort=8890  
     ServerPort=8891  
     ServerPort=8892  
 
-3. 启动参数配置 -ExecCmds="ImGui.WS.Port 8890"
+3. Startup parameter configuration -ExecCmds="ImGui.WS.Port 8890"
 
-### 绘制事件
+### Draw event
 
-UImGui_WS_Manager::GetImGuiContext获取到ImGuiContext  
-成员OnDraw为ImGui_WS绘制调用的事件  
-绑定该事件调用ImGui绘制特定的面板
+UImGui_WS_Manager::GetImGuiContext gets ImGuiContext
+Member OnDraw is the event called for ImGui_WS drawing
+Bind this event to call ImGui to draw a specific panel
 
-## 录制绘制数据与回放
+## World Debugger
 
-### 录制方式
+World Debugger is the default runtime unreal world debugger provided by this plugin, which provides the function of previewing and setting Actor properties in the game world
 
-开始录制：
+> Configurable console variable ImGui.DebugGameWorld controls whether to enable the debug panel, enabled by default
+> If you need to disable this function, you can set ImGuiWorldDebuggerBootstrap::bLaunchImGuiWorldDebugger = false in the game module StartupModule;
 
-* 菜单->ImGui_WS->Start Record
-* 控制台输入ImGui.WS.StartRecord
-
-结束录制：
-
-* 菜单->ImGui_WS->Stop Record
-* 控制台输入ImGui.WS.StopRecord
-
-### 回放录制数据
-
-菜单->ImGui_WS->Load Record，选择录制的文件进行回看
-
-## 虚幻俯视图
+## Unreal top view
 
 ![俯视图](Docs/Viewport.png)  
 
-### 根据类型筛选Actor
+### Filter Actors by Type
 
-FilterActor搜索框中输入**type:ClassPath**后在地图中只会显示当前类型的Actor
+After entering **type:ClassPath** in the FilterActor search box, only the Actor of the current type will be displayed in the map
 
-### 添加需要可视化的Actor类型
+### Add the Actor type that needs to be visualized
 
-创建继承于UImGuiWorldDebuggerDrawerBase的类型
+Create a type that inherits from UImGuiWorldDebuggerDrawerBase
 
-* 添加构造函数
+* Add constructor
 
 ``` cpp
 UShootWeaponBulletDrawer::UShootWeaponBulletDrawer()
 {
-	// 标识该Drawer支持的Actor类型
+	// Declare the Actor types supported by the Drawer
 	DrawActor = AShootWeaponBullet::StaticClass();
-	// 绘制的实体半径
+	// Drawn solid radius
 	Radius = 10.f;
-	// 绘制的颜色
+	// Painted color
 	Color = FLinearColor::Red;
-	// 是否会因为视距太远而被剔除
-	bAlwaysDebuggerDraw = true;
 }
 ```
 
-* 重写DrawImGuiDebuggerExtendInfo等函数添加额外的调试信息绘制
+* Rewrite functions such as DrawImGuiDebuggerExtendInfo to add extra debugging information to draw
 
 ``` cpp
 void UShootWeaponBulletDrawer::DrawImGuiDebuggerExtendInfo(const AActor* Actor, const FImGuiWorldViewportContext& DebuggerContext) const
@@ -111,21 +102,21 @@ void UShootWeaponBulletDrawer::DrawImGuiDebuggerExtendInfo(const AActor* Actor, 
 }
 ```
 
-### 添加额外的世界信息绘制
+### Add extra world info to draw
 
-在UImGuiWorldDebuggerViewportPanel中重写以下虚函数
+Inherit UImGuiWorldDebuggerViewportPanel and override the following virtual functions
 
-* DrawDebugInfoUnderActors 在Actor的下层绘制额外的调试信息
-* DrawDebugInfoUpperActors 在Actor的上层绘制额外的调试信息
+* DrawDebugInfoUnderActors draws additional debug info under Actors
+* DrawDebugInfoUpperActors draws additional debug information on top of Actors
 
-建议每个世界调试信息添加**开关**，避免调试世界同时显示过多的元素
+It is recommended to add a **switch** to each world debugging information to avoid displaying too many elements in the debugging world at the same time
 
 ``` cpp
-// 声明开关
+// declare switch
 UPROPERTY(Config)
 uint8 bExampleToggle : 1;
 
-// 实现中添加是否开启开关的菜单选项
+// Add the menu option of whether to enable the switch in the implementation
 if (ImGui::BeginMenu("Example Menu"))
 {
 	{
@@ -139,55 +130,59 @@ if (ImGui::BeginMenu("Example Menu"))
 	ImGui::EndMenu();
 }
 
-// 逻辑中判断开关，开启的情况再进行调试信息的绘制
+// The switch is judged in the logic, and the debug information is drawn when it is turned on.
 ```
 
-## 虚幻细节面板
+## UObject Details Panel
 
-![细节面板](Docs/Details.png)  
+Can draw all the properties of the incoming UObject instance, support multi-select editing
 
-### 添加自定义类型的绘制方式
+![Details](Docs/Details.png)  
 
-查看**FStructCustomizerScoped**的使用方式
+For usage, please refer to **UImGuiWorldDebuggerDetailsPanel::Draw**
 
-## 编辑器面板布局
+### Add custom types of drawing methods
+
+See how **FStructCustomizerScoped** is used
+
+## Panel layout System
 
 ![默认布局效果](Docs/DefaultLayout.png)  
 
-### 概述
+### Overview
 
-* 继承UImGuiWorldDebuggerPanelBase给ImGuiWorldDebugger新增面板
-* 继承UImGuiWorldDebuggerLayoutBase给ImGuiWorldDebugger新增布局描述
+* Inherit UImGuiWorldDebuggerPanelBase to add a new panel to ImGuiWorldDebugger
+* Inherit UImGuiWorldDebuggerLayoutBase to add layout description to ImGuiWorldDebugger
 
 ### UnrealImGuiPanelBuilder
 
-FUnrealImGuiPanelBuilder用于构建所属窗口的布局，需要配置以下参数
+FUnrealImGuiPanelBuilder is used to build the layout of its own window, and the following parameters need to be configured
 
-| 属性名 | 描述 |
-|  ----  | ---- |
-| DockSpaceName | 该布局系统的名称 |
-| SupportLayoutType | 支持的布局类型，该布局的子类都会被搜集至该布局系统 |
-| SupportPanelType | 支持的面板类型，该面板的子类都会被搜集至该布局系统 |
+| property          | describe                                                                                |
+|-------------------|-----------------------------------------------------------------------------------------|
+| DockSpaceName     | the name of the layout system                                                           |
+| SupportLayoutType | Supported layout types, subclasses of the layout will be collected to the layout system |
+| SupportPanelType  | Supported panel types, subclasses of this panel will be collected to this layout system |
 
-配置完布局系统的描述信息后调用一下方法进行面板的绘制
+配置完布局系统的描述信息后调用以下方法进行面板的绘制
 
-| 方法名 | 描述 |
-|  ----  | ---- |
-| Register | 注册该布局系统，创建时调用 |
-| Unregister | 注销该布局系统，销毁时调用 |
-| DrawPanels | 绘制该布局系统下的面板 |
-| LoadDefaultLayout | 重新加在激活的布局 |
+| method            | describe                                                  |
+|-------------------|-----------------------------------------------------------|
+| Register          | Register the layout system and call it when it is created |
+| Unregister        | Unregister the layout system, called when destroyed       |
+| DrawPanels        | draws the panels under this layout system                 |
+| LoadDefaultLayout | Reload activate layout                                    |
 
-### 新增布局
+### Add layout
 
-继承FUnrealImGuiPanelBuilder下支持的布局基类类型，例如ImGuiWorldDebugger拓展布局就继承UImGuiWorldDebuggerLayoutBase  
+Inherit the layout base class types supported under FUnrealImGuiPanelBuilder, for example, ImGuiWorldDebugger extends the layout and inherits UImGuiWorldDebuggerLayoutBase
 
-* 配置LayoutName，没配置布局名的布局不会显示
-* 重写LoadDefaultLayout，实现改布局的描述
+* Configure LayoutName, layout without layout name will not be displayed
+* Override LoadDefaultLayout to declare the default layout structure
 
-#### ImGuiWorldDebugger默认布局例子
+#### ImGuiWorldDebugger default layout example
 
-默认布局将视口划分了四个区域
+The default layout divides the viewport into four areas
 
 ``` cpp
 UCLASS()
@@ -195,7 +190,7 @@ class UImGuiWorldDebuggerDefaultLayout : public UImGuiWorldDebuggerLayoutBase
 {
 	GENERATED_BODY()
 public:
-	// 声明DockId，作为面板注册Dock时的配置
+	// Declare the DockId as the configuration when the panel registers the Dock
 	enum EDockId
 	{
 		Viewport,
@@ -211,7 +206,7 @@ public:
 ``` cpp
 UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 {
-	// 设置布局名
+	// Set layout name
 	LayoutName = LOCTEXT("Default", "Default");
 }
 
@@ -219,14 +214,14 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 {
 	const ImGuiID DockId = ImGui::DockBuilderAddNode(DockSpaceId, ImGuiDockNodeFlags_None);
 
-	// 调用DockBuilderSplitNode划分布局
+	// Call DockBuilderSplitNode to divide the layout
 	ImGuiID RemainAreaId;
 	ImGuiID ViewportId = ImGui::DockBuilderSplitNode(DockSpaceId, ImGuiDir_Left, 0.7f, nullptr, &RemainAreaId);
 	const ImGuiID UtilsId = ImGui::DockBuilderSplitNode(ViewportId, ImGuiDir_Down, 0.3f, nullptr, &ViewportId);
 	const ImGuiID OutlinerId = ImGui::DockBuilderSplitNode(RemainAreaId, ImGuiDir_Up, 0.3f, nullptr, &RemainAreaId);
 	const ImGuiID DetailsId = ImGui::DockBuilderSplitNode(RemainAreaId, ImGuiDir_Down, 0.7f, nullptr, &RemainAreaId);
 
-	// 将声明的DockId与ImGui的实际ID添加映射关系
+	// Add a mapping relationship between the declared DockId and the actual ID of ImGui
 	const TMap<int32, ImGuiID> DockIdMap
 	{
 		{ Viewport, ViewportId },
@@ -234,31 +229,31 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 		{ Details, DetailsId },
 		{ Utils, UtilsId },
 	};
-	// 子面板应用布局信息
+	// Subpanel application layout information
 	ApplyPanelDockSettings(LayoutBuilder, DockIdMap, EDockId::Utils);
 
 	ImGui::DockBuilderFinish(DockId);
 }
 ```
 
-### 新增面板
+### Add panel
 
-继承FUnrealImGuiPanelBuilder下支持的面板基类类型，例如ImGuiWorldDebugger拓展面板就继承UImGuiWorldDebuggerPanelBase
+Inherit the panel base class types supported under FUnrealImGuiPanelBuilder. For example, the ImGuiWorldDebugger extension panel inherits UImGuiWorldDebuggerPanelBase
 
-* 配置Title，无命名的面板不会被注册
-* 配置DefaultDockSpace，添加面板在布局中的位置
-* 重写Draw，实现面板的绘制
+* Configure Title, unnamed panels will not be registered
+* Configure DefaultDockSpace, add the position of the panel in the layout
+* Rewrite Draw to realize panel drawing
 
-#### ImGuiWorldDebuggerViewportPanel面板例子
+#### ImGuiWorldDebuggerViewportPanel panel example
 
 ``` cpp
 UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 {
-	// 声明需要显示菜单栏
+	// Declares that the menu bar needs to be displayed
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
-	// 面板命名
+	// Set panel name
 	Title = LOCTEXT("Viewport", "Viewport");
-	// 默认在ImGuiWorldDebuggerDefaultLayout布局中的位置为Viewport
+	// The default position in the ImGuiWorldDebuggerDefaultLayout layout is Viewport
 	DefaultDockSpace =
 	{
 		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Viewport }
@@ -266,10 +261,35 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 }
 ```
 
-## 冒泡消息提示
+## Bubbling message prompt
 
 [imgui-notify](https://github.com/patrickcjk/imgui-notify)
 
-调用**ImGui::InsertNotification**使用全局的冒泡消息提示  
+Call **ImGui::InsertNotification** to use the global bubbling message prompt  
 
 ![冒泡消息提示](Docs/Notification.gif)  
+
+## Record drawing data and playback (experimental)
+
+### Recording method
+
+Start recording:
+
+* Menu->ImGui_WS->Start Record
+* Console input ImGui.WS.StartRecord
+
+To end recording:
+
+* Menu->ImGui_WS->Stop Record
+* Console input ImGui.WS.StopRecord
+
+### Play back recorded data
+
+Menu->ImGui_WS->Load Record, select the recorded file for review
+
+## Reference warehouse address
+
+* [ImGui](https://github.com/ocornut/imgui)
+  ImGui's repository, which contains ImGui's Wiki
+* [imgui-ws](https://github.com/ggerganov/imgui-ws)
+  Implemented ImGui web page drawing
