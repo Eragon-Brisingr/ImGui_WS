@@ -289,7 +289,7 @@ To end recording:
 
 Menu->ImGui_WS->Load Record, select the recorded file for review
 
-## Reference warehouse address
+## Credits
 
 * [ImGui](https://github.com/ocornut/imgui)
   ImGui's repository, which contains ImGui's Wiki

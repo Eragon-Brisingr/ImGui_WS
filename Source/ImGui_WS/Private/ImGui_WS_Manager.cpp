@@ -243,7 +243,7 @@ public:
 		ImPlot::SetCurrentContext(PlotContext);
 		
 		// setup imgui-ws
-		const FString HtmlPath = PluginPath / TEXT("Source/ImGui_WS/HTML");
+		const FString HtmlPath = PluginPath / TEXT("Resources/HTML");
 		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), { "", "index.html", "imgui-ws.js", "draw-mouse-pos.js" }, [this]
 		{
 			WS_ThreadUpdate();
