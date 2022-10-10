@@ -4,32 +4,33 @@
 
 ![Overview](Docs/Overview.gif)
 
-The Unreal ImGui WS plugin provides the ability to display Unreal debugging information on a remote web page, also supports packaged game. (e.g. standalone DS processes can use this debugger to visualize in-game data)
+Unreal ImGui_WS plugin provides the ability to display debugging information from the unreal engine on remote web pages and also supports packaged games. (e.g. standalone DS processes can use this debugger to preview in-game data visually)
 
 ## Feature
 
-* ImGui web drawing
-* Unreal World Debugger
-  * Unreal world top view
+* ImGui webpage drawing
+* Unreal world debugger
+  * Top view of the unreal world
   * Details panel
   * World outline view
-  * Log and console
+  * Logging and console features
 * Panel layout system
-* ImPlot data visualization library
+* ImPlot data visualization library embedded
+
 
 ## Learn how to use ImGui
 
-Select ImGui_WS on the ImGui webpage, check ImGuiDemo to open the Demo panel  
-For code viewing **ImGuiDemo.cpp**, refer to the widget drawing method required for copying the Demo panel  
-> [imgui_manual](https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html) demo网页版  
+Select ImGui_WS on the ImGui webpage and check ImGuiDemo to open the Demo panel
+For code viewing **ImGuiDemo.cpp**, refer to the widget drawing method required for copying the Demo panel
+imgui_manual demo web version
 
-## Web drawing
+> [imgui_manual](https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html) demo web version  
+
+## Webpage drawing
 
 Click the ImGui button in the lower right corner to open the corresponding webpage, or enter **ImGui.WS.LaunchWeb** in the console to open the webpage
 
-> ImGui_WS drawing is only enabled by default in the editor, and the packaged DS or client is added in the startup parameters
-> -ExecCmds="ImGui.WS.Enable 1"
-> to enable drawing
+> ImGui_WS drawing is only enabled by default under the editor and the packaged DS or client adds ExecCmds="ImGui.WS.Enable 1" in the startup parameters to enable drawing
 
 ### Switch world context
 
@@ -40,8 +41,8 @@ The previewed world can be selected through the world context option under the I
 
 You can set the port number through Config or the command line
 
-1. Configurable port number in ProjectSettings - Plugins - ImGui_WS
-2. ImGui_WS.ini configuration file
+1. Port number can be configured in ProjectSettings - Plugins - ImGui_WS
+2. File configured in ImGui_WS.ini 
     > [/Script/ImGui_WS.ImGui_WS_Settings]  
     GamePort=8890  
     ServerPort=8891  
@@ -51,20 +52,21 @@ You can set the port number through Config or the command line
 
 ### Draw event
 
-UImGui_WS_Manager::GetImGuiContext gets ImGuiContext
-Member OnDraw is the event called for ImGui_WS drawing
-Bind this event to call ImGui to draw a specific panel
+1. Gets ImGuiContext by calling **UImGui_WS_Manager::GetImGuiContext**
+2. Function **OnDraw** draws the invoked event for the ImGui_WS drawing 
+3. Bind this event to call ImGui to draw a specific panel
+
 
 ## World Debugger
 
 World Debugger is the default runtime unreal world debugger provided by this plugin, which provides the function of previewing and setting Actor properties in the game world
 
-> Configurable console variable ImGui.DebugGameWorld controls whether to enable the debug panel, enabled by default
-> If you need to disable this function, you can set ImGuiWorldDebuggerBootstrap::bLaunchImGuiWorldDebugger = false in the game module StartupModule;
+> You can configure the console variable ImGui.DebugGameWorld to control whether the debug panel is enabled. 
+> If you need to turn off this function when enabled by default, you can set ImGuiWorldDebuggerBootstrap:: bLaunchImGuiWorldDebugger = false in the game module StartupModule.
 
-## Unreal top view
+## Top view of the unreal world
 
-> In order to avoid displaying too many unrelated Actors, the default preview will only display Actors that inherit the UImGuiWorldDebuggerDrawerBase declaration.
+To avoid displaying too many unrelated Actors, the default preview will only display Actors drawn that inherit the UImGuiWorldDebuggerDrawerBase declaration.
 
 ![俯视图](Docs/Viewport.png)  
 
@@ -90,7 +92,7 @@ UShootWeaponBulletDrawer::UShootWeaponBulletDrawer()
 }
 ```
 
-* Rewrite functions such as DrawImGuiDebuggerExtendInfo to add extra debugging information to draw
+* Rewrite functions such as DrawImGuiDebuggerExtendInfo to add extra debugging information drawing
 
 ``` cpp
 void UShootWeaponBulletDrawer::DrawImGuiDebuggerExtendInfo(const AActor* Actor, const FImGuiWorldViewportContext& DebuggerContext) const
@@ -102,14 +104,14 @@ void UShootWeaponBulletDrawer::DrawImGuiDebuggerExtendInfo(const AActor* Actor, 
 }
 ```
 
-### Add extra world info to draw
+### Add extra world information drawing
 
-Inherit UImGuiWorldDebuggerViewportPanel and override the following virtual functions
+Inherit UImGuiWorldDebuggerViewportPanel and rewrite the following virtual functions
 
-* DrawDebugInfoUnderActors draws additional debug info under Actors
-* DrawDebugInfoUpperActors draws additional debug information on top of Actors
+* DrawDebugInfoUnderActors draws extra debugging information on the lower layer of Actors
+* DrawDebugInfoUpperActors draws extra debugging information on the upper layer of Actors
 
-It is recommended to add a **switch** to each world debugging information to avoid displaying too many elements in the debugging world at the same time
+It is recommended to add a **switch** to debug information for each world to avoid displaying too many elements in the debugging world at the same time
 
 ``` cpp
 // declare switch
@@ -135,13 +137,13 @@ if (ImGui::BeginMenu("Example Menu"))
 
 ## UObject Details Panel
 
-Can draw all the properties of the incoming UObject instance, support multi-select editing
+All properties of the incoming UObject instance can be drawn, and multi-select editing is supported
 
 ![Details](Docs/Details.png)  
 
 For usage, please refer to **UImGuiWorldDebuggerDetailsPanel::Draw**
 
-### Add custom types of drawing methods
+### Add drawing methods of custom types
 
 See how **FStructCustomizerScoped** is used
 
@@ -156,29 +158,29 @@ See how **FStructCustomizerScoped** is used
 
 ### UnrealImGuiPanelBuilder
 
-FUnrealImGuiPanelBuilder is used to build the layout of its own window, and the following parameters need to be configured
+FUnrealImGuiPanelBuilder is used to build the layout of its window, and the following parameters need to be configured
 
-| property          | describe                                                                                |
-|-------------------|-----------------------------------------------------------------------------------------|
-| DockSpaceName     | the name of the layout system                                                           |
-| SupportLayoutType | Supported layout types, subclasses of the layout will be collected to the layout system |
-| SupportPanelType  | Supported panel types, subclasses of this panel will be collected to this layout system |
+| property          | describe                                                                                   |
+|-------------------|--------------------------------------------------------------------------------------------|
+| DockSpaceName     | the name of the layout system                                                              |
+| SupportLayoutType | Supported layout types, subclasses of the layout will be collected into this layout system |
+| SupportPanelType  | Supported panel types, subclasses of this panel will be collected into this layout system  |
 
-After configuring the description information of the layout system, call the following method to draw the panel
+After configuring the description information of the layout system, call the following methods to draw the panel
 
-| method            | describe                                                  |
-|-------------------|-----------------------------------------------------------|
-| Register          | Register the layout system and call it when it is created |
-| Unregister        | Unregister the layout system, called when destroyed       |
-| DrawPanels        | draws the panels under this layout system                 |
-| LoadDefaultLayout | Reload activate layout                                    |
+| method            | describe                                                      |
+|-------------------|---------------------------------------------------------------|
+| Register          | Register the layout system and call it when it is created     |
+| Unregister        | Unregister the layout system and call it when it is destroyed |
+| DrawPanels        | Draw the panels under the layout system                       |
+| LoadDefaultLayout | Reload the activated layout                                   |
 
 ### Add layout
 
-Inherit the layout base class types supported under FUnrealImGuiPanelBuilder, for example, ImGuiWorldDebugger extends the layout and inherits UImGuiWorldDebuggerLayoutBase
+Inherit the layout base class types supported under FUnrealImGuiPanelBuilder. For example, ImGuiWorldDebugger extended layout inherits UImGuiWorldDebuggerLayoutBase
 
-* Configure LayoutName, layout without layout name will not be displayed
-* Override LoadDefaultLayout to declare the default layout structure
+* Configure LayoutName. Unnamed layouts will not be displayed
+* Rewrite LoadDefaultLayout to declare the default layout structure
 
 #### ImGuiWorldDebugger default layout example
 
@@ -238,10 +240,10 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 
 ### Add panel
 
-Inherit the panel base class types supported under FUnrealImGuiPanelBuilder. For example, the ImGuiWorldDebugger extension panel inherits UImGuiWorldDebuggerPanelBase
+Inherit the panel base class types supported under FUnrealImGuiPanelBuilder. For example, the ImGuiWorldDebugger extended panel inherits UImGuiWorldDebuggerPanelBase
 
-* Configure Title, unnamed panels will not be registered
-* Configure DefaultDockSpace, add the position of the panel in the layout
+* Configure Title. Unnamed panels will not be registered
+* Configure DefaultDockSpace to add the position of the panel in the layout
 * Rewrite Draw to realize panel drawing
 
 #### ImGuiWorldDebuggerViewportPanel panel example
@@ -261,11 +263,11 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 }
 ```
 
-## Bubbling message
+## Bubbling message prompt
 
 [imgui-notify](https://github.com/patrickcjk/imgui-notify)
 
-Call **ImGui::InsertNotification** to use the global bubbling message  
+Call **ImGui::InsertNotification** to use the global bubbling message prompt
 
 ![Bubbling message](Docs/Notification.gif)  
 
@@ -276,12 +278,12 @@ Call **ImGui::InsertNotification** to use the global bubbling message
 Start recording:
 
 * Menu->ImGui_WS->Start Record
-* Console input ImGui.WS.StartRecord
+* Console input **ImGui.WS.StartRecord**
 
 To end recording:
 
 * Menu->ImGui_WS->Stop Record
-* Console input ImGui.WS.StopRecord
+* Console input **ImGui.WS.StopRecord**
 
 ### Play back recorded data
 
