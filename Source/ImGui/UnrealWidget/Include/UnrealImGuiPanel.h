@@ -67,3 +67,9 @@ protected:
 
 	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, float DeltaSeconds);
 };
+
+UCLASS(Abstract)
+class IMGUI_API UUnrealImGuiDefaultPanelBase : public UUnrealImGuiPanelBase
+{
+	GENERATED_BODY()
+};

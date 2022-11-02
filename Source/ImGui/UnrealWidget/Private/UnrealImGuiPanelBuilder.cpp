@@ -5,23 +5,16 @@
 
 #include "imgui.h"
 #include "UnrealImGuiLayout.h"
-#include "UnrealImGuiLogPanel.h"
-#include "UnrealImGuiObjectBrowser.h"
 #include "UnrealImGuiPanel.h"
-#include "UnrealImGuiStatPanel.h"
 
 FUnrealImGuiPanelBuilder::FUnrealImGuiPanelBuilder()
 {
-	ExternSupportPanelTypes.Append({
-		UUnrealImGuiObjectBrowserPanel::StaticClass(),
-		UUnrealImGuiStatPanel::StaticClass(),
-		UUnrealImGuiLogPanel::StaticClass(),
-	});
+	SupportPanelTypes.Add(UUnrealImGuiDefaultPanelBase::StaticClass());
 }
 
 void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 {
-	if (DockSpaceName == NAME_None || SupportPanelType == nullptr || SupportLayoutType == nullptr)
+	if (DockSpaceName == NAME_None || SupportPanelTypes.Num() == 0 || SupportPanelTypes.Contains(nullptr) || SupportLayoutType == nullptr)
 	{
 		checkNoEntry();
 		return;
@@ -76,13 +69,11 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		}
 	}
 
+	TSet<const UClass*> Visited;
+	for (const TSubclassOf<UUnrealImGuiPanelBase>& SupportPanelType : SupportPanelTypes)
 	{
 		TArray<UClass*> PanelClasses;
 		GetDerivedClasses(SupportPanelType, PanelClasses);
-		for (const TSubclassOf<UUnrealImGuiPanelBase>& ExternSupportPanelType : ExternSupportPanelTypes)
-		{
-			PanelClasses.AddUnique(ExternSupportPanelType);
-		}
 		RemoveNotLeafClass(PanelClasses);
 		TSet<FName> ExistPanelNames;
 		for (const UClass* Class : PanelClasses)
@@ -91,6 +82,12 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 			{
 				continue;
 			}
+
+			if (Visited.Contains(Class))
+			{
+				continue;
+			}
+			Visited.Add(Class);
 			
 			const FName PanelName = *Class->GetDefaultObject<UUnrealImGuiPanelBase>()->Title.ToString();
 			if (ensure(PanelName != NAME_None && ExistPanelNames.Contains(PanelName) == false))
@@ -101,24 +98,24 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				Panels.Add(Panel);
 			}
 		}
+	}
 
-		const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
-		for (UUnrealImGuiPanelBase* Panel : Panels)
+	const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
+	for (UUnrealImGuiPanelBase* Panel : Panels)
+	{
+		if (const bool* IsOpenPtr = Panel->PanelOpenState.Find(Layout->GetClass()->GetFName()))
 		{
-			if (const bool* IsOpenPtr = Panel->PanelOpenState.Find(Layout->GetClass()->GetFName()))
-			{
-				Panel->SetOpenState(*IsOpenPtr);
-			}
-			else if (const auto* LayoutSettings = Panel->DefaultDockSpace.Find(Layout->GetClass()->GetFName()))
-			{
-				Panel->SetOpenState(LayoutSettings->bOpen);
-			}
-			else
-			{
-				Panel->SetOpenState(Panel->DefaultState.bOpen);
-			}
-			Panel->Register(Owner);
+			Panel->SetOpenState(*IsOpenPtr);
 		}
+		else if (const auto* LayoutSettings = Panel->DefaultDockSpace.Find(Layout->GetClass()->GetFName()))
+		{
+			Panel->SetOpenState(LayoutSettings->bOpen);
+		}
+		else
+		{
+			Panel->SetOpenState(Panel->DefaultState.bOpen);
+		}
+		Panel->Register(Owner);
 	}
 }
 

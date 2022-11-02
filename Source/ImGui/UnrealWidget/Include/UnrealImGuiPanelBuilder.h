@@ -25,10 +25,7 @@ public:
 	TSubclassOf<UUnrealImGuiLayoutBase> SupportLayoutType;
 	// 支持的面板类型，该面板的子类都会被搜集至该布局系统
 	UPROPERTY(Transient)
-	TSubclassOf<UUnrealImGuiPanelBase> SupportPanelType;
-	// 额外支持的面板类型，不用为SupportPanelType的子类
-	UPROPERTY(Transient)
-	TArray<TSubclassOf<UUnrealImGuiPanelBase>> ExternSupportPanelTypes;
+	TArray<TSubclassOf<UUnrealImGuiPanelBase>> SupportPanelTypes;
 
 	void Register(UObject* Owner);
 	void Unregister(UObject* Owner);

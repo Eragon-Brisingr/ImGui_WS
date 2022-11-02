@@ -44,7 +44,7 @@ FImGuiEditorDefaultLayoutBuilder::FImGuiEditorDefaultLayoutBuilder()
 {
 	DockSpaceName = TEXT("ImGuiEditorDefaultLayoutDockSpace");
 	SupportLayoutType = UImGuiEditorDefaultLayoutBase::StaticClass();
-	SupportPanelType = UImGuiEditorDefaultPanelBase::StaticClass();
+	SupportPanelTypes.Add(UImGuiEditorDefaultPanelBase::StaticClass());
 	Register(GetTransientPackage());
 }
 

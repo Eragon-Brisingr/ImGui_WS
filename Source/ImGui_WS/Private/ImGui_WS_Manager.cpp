@@ -185,7 +185,7 @@ public:
 		ImGuiIO& IO = ImGui::GetIO();
 
 		// Initialize notify
-		ImGui::MergeIconsWithLatestFont(16.f * DPIScale, false);
+		ImGui::MergeIconsWithLatestFont(12.f * DPIScale, false);
 
 		IO.KeyMap[ImGuiKey_Tab]         = 9;
 		IO.KeyMap[ImGuiKey_LeftArrow]   = 37;

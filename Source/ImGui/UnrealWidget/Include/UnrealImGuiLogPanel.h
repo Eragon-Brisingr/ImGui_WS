@@ -12,7 +12,7 @@
  * 
  */
 UCLASS()
-class IMGUI_API UUnrealImGuiLogPanel : public UUnrealImGuiPanelBase
+class IMGUI_API UUnrealImGuiLogPanel : public UUnrealImGuiDefaultPanelBase
 {
 	GENERATED_BODY()
 public:
