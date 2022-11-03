@@ -19,5 +19,5 @@ namespace ImGui
 	IMGUI_API void RenderNotifications();
 
 	IMGUI_API void InsertNotification(ImGuiToastType type, const char* format, ...);
-	IMGUI_API void InsertNotification(ImGuiToastType type, int dismiss_time, const char* format, ...);
+	IMGUI_API void InsertNotification(ImGuiToastType type, float dismiss_seconds, const char* format, ...);
 }

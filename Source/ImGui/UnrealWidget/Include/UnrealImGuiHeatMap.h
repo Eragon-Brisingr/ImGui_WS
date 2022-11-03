@@ -63,7 +63,7 @@ namespace UnrealImGui
 		THeatMap(const float UnitSize, const int32 PreGridUnitCount)
 			: FHeatMapBase(UnitSize, PreGridUnitCount, sizeof(TUnit))
 		{}
-		struct FGrid : protected FGridBase
+		struct FGrid : FGridBase
 		{
 			TUnit& GetUnit(int32 Index) { return static_cast<TUnit*>(Units)[Index]; }
 		};

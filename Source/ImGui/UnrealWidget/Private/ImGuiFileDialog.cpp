@@ -3,6 +3,7 @@
 #include "ImGuiFileDialog.h"
 #include <filesystem>
 #include <sstream>
+#include <vector>
 
 #include "imgui.h"
 #include "imgui_internal.h"

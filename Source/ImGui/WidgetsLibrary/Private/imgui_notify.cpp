@@ -367,11 +367,11 @@ namespace ImGui
 		va_end(args);
 	}
 
-	void InsertNotification(ImGuiToastType type, int dismiss_time, const char* format, ...)
+	void InsertNotification(ImGuiToastType type, float dismiss_seconds, const char* format, ...)
 	{
 		va_list args;
 		va_start(args, format);
-		InsertNotification({ type, dismiss_time, format, args });
+		InsertNotification({ type, int(dismiss_seconds * 1000.f), format, args });
 		va_end(args);
 	}
 }
