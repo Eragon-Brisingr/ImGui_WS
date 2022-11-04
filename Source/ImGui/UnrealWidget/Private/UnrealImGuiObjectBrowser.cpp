@@ -22,7 +22,7 @@ UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
 
 void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, float DeltaSeconds)
 {
-		if (ImGui::BeginChild("ObjectPathViewer", { 0.f, 30.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar))
+	if (ImGui::BeginChild("ObjectPathViewer", { 0.f, 30.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar))
 	{
 		if (ImGui::Button("Root"))
 		{
