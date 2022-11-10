@@ -26,17 +26,20 @@ namespace UnrealImGui
 
 		struct FLog
 		{
-			FLog(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category)
-				: LogString{ Message }
-				, Verbosity(Verbosity)
-				, Category(Category)
-			{}
-
 			FUTF8String LogString;
 			ELogVerbosity::Type Verbosity;
 			FName Category;
 		};
-		TArray<FLog> Logs;
+		static constexpr int32 PreChunkLogCount = 1024 * 1024 / sizeof(FLog);
+		struct FLogCollections : TChunkedArray<FLog, sizeof(FLog) * PreChunkLogCount>
+		{
+			void RemoveFirstChunk()
+			{
+				NumElements -= PreChunkLogCount;
+				Chunks.RemoveAt(0);
+			}
+		};
+		FLogCollections Logs;
 		TSet<FName> CategoryNames;
 
 		void Register(FUnrealImGuiLogDevice* LogDevice);

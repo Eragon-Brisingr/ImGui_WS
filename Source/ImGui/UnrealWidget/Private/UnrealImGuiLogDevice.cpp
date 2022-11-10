@@ -78,7 +78,7 @@ namespace UnrealImGui
 		const ELogVerbosity::Type TestVerbosity = static_cast<ELogVerbosity::Type>(Verbosity & ELogVerbosity::VerbosityMask);
 		if (TestVerbosity)
 		{
-			int32 LogLine = Logs.Add(FLog{ Message, TestVerbosity, Category });
+			int32 LogLine = Logs.AddElement(FLog{ Message, TestVerbosity, Category });
 			const SIZE_T LogSize = sizeof(FLog) + Logs[LogLine].LogString.GetAllocatedSize();
 			AllLogSize += LogSize;
 
@@ -86,11 +86,16 @@ namespace UnrealImGui
 			{
 				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UnrealImGuiOutputDevice_RemoveTopLog"), STAT_UnrealImGuiOutputDevice_RemoveTopLog, STATGROUP_ImGui);
 
-				// TODO:使用TArray作为容器移除头元素开销太大
 				while (AllLogSize > MaxLogSize)
 				{
-					LogLine -= 1;
-					const SIZE_T RemoveLogSize = sizeof(FLog) + Logs[0].LogString.GetAllocatedSize();
+					SIZE_T RemoveLogSize = 0;
+					int32 RemoveLogCounter = 0;
+					for (int32 Idx = 0; Idx < PreChunkLogCount; ++Idx)
+					{
+						RemoveLogCounter += 1;
+						RemoveLogSize += sizeof(FLog) + Logs[Idx].LogString.GetAllocatedSize();
+					}
+					LogLine -= RemoveLogCounter;
 					AllLogSize -= RemoveLogSize;
 					for (FUnrealImGuiLogDevice* LogDevice : LogDevices)
 					{
@@ -98,12 +103,12 @@ namespace UnrealImGui
 						{
 							if (LogDevice->CanLogDisplay(Logs[LogDevice->DisplayLines[0] + LogDevice->DisplayLineIndexOffset]))
 							{
-								LogDevice->DisplayLines.RemoveAt(0);
+								LogDevice->DisplayLines.RemoveAt(0, RemoveLogCounter);
 							}
 						}
-						LogDevice->DisplayLineIndexOffset -= 1;
+						LogDevice->DisplayLineIndexOffset -= RemoveLogCounter;
 					}
-					Logs.RemoveAt(0);
+					Logs.RemoveFirstChunk();
 				}
 			}
 			SET_MEMORY_STAT(Stat_UnrealImGuiOutputDevice_Logs, AllLogSize);
@@ -282,7 +287,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 			{
 				FString ToClipboardText;
 				const auto& Logs = UnrealImGui::GUnrealImGuiOutputDevice->Logs;
-				for (const int32 Idx : DisplayLines)
+				for (int32 Idx = 0; Idx < DisplayLines.Num(); ++Idx)
 				{
 					const auto& Log = Logs[DisplayLines[Idx] + DisplayLineIndexOffset];
 					ToClipboardText += FString::Printf(TEXT("%s: %s: %s"), *Log.Category.ToString(), ToString(Log.Verbosity), UTF8_TO_TCHAR(*Log.LogString));
