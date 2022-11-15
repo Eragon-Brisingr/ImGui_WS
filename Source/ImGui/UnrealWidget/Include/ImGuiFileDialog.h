@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <string>
-
 namespace UnrealImGui
 {
 	enum class FileDialogType : uint8
@@ -21,11 +19,11 @@ namespace UnrealImGui
 
 	struct IMGUI_API FFileDialogState
 	{
-		int FileSelectIndex = 0;
-		int FolderSelectIndex = 0;
-		std::string CurrentPath;
-		std::string CurrentFile;
-		std::string FileDialogCurrentFolder;
+		int32 FileSelectIndex = 0;
+		int32 FolderSelectIndex = 0;
+		FString CurrentPath;
+		FString CurrentFile;
+		FString FileDialogCurrentFolder;
 		FileDialogSortOrder FileNameSortOrder = FileDialogSortOrder::None;
 		FileDialogSortOrder SizeSortOrder = FileDialogSortOrder::None;
 		FileDialogSortOrder DateSortOrder = FileDialogSortOrder::None;

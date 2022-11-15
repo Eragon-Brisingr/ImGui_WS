@@ -33,6 +33,7 @@ namespace UnrealImGui
 		void Reset(SizeType NewSize = 0) { Super::Reset(NewSize + 1); Add('\0'); }
 		void Empty(SizeType Slack = 0) { Super::Empty(Slack + 1); Add('\0'); }
 		bool IsEmpty() const { return (*this)[0] == '\0'; }
+		int32 Len() const { return Num() - 1; }
 
 		ANSICHAR* GetData() { return Super::GetData(); }
 		const ANSICHAR* GetData() const { return Super::GetData(); }

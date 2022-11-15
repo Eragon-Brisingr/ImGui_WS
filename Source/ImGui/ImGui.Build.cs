@@ -25,6 +25,8 @@ public class ImGui : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
         {
 			"EngineSettings",
+			"Slate",
+			"DesktopPlatform",
 		});
 		
 		PublicIncludePaths.AddRange(new string[] {
