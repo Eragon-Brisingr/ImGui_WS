@@ -29,7 +29,7 @@ namespace UnrealImGui
 		const float GridSize;
 		const uint32 UnitTypeSize;
 		using FUnit = FHeatMapUnit;
-		FGridLocation ToGridLocation(const FVector2D& WorldLocation) const { return { FMath::FloorToInt(WorldLocation.X / GridSize), FMath::FloorToInt(WorldLocation.Y / GridSize) }; }
+		FGridLocation ToGridLocation(const FVector2D& WorldLocation) const { return { FMath::FloorToInt((float)WorldLocation.X / GridSize), FMath::FloorToInt((float)WorldLocation.Y / GridSize) }; }
 		FUnitLocation ToUnitLocation(const FGridLocation& GridLocation, const FVector2D& WorldLocation) const
 		{
 			const int32 UnitX = FMath::FloorToInt((WorldLocation.X - GridLocation.X * GridSize) / UnitSize);

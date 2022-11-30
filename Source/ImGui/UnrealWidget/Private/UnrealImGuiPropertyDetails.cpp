@@ -180,16 +180,15 @@ namespace UnrealImGui
 		// 注册默认的结构体自定义显示实现
 		struct StaticGetBaseStructure
 		{
-			static UScriptStruct* Get(FName Name)
+			static UScriptStruct* Get(FStringView Name)
 			{
 				static UPackage* CoreUObjectPkg = FindObjectChecked<UPackage>(nullptr, TEXT("/Script/CoreUObject"));
-
-				UScriptStruct* Result = (UScriptStruct*)StaticFindObjectFast(UScriptStruct::StaticClass(), CoreUObjectPkg, Name, false, false, RF_NoFlags, EInternalObjectFlags::None);
+				UScriptStruct* Result = FindObjectChecked<UScriptStruct>(CoreUObjectPkg, Name.GetData());
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				if (!Result)
 				{
-					UE_LOG(LogClass, Fatal, TEXT("Failed to find native struct '%s.%s'"), *CoreUObjectPkg->GetName(), *Name.ToString());
+					UE_LOG(LogClass, Fatal, TEXT("Failed to find native struct '%s.%s'"), *CoreUObjectPkg->GetName(), Name.GetData());
 				}
 #endif
 				return Result;

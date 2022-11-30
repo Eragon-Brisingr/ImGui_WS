@@ -366,7 +366,7 @@ namespace UnrealImGui
 					FARFilter ARFilter;
 					ARFilter.bRecursivePaths = true;
 					ARFilter.bRecursiveClasses = true;
-					ARFilter.ClassNames.Add(ObjectClass->GetFName());
+					ARFilter.ClassPaths.Add(FTopLevelAssetPath{ ObjectClass });
 					AssetRegistry.GetAssets(ARFilter, CachedAssetList);
 					const FString Filter = FilterString.ToString();
 					if (Filter.IsEmpty() == false)
@@ -403,7 +403,7 @@ namespace UnrealImGui
 							if (ImGui::IsItemHovered())
 							{
 								ImGui::BeginTooltip();
-								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.GetSoftObjectPath().ToString()));
 								ImGui::EndTooltip();
 							}
 						}
@@ -604,7 +604,7 @@ namespace UnrealImGui
 					FARFilter ARFilter;
 					ARFilter.bRecursivePaths = true;
 					ARFilter.bRecursiveClasses = true;
-					ARFilter.ClassNames.Add(ObjectClass->GetFName());
+					ARFilter.ClassPaths.Add(FTopLevelAssetPath{ ObjectClass });
 					AssetRegistry.GetAssets(ARFilter, CachedAssetList);
 					const FString Filter = FilterString.ToString();
 					if (Filter.IsEmpty() == false)
@@ -624,7 +624,7 @@ namespace UnrealImGui
 						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
 						{
 							const FAssetData& Asset = CachedAssetList[Idx];
-							const bool IsSelected = FirstValue.GetUniqueID().GetAssetPathName() == Asset.ObjectPath;
+							const bool IsSelected = FirstValue.GetUniqueID() == Asset.GetSoftObjectPath();
 							if (ImGui::Selectable(TCHAR_TO_UTF8(*Asset.AssetName.ToString()), IsSelected))
 							{
 								const FSoftObjectPtr NewValue{Asset.ToSoftObjectPath()};
@@ -642,7 +642,7 @@ namespace UnrealImGui
 							if (ImGui::IsItemHovered())
 							{
 								ImGui::BeginTooltip();
-								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.ObjectPath.ToString()));
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.GetSoftObjectPath().ToString()));
 								ImGui::EndTooltip();
 							}
 						}
