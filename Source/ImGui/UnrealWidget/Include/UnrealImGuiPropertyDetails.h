@@ -15,12 +15,28 @@ namespace UnrealImGui
 		IMGUI_API extern bool GDisplayAllProperties;
 	}
 	
-	constexpr int32 ArrayInlineAllocateSize = 8;
+	constexpr int32 ArrayInlineAllocateSize = 1;
 	using FStructArray = TArray<uint8*, TInlineAllocator<ArrayInlineAllocateSize>>;
+	template<typename T>
+	struct TStructArray : TArray<T*, TInlineAllocator<ArrayInlineAllocateSize>>
+	{
+		TStructArray() = default;
+		TStructArray(std::initializer_list<T*> InitList)
+			: TArray<T*, TInlineAllocator<ArrayInlineAllocateSize>>{ InitList }
+		{}
+		operator const FStructArray& () const
+		{
+			return reinterpret_cast<const FStructArray&>(*this);
+		}
+	};
 	using FObjectArray = TArray<UObject*, TInlineAllocator<ArrayInlineAllocateSize>>;
 	template<typename T>
-	struct TObjectArray : public TArray<T*, TInlineAllocator<ArrayInlineAllocateSize>>
+	struct TObjectArray : TArray<T*, TInlineAllocator<ArrayInlineAllocateSize>>
 	{
+		TObjectArray() = default;
+		TObjectArray(std::initializer_list<T*> InitList)
+			: TArray<T*, TInlineAllocator<ArrayInlineAllocateSize>>{ InitList }
+		{}
 		operator const FObjectArray& () const
 		{
 			return reinterpret_cast<const FObjectArray&>(*this);

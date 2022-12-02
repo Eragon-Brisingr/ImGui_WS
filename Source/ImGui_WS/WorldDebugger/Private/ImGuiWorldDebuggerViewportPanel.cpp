@@ -174,7 +174,11 @@ void UImGuiWorldDebuggerViewportPanel::WhenFilterStringChanged(const FString& Fi
 		FilterActorType = 0;
 		if (FilterType == EFilterActorType::TypeFilter_FilterType)
 		{
-			FilterActorClass = FindObject<UClass>(ANY_PACKAGE, *FilterValue);
+			FilterActorClass = UClass::TryFindTypeSlow<UClass>(FilterValue);
+			if (FilterActorClass.IsValid() == false)
+			{
+				FilterActorClass = LoadObject<UClass>(nullptr, *FilterValue);
+			}
 			if (FilterActorClass.IsValid())
 			{
 				FilterActorType = EFilterActorType::TypeFilter;
