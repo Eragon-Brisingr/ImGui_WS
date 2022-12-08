@@ -160,11 +160,11 @@ if (ImGui::BeginMenu("Example Menu"))
 
 FUnrealImGuiPanelBuilder用于构建所属窗口的布局，需要配置以下参数
 
-| 属性名               | 描述                        |
-|-------------------|---------------------------|
-| DockSpaceName     | 该布局系统的名称                  |
-| SupportLayoutType | 支持的布局类型，该布局的子类都会被搜集至该布局系统 |
-| SupportPanelType  | 支持的面板类型，该面板的子类都会被搜集至该布局系统 |
+| 属性名                | 描述                        |
+|--------------------|---------------------------|
+| DockSpaceName      | 该布局系统的名称                  |
+| SupportLayoutTypes | 支持的布局类型，该布局的子类都会被搜集至该布局系统 |
+| SupportPanelTypes  | 支持的面板类型，该面板的子类都会被搜集至该布局系统 |
 
 配置完布局系统的描述信息后调用以下方法进行面板的绘制
 

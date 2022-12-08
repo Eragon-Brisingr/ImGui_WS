@@ -43,7 +43,7 @@ FString FImGuiEditorDefaultLayoutBuilder::GetReferencerName() const
 FImGuiEditorDefaultLayoutBuilder::FImGuiEditorDefaultLayoutBuilder()
 {
 	DockSpaceName = TEXT("ImGuiEditorDefaultLayoutDockSpace");
-	SupportLayoutType = UImGuiEditorDefaultLayoutBase::StaticClass();
+	SupportLayoutTypes.Add(UImGuiEditorDefaultLayoutBase::StaticClass());
 	SupportPanelTypes.Add(UImGuiEditorDefaultPanelBase::StaticClass());
 	Register(GetTransientPackage());
 }

@@ -160,11 +160,11 @@ See how **FStructCustomizerScoped** is used
 
 FUnrealImGuiPanelBuilder is used to build the layout of its own window, and the following parameters need to be configured
 
-| property          | describe                                                                                |
-|-------------------|-----------------------------------------------------------------------------------------|
-| DockSpaceName     | the name of the layout system                                                           |
-| SupportLayoutType | Supported layout types, subclasses of the layout will be collected to the layout system |
-| SupportPanelType  | Supported panel types, subclasses of this panel will be collected to this layout system |
+| property           | describe                                                                                |
+|--------------------|-----------------------------------------------------------------------------------------|
+| DockSpaceName      | the name of the layout system                                                           |
+| SupportLayoutTypes | Supported layout types, subclasses of the layout will be collected to the layout system |
+| SupportPanelTypes  | Supported panel types, subclasses of this panel will be collected to this layout system |
 
 After configuring the description information of the layout system, call the following method to draw the panel
 

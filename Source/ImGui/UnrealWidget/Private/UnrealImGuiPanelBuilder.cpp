@@ -14,7 +14,7 @@ FUnrealImGuiPanelBuilder::FUnrealImGuiPanelBuilder()
 
 void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 {
-	if (DockSpaceName == NAME_None || SupportPanelTypes.Num() == 0 || SupportPanelTypes.Contains(nullptr) || SupportLayoutType == nullptr)
+	if (DockSpaceName == NAME_None || SupportPanelTypes.Num() == 0 || SupportPanelTypes.Contains(nullptr) || SupportLayoutTypes.Num() == 0)
 	{
 		checkNoEntry();
 		return;
@@ -38,6 +38,8 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		}
 	};
 	
+	TSet<const UClass*> VisitedLayoutClasses;
+	for (const TSubclassOf<UUnrealImGuiLayoutBase>& SupportLayoutType : SupportLayoutTypes)
 	{
 		TArray<UClass*> LayoutClasses;
 		GetDerivedClasses(SupportLayoutType, LayoutClasses);
@@ -49,6 +51,12 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 			{
 				continue;
 			}
+
+			if (VisitedLayoutClasses.Contains(Class))
+			{
+				continue;
+			}
+			VisitedLayoutClasses.Add(Class);
 
 			const FName LayoutName = *Class->GetDefaultObject<UUnrealImGuiLayoutBase>()->LayoutName.ToString();
 			if (ensure(LayoutName != NAME_None && ExistLayoutNames.Contains(LayoutName) == false))
@@ -69,7 +77,7 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		}
 	}
 
-	TSet<const UClass*> Visited;
+	TSet<const UClass*> VisitedPanelClasses;
 	for (const TSubclassOf<UUnrealImGuiPanelBase>& SupportPanelType : SupportPanelTypes)
 	{
 		TArray<UClass*> PanelClasses;
@@ -83,11 +91,11 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
-			if (Visited.Contains(Class))
+			if (VisitedPanelClasses.Contains(Class))
 			{
 				continue;
 			}
-			Visited.Add(Class);
+			VisitedPanelClasses.Add(Class);
 			
 			const FName PanelName = *Class->GetDefaultObject<UUnrealImGuiPanelBase>()->Title.ToString();
 			if (ensure(PanelName != NAME_None && ExistPanelNames.Contains(PanelName) == false))
