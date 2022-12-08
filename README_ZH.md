@@ -53,9 +53,9 @@ ImGui_WS插件提供了虚幻调试信息远程网页显示的能力，支持打
 
 ### 绘制事件
 
-UImGui_WS_Manager::GetImGuiContext获取到ImGuiContext  
-成员OnDraw为ImGui_WS绘制调用的事件  
-绑定该事件调用ImGui绘制特定的面板
+* 从**UImGui_WS_Manager::GetImGuiContext**获取到ImGuiContext  
+* 成员**OnDraw**为ImGui_WS绘制调用的事件  
+* 绑定该事件调用ImGui绘制特定的面板
 
 ## World Debugger
 
@@ -66,7 +66,7 @@ World Debugger为本插件提供的默认运行时虚幻世界调试器，提供
 
 ## 虚幻俯视图
 
-> 为了避免无关的Actor显示太多，默认预览只会显示继承UImGuiWorldDebuggerDrawerBase声明绘制的Actor
+为了避免无关的Actor显示太多，默认预览只会显示继承UImGuiWorldDebuggerDrawerBase声明绘制的Actor
 
 ![俯视图](Docs/Viewport.png)  
 
@@ -278,12 +278,12 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 开始录制：
 
 * 菜单->ImGui_WS->Start Record
-* 控制台输入ImGui.WS.StartRecord
+* 控制台输入**ImGui.WS.StartRecord**
 
 结束录制：
 
 * 菜单->ImGui_WS->Stop Record
-* 控制台输入ImGui.WS.StopRecord
+* 控制台输入**ImGui.WS.StopRecord**
 
 ### 回放录制数据
 
