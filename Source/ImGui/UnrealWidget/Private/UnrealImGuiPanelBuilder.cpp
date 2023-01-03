@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "UnrealImGuiLayout.h"
 #include "UnrealImGuiPanel.h"
+#include "UnrealImGuiStat.h"
 
 FUnrealImGuiPanelBuilder::FUnrealImGuiPanelBuilder()
 {
@@ -154,6 +155,8 @@ void FUnrealImGuiPanelBuilder::LoadDefaultLayout(UObject* Owner)
 
 void FUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 {
+	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UnrealImGuiPanelBuilder_DrawPanels"), STAT_UnrealImGuiPanelBuilder_DrawPanels, STATGROUP_ImGui);
+	
 	UUnrealImGuiLayoutBase* Layout = Layouts[ActiveLayoutIndex];
 	Layout->CreateDockSpace(Owner, *this);
 	for (UUnrealImGuiPanelBase* Panel : Panels)

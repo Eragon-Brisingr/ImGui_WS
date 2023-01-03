@@ -84,9 +84,9 @@ void UImGuiWorldDebuggerViewportPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 			return;
 		}
 
-		for (UClass* TestClass = Actor->GetClass(); TestClass != UObject::StaticClass(); TestClass = TestClass->GetSuperClass())
+		for (const UClass* TestClass = Actor->GetClass(); TestClass != UObject::StaticClass(); TestClass = TestClass->GetSuperClass())
 		{
-			if (TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawerMap.Find(TestClass))
+			if (const TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawerMap.Find(TestClass))
 			{
 				DrawableActors.Add(Actor, *Drawer);
 				Actor->OnEndPlay.AddUniqueDynamic(this, &UImGuiWorldDebuggerViewportPanel::WhenActorEndPlay);
