@@ -78,7 +78,7 @@ namespace UnrealImGui
 		const ELogVerbosity::Type TestVerbosity = static_cast<ELogVerbosity::Type>(Verbosity & ELogVerbosity::VerbosityMask);
 		if (TestVerbosity)
 		{
-			int32 LogLine = Logs.AddElement(FLog{ Message, TestVerbosity, Category });
+			int32 LogLine = Logs.AddElement(FLog{ Message, TestVerbosity, Category, FDateTime::Now(), GFrameCounter });
 			const SIZE_T LogSize = sizeof(FLog) + Logs[LogLine].LogString.GetAllocatedSize();
 			AllLogSize += LogSize;
 
@@ -137,6 +137,8 @@ namespace UnrealImGui
 
 FUnrealImGuiLogDevice::FUnrealImGuiLogDevice()
 	: VerbosityVisibility{ true, true, true, true, true, true, false }
+	, bDisplayTime(false)
+	, bDisplayFrame(false)
 	, bIsFirstDraw(2)
 {}
 
@@ -159,6 +161,22 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 	
 	if (ImGui::BeginMenuBar())
 	{
+		if (ImGui::BeginMenu("Info"))
+		{
+			bool IsDisplay = bDisplayTime;
+			if (ImGui::Checkbox("Display Time", &IsDisplay))
+			{
+				bDisplayTime = IsDisplay;
+				Owner->SaveConfig();
+			}
+			IsDisplay = bDisplayFrame;
+			if (ImGui::Checkbox("Display Frame", &IsDisplay))
+			{
+				bDisplayFrame = IsDisplay;
+				Owner->SaveConfig();
+			}
+			ImGui::EndMenu();
+		}
 		if (ImGui::BeginMenu("Verbosity"))
 		{
 			for (uint8 VerbosityIdx = ELogVerbosity::All; VerbosityIdx > ELogVerbosity::NoLogging; --VerbosityIdx)
@@ -240,7 +258,24 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 				const auto& Log = UnrealImGui::GUnrealImGuiOutputDevice->Logs[LogIndex];
 
 				ImGui::PushStyleColor(ImGuiCol_Text, UnrealImGui::ToColor(Log.Verbosity));
+				if (bDisplayTime)
+				{
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Log.Time.ToString()));
+					ImGui::SameLine();
+				}
+				if (bDisplayFrame)
+				{
+					ImGui::Text("[%llu]", Log.Frame);
+					ImGui::SameLine();
+				}
 				ImGui::Text("%s: %s: %s", TCHAR_TO_UTF8(*Log.Category.ToString()), *UnrealImGui::ToString(Log.Verbosity), *Log.LogString);
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::BeginTooltip();
+					ImGui::Text("Time: %s", TCHAR_TO_UTF8(*Log.Time.ToString()));
+					ImGui::Text("Frame: %llu", Log.Frame);
+					ImGui::EndTooltip();
+				}
 				ImGui::PopStyleColor();
 
 				if (ImGui::IsItemHovered())

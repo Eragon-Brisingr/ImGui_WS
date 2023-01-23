@@ -29,6 +29,8 @@ namespace UnrealImGui
 			FUTF8String LogString;
 			ELogVerbosity::Type Verbosity;
 			FName Category;
+			FDateTime Time;
+			uint64 Frame;
 		};
 		static constexpr int32 PreChunkLogCount = 1024 * 1024 / sizeof(FLog);
 		struct FLogCollections : TChunkedArray<FLog, sizeof(FLog) * PreChunkLogCount>
@@ -70,6 +72,12 @@ private:
 	UPROPERTY()
 	FString FilterString;
 
+	UPROPERTY()
+	uint8 bDisplayTime : 1;
+	UPROPERTY()
+	uint8 bDisplayFrame : 1;
+	uint8 bIsFirstDraw : 2;
+
 	int32 DisplayLineIndexOffset = 0;
 	TArray<int32> DisplayLines;
 
@@ -82,6 +90,4 @@ private:
 	int32 StartDisplayLine = 0;
 	bool CanLogDisplay(const UnrealImGui::FUnrealImGuiOutputDevice::FLog& Log);
 	void PostLogAdded(const UnrealImGui::FUnrealImGuiOutputDevice::FLog& Log, int32 LogLine);
-
-	uint8 bIsFirstDraw : 2;
 };
