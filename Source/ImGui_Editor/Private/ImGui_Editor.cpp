@@ -28,7 +28,7 @@ void FImGui_EditorModule::StartupModule()
 		.SetPressedPadding(Padding);
 
 	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.StatusBar.ToolBar");
-	FToolMenuSection& Section = Menu->AddSection(TEXT("ImGui"), LOCTEXT("ImGui", "ImGui"), FToolMenuInsert("Compile", EToolMenuInsertType::Before));
+	FToolMenuSection& Section = Menu->AddSection(TEXT("ImGui"), LOCTEXT("ImGui", "ImGui"));
 	Section.AddEntry(FToolMenuEntry::InitWidget(
 		TEXT("LaunchUrlImGui_WS"),
 		SNew(SButton)
