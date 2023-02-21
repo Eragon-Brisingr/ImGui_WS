@@ -133,32 +133,6 @@ namespace UnrealImGui
 		return nullptr;
 	}
 
-	template<typename ComponentT, int32 Length>
-	struct FComponentPropertyCustomization : public IUnrealStructCustomization
-	{
-		ImGuiDataType DataType;
-		const char* Format = nullptr;
-
-		FComponentPropertyCustomization(ImGuiDataType data_type, const char* fmt = nullptr)
-			: DataType(data_type), Format(fmt)
-		{}
-
-		void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
-		{
-			ComponentT Component[Length];
-			FMemory::Memcpy(&Component, Containers[0] + Offset, sizeof(ComponentT) * Length);
-			ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), DataType, Component, Length, nullptr, nullptr, Format);
-			if (ImGui::IsItemDeactivatedAfterEdit())
-			{
-				for (uint8* Container : Containers)
-				{
-					FMemory::Memcpy(Container + Offset, &Component, sizeof(ComponentT) * Length);
-				}
-				NotifyPostPropertyValueChanged(Property);
-			}
-		}
-	};
-
 	void UnrealPropertyCustomizeFactory::InitialDefaultCustomizer()
 	{
 		// 注册默认的属性自定义显示实现
@@ -202,7 +176,7 @@ namespace UnrealImGui
 		AddStructCustomizer(TBaseStructure<FVector4>::Get(), MakeShared<FComponentPropertyCustomization<FVector4::FReal, 4>>(ImGuiDataType_Double, "%.3f"));
 		AddStructCustomizer(StaticGetBaseStructure::Get(TEXT("IntVector")), MakeShared<FComponentPropertyCustomization<int32, 3>>(ImGuiDataType_S32));
 
-		struct FQuatCustomization : public IUnrealStructCustomization
+		struct FQuatCustomization : IUnrealStructCustomization
 		{
 			void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
@@ -222,7 +196,7 @@ namespace UnrealImGui
 		};
 		AddStructCustomizer(TBaseStructure<FQuat>::Get(), MakeShared<FQuatCustomization>());
 
-		struct FLinearColorCustomization : public IUnrealStructCustomization
+		struct FLinearColorCustomization : IUnrealStructCustomization
 		{
 			void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
@@ -240,7 +214,7 @@ namespace UnrealImGui
 		};
 		AddStructCustomizer(TBaseStructure<FLinearColor>::Get(), MakeShared<FLinearColorCustomization>());
 
-		struct FColorCustomization : public IUnrealStructCustomization
+		struct FColorCustomization : IUnrealStructCustomization
 		{
 			void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
