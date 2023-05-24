@@ -2,10 +2,10 @@
 
 
 #include "UnrealImGuiStatPanel.h"
-#include <Stats/StatsData.h>
 
 #include "imgui.h"
 #include "UnrealImGuiStat.h"
+#include "Stats/StatsData.h"
 
 #define LOCTEXT_NAMESPACE "UnrealImGui"
 

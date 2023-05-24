@@ -2,13 +2,13 @@
 
 
 #include "UnrealImGuiPropertyCustomization.h"
-#include <AssetRegistry/AssetRegistryModule.h>
-#include <AssetRegistry/IAssetRegistry.h>
-#include <EngineUtils.h>
 
+#include "EngineUtils.h"
 #include "imgui.h"
 #include "UnrealImGuiUtils.h"
 #include "UnrealImGuiWrapper.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
 
 namespace UnrealImGui
 {
