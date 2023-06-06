@@ -1,11 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ImGuiFileDialog.h"
+
 #include <filesystem>
 #include <sstream>
-#include <DesktopPlatformModule.h>
-#include <IDesktopPlatform.h>
 
+#include "DesktopPlatformModule.h"
+#include "IDesktopPlatform.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_notify.h"
@@ -514,9 +515,11 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 }
 
 #if PLATFORM_WINDOWS
-#include "Windows/AllowWindowsPlatformTypes.h"
 #include <windows.h>
+
+#include "Windows/AllowWindowsPlatformTypes.h"
 #include "Windows/HideWindowsPlatformTypes.h"
+
 TArray<char, TInlineAllocator<26>> UnrealImGui::GetDrivesBitMask()
 {
 	const DWORD Mask = GetLogicalDrives();
