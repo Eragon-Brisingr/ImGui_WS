@@ -177,12 +177,14 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, float DeltaSeconds)
 			}
 			ImGui::EndMenuBar();
 		}
-		TGuardValue<bool> GDisplayAllPropertiesGuard(UnrealImGui::GlobalValue::GDisplayAllProperties, bDisplayAllProperties);
-		TGuardValue<bool> GEnableEditVisiblePropertyGuard(UnrealImGui::GlobalValue::GEnableEditVisibleProperty, bEnableEditVisibleProperty);
+		static UnrealImGui::FDetailsFilter DetailsFilter;
+		DetailsFilter.Draw();
 		if (SelectedObject)
 		{
 			ImGui::TextUnformatted(TCHAR_TO_UTF8(*SelectedObject->GetName()));
-			UnrealImGui::DrawDetailTable("Details", SelectedObject->GetClass(), { SelectedObject });
+			TGuardValue<bool> GDisplayAllPropertiesGuard(UnrealImGui::GlobalValue::GDisplayAllProperties, bDisplayAllProperties);
+			TGuardValue<bool> GEnableEditVisiblePropertyGuard(UnrealImGui::GlobalValue::GEnableEditVisibleProperty, bEnableEditVisibleProperty);
+			UnrealImGui::DrawDetailTable("Details", SelectedObject->GetClass(), { SelectedObject }, &DetailsFilter);
 		}
 		else
 		{

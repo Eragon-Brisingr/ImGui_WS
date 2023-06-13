@@ -6,6 +6,8 @@
 #include "imgui.h"
 #include "UnrealImGuiPropertyCustomization.h"
 #include "UnrealImGuiStat.h"
+#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiWrapper.h"
 
 namespace UnrealImGui
 {
@@ -22,9 +24,54 @@ namespace UnrealImGui
 		int32 GPropertyDepth = -1;
 		int32 GImGuiContainerIndex = INDEX_NONE;
 		FObjectArray GOuters;
+		const FDetailsFilter* GFilter = nullptr;
+
+		TMap<FFilterCacheKey, bool> FilterCacheMap;
+		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization, const TSharedPtr<IUnrealStructCustomization>& Customization)
+		{
+			if (InnerValue::GFilter == nullptr || InnerValue::GFilter->IsFilterEnable() == false)
+			{
+				return true;
+			}
+			const FFilterCacheKey Key{ Containers[0] + Offset, Property };
+			const uint32 KeyHash = GetTypeHash(Key);
+			if (const bool* bVisible = FilterCacheMap.FindByHash(KeyHash, Key))
+			{
+				return *bVisible;
+			}
+			if (Customization)
+			{
+				const bool bVisible = Customization->IsVisible(*InnerValue::GFilter, Property, Containers, Offset, IsIdentical);
+				FilterCacheMap.AddByHash(KeyHash, Key, bVisible);
+				return bVisible;
+			}
+			else
+			{
+				const bool bVisible = PropertyCustomization->IsVisible(*InnerValue::GFilter, Property, Containers, Offset, IsIdentical);
+				FilterCacheMap.AddByHash(KeyHash, Key, bVisible);
+				return bVisible;
+			}
+		}
+
+		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization)
+		{
+			if (InnerValue::GFilter == nullptr || InnerValue::GFilter->IsFilterEnable() == false)
+			{
+				return true;
+			}
+			const FFilterCacheKey Key{ Containers[0] + Offset };
+			const uint32 KeyHash = GetTypeHash(Key);
+			if (const bool* bFilter = FilterCacheMap.FindByHash(KeyHash, Key))
+			{
+				return *bFilter;
+			}
+			const bool bVisible = PropertyCustomization->IsVisible(*InnerValue::GFilter, Property, Containers, Offset, IsIdentical);
+			FilterCacheMap.AddByHash(KeyHash, Key, bVisible);
+			return bVisible;
+		}
 	}
 
-	void AddUnrealPropertyInner(const FProperty* Property, const FStructArray& Containers, int32 Offset)
+	void AddUnrealPropertyInner(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
 	{
 		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(Property);
 		if (!PropertyCustomization)
@@ -43,6 +90,11 @@ namespace UnrealImGui
 		else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
 		{
 			Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
+		}
+
+		if (InnerValue::IsVisible(Property, Containers, Offset, IsIdentical, PropertyCustomization, Customization) == false)
+		{
+			return;
 		}
 
 		ImGui::TableNextRow();
@@ -90,9 +142,35 @@ namespace UnrealImGui
 	TMap<UStruct*, TSharedRef<IUnrealStructCustomization>> UnrealPropertyCustomizeFactory::StructCustomizeMap;
 	TMap<UClass*, TSharedRef<IUnrealDetailsCustomization>> UnrealPropertyCustomizeFactory::ClassCustomizeMap;
 
-	void IUnrealStructCustomization::CreateNameWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren) const
+	void FDetailsFilter::Draw(const char* Label)
 	{
-		UnrealImGui::CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, false, IsShowChildren);
+		FUTF8String UTF8String{ *StringFilter };
+		if (InputTextWithHint(Label, "Filter", UTF8String))
+		{
+			StringFilter = *UTF8String;
+		}
+		ImGui::SameLine();
+		ImGui::PushID(Label);
+		if (ImGui::Button("X"))
+		{
+			StringFilter.Empty();
+		}
+		ImGui::PopID();
+	}
+
+	bool IUnrealPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	{
+		return Property->GetName().ToLower().Contains(Filter.StringFilter.ToLower());
+	}
+
+	bool IUnrealStructCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	{
+		return Property->GetName().ToLower().Contains(Filter.StringFilter.ToLower());
+	}
+
+	void IUnrealStructCustomization::CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren) const
+	{
+		CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, false, IsShowChildren);
 	}
 
 	void IUnrealDetailsCustomization::CreateClassDetails(const UClass* Class, const FObjectArray& Containers, int32 Offset) const
@@ -102,7 +180,7 @@ namespace UnrealImGui
 
 	TSharedPtr<IUnrealPropertyCustomization> UnrealPropertyCustomizeFactory::FindPropertyCustomizer(const FProperty* Property)
 	{
-		for (FFieldClass* TestClass = Property->GetClass(); TestClass; TestClass = TestClass->GetSuperClass())
+		for (const FFieldClass* TestClass = Property->GetClass(); TestClass; TestClass = TestClass->GetSuperClass())
 		{
 			if (TSharedRef<IUnrealPropertyCustomization>* Customization = PropertyCustomizeMap.Find(TestClass))
 			{
@@ -178,7 +256,7 @@ namespace UnrealImGui
 
 		struct FQuatCustomization : IUnrealStructCustomization
 		{
-			void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
+			void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
 				FRotator Rotation = reinterpret_cast<FQuat*>(Containers[0] + Offset)->Rotator();
 				static_assert(TIsSame<FRotator::FReal, double>::Value);
@@ -198,7 +276,7 @@ namespace UnrealImGui
 
 		struct FLinearColorCustomization : IUnrealStructCustomization
 		{
-			void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
+			void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
 				FLinearColor Color = *reinterpret_cast<FLinearColor*>(Containers[0] + Offset);
 				static_assert(TIsSame<decltype(Color.A), float>::Value);
@@ -216,7 +294,7 @@ namespace UnrealImGui
 
 		struct FColorCustomization : IUnrealStructCustomization
 		{
-			void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
+			void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
 				FLinearColor Color = *reinterpret_cast<FColor*>(Containers[0] + Offset);
 				static_assert(TIsSame<decltype(Color.A), float>::Value);
@@ -234,7 +312,7 @@ namespace UnrealImGui
 	}
 }
 
-void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride)
+void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride)
 {
 	FPropertyEnableScope PropertyEnableScope;
 
@@ -245,7 +323,7 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 	}
 	else
 	{
-		const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet;
+		constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet;
 		ImGui::TreeNodeEx(TCHAR_TO_UTF8(*Name), flags);
 	}
 	if (ImGui::IsItemHovered())
@@ -260,7 +338,7 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 	}
 }
 
-void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArray& Containers, int32 Offset)
+void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
 {
 	FPropertyDisableScope ImGuiDisableScope{ Property };
 	if (Property->ArrayDim == 1)
@@ -269,6 +347,21 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 	}
 	else
 	{
+		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(Property);
+		if (!PropertyCustomization)
+		{
+			return;
+		}
+		TSharedPtr<IUnrealStructCustomization> Customization = nullptr;
+		if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+		{
+			Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(StructProperty->Struct);
+		}
+		else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+		{
+			Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
+		}
+
 		const bool IsIdentical = [&]
 		{
 			if (Containers.Num() == 1)
@@ -285,8 +378,13 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 			}
 			return true;
 		}();
+		if (InnerValue::IsVisible(Property, Containers, Offset, IsIdentical, PropertyCustomization, Customization) == false)
+		{
+			return;
+		}
+
 		bool IsShowChildren = false;
-		
+
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 		ImGui::AlignTextToFramePadding();
@@ -297,12 +395,6 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 
 		if (IsShowChildren)
 		{
-			const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(Property);
-			if (!PropertyCustomization)
-			{
-				return;
-			}
-			
 			for (int32 ArrayIndex = 0; ArrayIndex < Property->ArrayDim; ++ArrayIndex)
 			{
 				const int32 ElementOffset = Offset + Property->GetOffset_ForInternal() + Property->ElementSize * ArrayIndex;
@@ -311,15 +403,6 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 				
 				bool IsElementShowChildren = false;
 				const bool IsElementIdentical = IsAllPropertiesIdentical(Property, Containers, ElementOffset);
-				TSharedPtr<IUnrealStructCustomization> Customization = nullptr;
-				if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
-				{
-					Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(StructProperty->Struct);
-				}
-				else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
-				{
-					Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
-				}
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
@@ -360,20 +443,24 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FStructArra
 	}
 }
 
-void UnrealImGui::DrawDefaultStructDetails(const UStruct* TopStruct, const FStructArray& Instances, int32 Offset)
+void UnrealImGui::DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset)
 {
-	for (FProperty* Property = TopStruct->PropertyLink; Property; Property = Property->PropertyLinkNext)
+	check(Instances.Num() > 0);
+
+	for (const FProperty* Property = TopStruct->PropertyLink; Property; Property = Property->PropertyLinkNext)
 	{
-		if (UnrealImGui::IsPropertyShow(Property) == false)
+		if (IsPropertyShow(Property) == false)
 		{
 			continue;
 		}
-		UnrealImGui::AddUnrealProperty(Property, reinterpret_cast<const FStructArray&>(Instances), Offset);
+		AddUnrealProperty(Property, Instances, Offset);
 	}
 }
 
 void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset)
 {
+	check(Instances.Num() > 0);
+
 	CollapseCategories |= TopClass->HasAnyClassFlags(CLASS_CollapseCategories);
 	for (const UClass* DetailClass = TopClass; DetailClass != UObject::StaticClass(); DetailClass = DetailClass->GetSuperClass())
 	{
@@ -381,22 +468,57 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 		{
 			if (CollapseCategories)
 			{
-				for (FProperty* Property = DetailClass->PropertyLink; Property && Property->GetOwnerClass() == DetailClass; Property = Property->PropertyLinkNext)
+				for (const FProperty* Property = DetailClass->PropertyLink; Property && Property->GetOwnerClass() == DetailClass; Property = Property->PropertyLinkNext)
 				{
-					if (UnrealImGui::IsPropertyShow(Property) == false)
+					if (IsPropertyShow(Property) == false)
 					{
 						continue;
 					}
-					UnrealImGui::AddUnrealProperty(Property, reinterpret_cast<const FStructArray&>(Instances), Offset);
+					AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset);
 				}
 			}
 			else
 			{
+				if (InnerValue::GFilter && InnerValue::GFilter->IsFilterEnable())
+				{
+					bool bCategoryVisible = false;
+					for (const FProperty* Property = DetailClass->PropertyLink; Property && Property->GetOwnerClass() == DetailClass; Property = Property->PropertyLinkNext)
+					{
+						if (IsPropertyShow(Property) == false)
+						{
+							continue;
+						}
+						const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(Property);
+						if (!PropertyCustomization)
+						{
+							continue;
+						}
+						TSharedPtr<IUnrealStructCustomization> Customization = nullptr;
+						if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+						{
+							Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(StructProperty->Struct);
+						}
+						else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+						{
+							Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
+						}
+						if (InnerValue::IsVisible(Property, reinterpret_cast<const FPtrArray&>(Instances), Property->GetOffset_ForInternal(), false, PropertyCustomization, Customization))
+						{
+							bCategoryVisible = true;
+							break;
+						}
+					}
+					if (bCategoryVisible == false)
+					{
+						continue;
+					}
+				}
+
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				ImGui::AlignTextToFramePadding();
 
-				const FString CategoryName = FString::Printf(TEXT("%s##%d%d"), *DetailClass->GetName(), UnrealImGui::InnerValue::GPropertyDepth, UnrealImGui::InnerValue::GImGuiContainerIndex);
+				const FString CategoryName = FString::Printf(TEXT("%s##%d%d"), *DetailClass->GetName(), InnerValue::GPropertyDepth, InnerValue::GImGuiContainerIndex);
 				const bool IsShowChildren = ImGui::TreeNode(TCHAR_TO_UTF8(*CategoryName));
 				if (ImGui::IsItemHovered())
 				{
@@ -411,13 +533,13 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 
 				if (IsShowChildren)
 				{
-					for (FProperty* Property = DetailClass->PropertyLink; Property && Property->GetOwnerClass() == DetailClass; Property = Property->PropertyLinkNext)
+					for (const FProperty* Property = DetailClass->PropertyLink; Property && Property->GetOwnerClass() == DetailClass; Property = Property->PropertyLinkNext)
 					{
-						if (UnrealImGui::IsPropertyShow(Property) == false)
+						if (IsPropertyShow(Property) == false)
 						{
 							continue;
 						}
-						UnrealImGui::AddUnrealProperty(Property, reinterpret_cast<const FStructArray&>(Instances), Offset);
+						AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset);
 					}
 					ImGui::TreePop();
 				}
@@ -429,13 +551,15 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 
 DECLARE_CYCLE_STAT(TEXT("ImGui_DrawDetailTable"), STAT_ImGui_DrawDetailTable, STATGROUP_ImGui);
 
-void UnrealImGui::DrawDetailTable(const char* str_id, UStruct* TopStruct, const FStructArray& Instances, const FPostPropertyValueChanged& PostPropertyValueChanged)
+void UnrealImGui::DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged)
 {
 	SCOPE_CYCLE_COUNTER(STAT_ImGui_DrawDetailTable);
 	if (ImGui::BeginTable(str_id, 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 	{
-		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);
-		TGuardValue<FPostPropertyValueChanged> GPostPropertyValueChangedGuard(GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged);
+		TGuardValue GFilterGuard{ InnerValue::GFilter, Filter };
+		TGuardValue DepthGuard{InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1 };
+		TGuardValue GPostPropertyValueChangedGuard{ GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged };
+		TGuardValue GFilterCacheMapGuard{ InnerValue::FilterCacheMap, InnerValue::FilterCacheMap };
 
 		DrawDefaultStructDetails(TopStruct, Instances, 0);
 
@@ -443,14 +567,16 @@ void UnrealImGui::DrawDetailTable(const char* str_id, UStruct* TopStruct, const 
 	}
 }
 
-void UnrealImGui::DrawDetailTable(const char* str_id, UClass* TopClass, const FObjectArray& Instances, const FPostPropertyValueChanged& PostPropertyValueChanged)
+void UnrealImGui::DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged)
 {
 	SCOPE_CYCLE_COUNTER(STAT_ImGui_DrawDetailTable);
 	if (ImGui::BeginTable(str_id, 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 	{
-		TGuardValue<FObjectArray> GOutersGuard{ InnerValue::GOuters, reinterpret_cast<const FObjectArray&>(Instances) };
-		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);
-		TGuardValue<FPostPropertyValueChanged> GPostPropertyValueChangedGuard(GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged);
+		TGuardValue GFilterGuard{ InnerValue::GFilter, Filter };
+		TGuardValue GOutersGuard{ InnerValue::GOuters, reinterpret_cast<const FObjectArray&>(Instances) };
+		TGuardValue DepthGuard{ InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1 };
+		TGuardValue GPostPropertyValueChangedGuard{ GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged };
+		TGuardValue GFilterCacheMapGuard{ InnerValue::FilterCacheMap, InnerValue::FilterCacheMap };
 
 		const TSharedPtr<IUnrealDetailsCustomization> Customizer = UnrealPropertyCustomizeFactory::FindDetailsCustomizer(TopClass);
 		if (Customizer)
@@ -470,8 +596,12 @@ UClass* UnrealImGui::GetTopClass(const FObjectArray& Instances, const UClass* St
 {
 	check(Instances.Num() > 0);
 	UClass* TopClass = Instances[0]->GetClass();
-	for (UObject* Entity : Instances)
+	for (const UObject* Entity : Instances)
 	{
+		if (Entity == nullptr)
+		{
+			return nullptr;
+		}
 		for (; TopClass; TopClass = TopClass->GetSuperClass())
 		{
 			if (Entity->GetClass()->IsChildOf(TopClass))
@@ -487,7 +617,7 @@ UClass* UnrealImGui::GetTopClass(const FObjectArray& Instances, const UClass* St
 	return TopClass;
 }
 
-bool UnrealImGui::IsAllPropertiesIdentical(const FProperty* Property, const FStructArray& Containers, int32 Offset)
+bool UnrealImGui::IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
 {
 	for (int32 Idx = 1; Idx < Containers.Num(); ++Idx)
 	{

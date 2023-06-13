@@ -80,7 +80,7 @@ namespace UnrealImGui
 	}
 
 	template<typename TNameCustomizer, typename TValueExtend>
-	void AddUnrealContainerPropertyInner(const FProperty* Property, const FStructArray& Containers, int32 Offset, const TNameCustomizer& NameCustomizer, const TValueExtend& ValueExtend)
+	void AddUnrealContainerPropertyInner(const FProperty* Property, const FPtrArray& Containers, int32 Offset, const TNameCustomizer& NameCustomizer, const TValueExtend& ValueExtend)
 	{
 		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(Property);
 		if (!PropertyCustomization)
@@ -98,6 +98,11 @@ namespace UnrealImGui
 		else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
 		{
 			Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
+		}
+
+		if (InnerValue::IsVisible(Property, Containers, Offset, IsIdentical, PropertyCustomization, Customization) == false)
+		{
+			return;
 		}
 
 		ImGui::TableNextRow();
@@ -132,9 +137,9 @@ namespace UnrealImGui
 		ImGui::NextColumn();
 	}
 
-	void FBoolPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FBoolPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const FBoolProperty* BoolProperty = CastFieldChecked<FBoolProperty>(Property);
 		bool FirstValue = BoolProperty->GetPropertyValue(FirstValuePtr);
 		if (ImGui::Checkbox(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), &FirstValue))
@@ -147,12 +152,12 @@ namespace UnrealImGui
 		}
 	}
 
-	void FNumericPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FNumericPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FNumericProperty* NumericProperty = CastFieldChecked<FNumericProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const auto PropertyLabelName = TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical));
-		if (UEnum* EnumDef = NumericProperty->GetIntPropertyEnum())
+		if (const UEnum* EnumDef = NumericProperty->GetIntPropertyEnum())
 		{
 			const int64 EnumValue = NumericProperty->GetSignedIntPropertyValue(FirstValuePtr);
 
@@ -210,14 +215,70 @@ namespace UnrealImGui
 		}
 	}
 
-	bool FObjectPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FObjectPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
+		if (IUnrealPropertyCustomization::IsVisible(Filter, Property, Containers, Offset, IsIdentical))
+		{
+			return true;
+		}
 		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
-		const uint8* FirstValuePtr = Containers[0] + Offset;
-		return ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference) && ObjectProperty->GetObjectPropertyValue(FirstValuePtr) != nullptr;
+		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference) == false)
+		{
+			return false;
+		}
+		FObjectArray Instances;
+		for (const uint8* Container : Containers)
+		{
+			UObject* Object = ObjectProperty->GetObjectPropertyValue(Container + Offset);
+			if (Object == nullptr)
+			{
+				return false;
+			}
+			Instances.Add(Object);
+		}
+		const UClass* TopClass = GetTopClass(Instances);
+		static TSet<const FProperty*> Visited;
+		for (const FProperty* ChildProperty = TopClass->PropertyLink; ChildProperty; ChildProperty = ChildProperty->PropertyLinkNext)
+		{
+			if (IsPropertyShow(ChildProperty) == false)
+			{
+				continue;
+			}
+			bool bIsAlreadyInSet;
+			Visited.Add(ChildProperty, &bIsAlreadyInSet);
+			if (bIsAlreadyInSet)
+			{
+				continue;
+			}
+			const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ChildProperty);
+			const bool bVisible = PropertyCustomization && InnerValue::IsVisible(ChildProperty, reinterpret_cast<FPtrArray&>(Instances), ChildProperty->GetOffset_ForInternal(), IsIdentical, PropertyCustomization);
+			Visited.Remove(ChildProperty);
+			if (bVisible)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
-	void FObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FObjectPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	{
+		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
+		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference) == false)
+		{
+			return false;
+		}
+		for (const uint8* Container : Containers)
+		{
+			if (ObjectProperty->GetObjectPropertyValue(Container + Offset) == nullptr)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void FObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
 		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference))
@@ -431,20 +492,15 @@ namespace UnrealImGui
 		}
 	}
 
-	void FObjectPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FObjectPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
 		check(ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference));
 
-		if (ObjectProperty->GetObjectPropertyValue(Containers[0] + Offset) == nullptr)
-		{
-			return;
-		}
-
 		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);
 
 		FObjectArray Instances;
-		for (uint8* Container : Containers)
+		for (const uint8* Container : Containers)
 		{
 			Instances.Add(ObjectProperty->GetObjectPropertyValue(Container + Offset));
 		}
@@ -462,7 +518,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void FSoftObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FSoftObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FSoftObjectProperty* SoftObjectProperty = CastFieldChecked<FSoftObjectProperty>(Property);
 		uint8* FirstValuePtr = Containers[0] + Offset;
@@ -670,7 +726,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void FClassPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FClassPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FClassProperty* ClassProperty = CastFieldChecked<FClassProperty>(Property);
 		const UObject* FirstValue = ClassProperty->GetPropertyValue(Containers[0] + Offset);
@@ -775,7 +831,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void FSoftClassPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FSoftClassPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FSoftClassProperty* SoftClassProperty = CastFieldChecked<FSoftClassProperty>(Property);
 		const FSoftObjectPtr FirstValue = SoftClassProperty->GetPropertyValue(Containers[0] + Offset);
@@ -881,10 +937,10 @@ namespace UnrealImGui
 		}
 	}
 
-	void FStringPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FStringPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FStrProperty* StringProperty = CastFieldChecked<FStrProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const FString FirstValue = StringProperty->GetPropertyValue(FirstValuePtr);
 		const auto StringPoint = FTCHARToUTF8(*FirstValue);
 		char Buff[512];
@@ -901,10 +957,10 @@ namespace UnrealImGui
 		}
 	}
 
-	void FNamePropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FNamePropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FNameProperty* NameProperty = CastFieldChecked<FNameProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const auto PropertyLabelName = TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical));
 		const FName FirstValue = NameProperty->GetPropertyValue(FirstValuePtr);
 		const auto StringPoint = FTCHARToUTF8(*FirstValue.ToString());
@@ -922,10 +978,10 @@ namespace UnrealImGui
 		}
 	}
 
-	void FTextPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FTextPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FTextProperty* TextProperty = CastFieldChecked<FTextProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const FText FirstValue = TextProperty->GetPropertyValue(FirstValuePtr);
 		const auto StringPoint = FTCHARToUTF8(*FirstValue.ToString());
 		char Buff[512];
@@ -942,12 +998,12 @@ namespace UnrealImGui
 		}
 	}
 
-	void FEnumPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FEnumPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FEnumProperty* EnumProperty = CastFieldChecked<FEnumProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
-		UEnum* EnumDef = EnumProperty->GetEnum();
-		FNumericProperty* UnderlyingProperty = EnumProperty->GetUnderlyingProperty();
+		const uint8* FirstValuePtr = Containers[0] + Offset;
+		const UEnum* EnumDef = EnumProperty->GetEnum();
+		const FNumericProperty* UnderlyingProperty = EnumProperty->GetUnderlyingProperty();
 		const int64 EnumValue = UnderlyingProperty->GetSignedIntPropertyValue(FirstValuePtr);
 
 		FString EnumName = EnumDef->GetNameByValue(EnumValue).ToString();
@@ -977,10 +1033,46 @@ namespace UnrealImGui
 		}
 	}
 
-	bool FArrayPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FArrayPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	{
+		if (IUnrealPropertyCustomization::IsVisible(Filter, Property, Containers, Offset, IsIdentical))
+		{
+			return true;
+		}
+		if (HasChildPropertiesOverride(Property, Containers, Offset, IsIdentical))
+		{
+			const FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(Property);
+			const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ArrayProperty->Inner);
+			if (PropertyCustomization == nullptr)
+			{
+				return false;
+			}
+			TArray<FScriptArrayHelper> Helpers;
+			for (const uint8* Container : Containers)
+			{
+				Helpers.Emplace(FScriptArrayHelper(ArrayProperty, Container + Offset));
+			}
+			FPtrArray ArrayRawPtr;
+			ArrayRawPtr.SetNum(Containers.Num());
+			for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
+			{
+				for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
+				{
+					ArrayRawPtr[Idx] = Helpers[Idx].GetRawPtr(ElemIdx);
+				}
+				if (InnerValue::IsVisible(ArrayProperty->Inner, ArrayRawPtr, 0, false, PropertyCustomization))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool FArrayPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const int32 FirstCount = FScriptArrayHelper(ArrayProperty, FirstValuePtr).Num();
 		if (FirstCount == 0)
 		{
@@ -1000,10 +1092,10 @@ namespace UnrealImGui
 		return true;
 	}
 
-	void FArrayPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FArrayPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		if (IsIdentical)
 		{
 			const int32 ArrayCount = FScriptArrayHelper(ArrayProperty, FirstValuePtr).Num();
@@ -1011,7 +1103,7 @@ namespace UnrealImGui
 			ImGui::SameLine();
 			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("+")))))
 			{
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptArrayHelper(ArrayProperty, Container + Offset).AddValue();
 				}
@@ -1020,7 +1112,7 @@ namespace UnrealImGui
 			ImGui::SameLine();
 			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
 			{
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptArrayHelper(ArrayProperty, Container + Offset).EmptyValues();
 				}
@@ -1033,7 +1125,7 @@ namespace UnrealImGui
 			ImGui::SameLine();
 			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
 			{
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptArrayHelper(ArrayProperty, Container + Offset).EmptyValues();
 				}
@@ -1042,7 +1134,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void FArrayPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FArrayPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(Property);
 		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ArrayProperty->Inner);
@@ -1052,11 +1144,11 @@ namespace UnrealImGui
 		}
 
 		TArray<FScriptArrayHelper> Helpers;
-		for (uint8* Container : Containers)
+		for (const uint8* Container : Containers)
 		{
 			Helpers.Emplace(FScriptArrayHelper(ArrayProperty, Container + Offset));
 		}
-		FStructArray ArrayRawPtr;
+		FPtrArray ArrayRawPtr;
 		ArrayRawPtr.SetNum(Containers.Num());
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
@@ -1067,11 +1159,11 @@ namespace UnrealImGui
 			TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ElemIdx);
 
 			AddUnrealContainerPropertyInner(ArrayProperty->Inner, ArrayRawPtr, 0,
-				[ElemIdx, &PropertyCustomization](const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren)
+				[ElemIdx, &PropertyCustomization](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren)
 			{
 				const FString ElementName = FString::Printf(TEXT("%d##%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
 				CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, IsIdentical), IsShowChildren, &ElementName);
-			}, [ElemIdx, &Helpers](const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical)
+			}, [ElemIdx, &Helpers](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical)
 			{
 				ImGui::SameLine();
 
@@ -1106,10 +1198,46 @@ namespace UnrealImGui
 		}
 	}
 
-	bool FSetPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FSetPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	{
+		if (IUnrealPropertyCustomization::IsVisible(Filter, Property, Containers, Offset, IsIdentical))
+		{
+			return true;
+		}
+		if (HasChildPropertiesOverride(Property, Containers, Offset, IsIdentical))
+		{
+			const FSetProperty* SetProperty = CastFieldChecked<FSetProperty>(Property);
+			const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(SetProperty->ElementProp);
+			if (PropertyCustomization == nullptr)
+			{
+				return false;
+			}
+			TArray<FScriptSetHelper> Helpers;
+			for (const uint8* Container : Containers)
+			{
+				Helpers.Emplace(FScriptSetHelper(SetProperty, Container + Offset));
+			}
+			FPtrArray SetRawPtr;
+			SetRawPtr.SetNum(Containers.Num());
+			for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
+			{
+				for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
+				{
+					SetRawPtr[Idx] = Helpers[Idx].GetElementPtr(ElemIdx);
+				}
+				if (InnerValue::IsVisible(SetProperty->ElementProp, SetRawPtr, 0, false, PropertyCustomization))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool FSetPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FSetProperty* SetProperty = CastFieldChecked<FSetProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const int32 FirstCount = FScriptSetHelper(SetProperty, FirstValuePtr).Num();
 		if (FirstCount == 0)
 		{
@@ -1129,10 +1257,10 @@ namespace UnrealImGui
 		return true;
 	}
 
-	void FSetPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FSetPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FSetProperty* SetProperty = CastFieldChecked<FSetProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		if (IsIdentical)
 		{
 			const int32 SetCount = FScriptSetHelper(SetProperty, FirstValuePtr).Num();
@@ -1143,7 +1271,7 @@ namespace UnrealImGui
 				TArray<uint8> AddElem;
 				AddElem.SetNumUninitialized(SetProperty->ElementProp->ElementSize);
 				SetProperty->ElementProp->InitializeValue(AddElem.GetData());
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptSetHelper(SetProperty, Container + Offset).AddElement(AddElem.GetData());
 				}
@@ -1152,7 +1280,7 @@ namespace UnrealImGui
 			ImGui::SameLine();
 			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
 			{
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptSetHelper(SetProperty, Container + Offset).EmptyElements();
 				}
@@ -1165,7 +1293,7 @@ namespace UnrealImGui
 			ImGui::SameLine();
 			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
 			{
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptSetHelper(SetProperty, Container + Offset).EmptyElements();
 				}
@@ -1174,7 +1302,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void FSetPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FSetPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FSetProperty* SetProperty = CastFieldChecked<FSetProperty>(Property);
 		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(SetProperty->ElementProp);
@@ -1184,11 +1312,11 @@ namespace UnrealImGui
 		}
 
 		TArray<FScriptSetHelper> Helpers;
-		for (uint8* Container : Containers)
+		for (const uint8* Container : Containers)
 		{
 			Helpers.Emplace(FScriptSetHelper(SetProperty, Container + Offset));
 		}
-		FStructArray SetRawPtr;
+		FPtrArray SetRawPtr;
 		SetRawPtr.SetNum(Containers.Num());
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
@@ -1199,11 +1327,11 @@ namespace UnrealImGui
 			TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ElemIdx);
 
 			AddUnrealContainerPropertyInner(SetProperty->ElementProp, SetRawPtr, 0,
-				[ElemIdx, &PropertyCustomization](const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren)
+				[ElemIdx, &PropertyCustomization](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren)
 			{
 				const FString ElementName = FString::Printf(TEXT("%d##%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
 				CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, IsIdentical), IsShowChildren, &ElementName);
-			}, [ElemIdx, &Helpers](const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical)
+			}, [ElemIdx, &Helpers](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical)
 			{
 				ImGui::SameLine();
 
@@ -1229,10 +1357,51 @@ namespace UnrealImGui
 		}
 	}
 
-	bool FMapPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FMapPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	{
+		if (IUnrealPropertyCustomization::IsVisible(Filter, Property, Containers, Offset, IsIdentical))
+		{
+			return true;
+		}
+		if (HasChildPropertiesOverride(Property, Containers, Offset, IsIdentical))
+		{
+			const FMapProperty* MapProperty = CastFieldChecked<FMapProperty>(Property);
+			const TSharedPtr<IUnrealPropertyCustomization> KeyPropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(MapProperty->KeyProp);
+			const TSharedPtr<IUnrealPropertyCustomization> ValuePropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(MapProperty->ValueProp);
+			if (KeyPropertyCustomization == nullptr || ValuePropertyCustomization == nullptr)
+			{
+				return false;
+			}
+			TArray<FScriptMapHelper> Helpers;
+			for (const uint8* Container : Containers)
+			{
+				Helpers.Emplace(FScriptMapHelper(MapProperty, Container + Offset));
+			}
+
+			FPtrArray KeyRawPtr;
+			KeyRawPtr.SetNum(Containers.Num());
+			FPtrArray ValueRawPtr;
+			ValueRawPtr.SetNum(Containers.Num());
+			for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
+			{
+				for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
+				{
+					KeyRawPtr[Idx] = Helpers[Idx].GetKeyPtr(ElemIdx);
+					ValueRawPtr[Idx] = Helpers[Idx].GetValuePtr(ElemIdx);
+				}
+				if (InnerValue::IsVisible(MapProperty->KeyProp, KeyRawPtr, 0, false, KeyPropertyCustomization) || InnerValue::IsVisible(MapProperty->ValueProp, ValueRawPtr, 0, false, ValuePropertyCustomization))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool FMapPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FMapProperty* MapProperty = CastFieldChecked<FMapProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const int32 FirstCount = FScriptMapHelper(MapProperty, FirstValuePtr).Num();
 		if (FirstCount == 0)
 		{
@@ -1252,10 +1421,10 @@ namespace UnrealImGui
 		return true;
 	}
 
-	void FMapPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FMapPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FMapProperty* MapProperty = CastFieldChecked<FMapProperty>(Property);
-		uint8* FirstValuePtr = Containers[0] + Offset;
+		const uint8* FirstValuePtr = Containers[0] + Offset;
 		if (IsIdentical)
 		{
 			const int32 MapCount = FScriptMapHelper(MapProperty, FirstValuePtr).Num();
@@ -1269,7 +1438,7 @@ namespace UnrealImGui
 				TArray<uint8> ValueElem;
 				ValueElem.SetNumUninitialized(MapProperty->ValueProp->ElementSize);
 				MapProperty->ValueProp->InitializeValue(ValueElem.GetData());
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					if (FScriptMapHelper(MapProperty, Container + Offset).FindOrAdd(KeyElem.GetData()) == nullptr)
 					{
@@ -1282,7 +1451,7 @@ namespace UnrealImGui
 			ImGui::SameLine();
 			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
 			{
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptMapHelper(MapProperty, Container + Offset).EmptyValues();
 				}
@@ -1295,7 +1464,7 @@ namespace UnrealImGui
 			ImGui::SameLine();
 			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
 			{
-				for (uint8* Container : Containers)
+				for (const uint8* Container : Containers)
 				{
 					FScriptMapHelper(MapProperty, Container + Offset).EmptyValues();
 				}
@@ -1304,7 +1473,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void FMapPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FMapPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FMapProperty* MapProperty = CastFieldChecked<FMapProperty>(Property);
 		const TSharedPtr<IUnrealPropertyCustomization> KeyPropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(MapProperty->KeyProp);
@@ -1315,14 +1484,14 @@ namespace UnrealImGui
 		}
 
 		TArray<FScriptMapHelper> Helpers;
-		for (uint8* Container : Containers)
+		for (const uint8* Container : Containers)
 		{
 			Helpers.Emplace(FScriptMapHelper(MapProperty, Container + Offset));
 		}
 
-		FStructArray KeyRawPtr;
+		FPtrArray KeyRawPtr;
 		KeyRawPtr.SetNum(Containers.Num());
-		FStructArray ValueRawPtr;
+		FPtrArray ValueRawPtr;
 		ValueRawPtr.SetNum(Containers.Num());
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
@@ -1359,7 +1528,7 @@ namespace UnrealImGui
 				}
 				else
 				{
-					const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet;
+					constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet;
 					ImGui::TreeNodeEx(TCHAR_TO_UTF8(*Name), flags);
 				}
 				ImGui::SameLine();
@@ -1433,11 +1602,33 @@ namespace UnrealImGui
 		}
 	}
 
-	void FStructPropertyCustomization::CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FStructPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	{
+		if (IUnrealPropertyCustomization::IsVisible(Filter, Property, Containers, Offset, IsIdentical))
+		{
+			return true;
+		}
+		const FStructProperty* StructProperty = CastFieldChecked<FStructProperty>(Property);
+		for (const FProperty* ChildProperty = StructProperty->Struct->PropertyLink; ChildProperty; ChildProperty = ChildProperty->PropertyLinkNext)
+		{
+			if (IsPropertyShow(ChildProperty) == false)
+			{
+				continue;
+			}
+			const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ChildProperty);
+			if (PropertyCustomization && InnerValue::IsVisible(ChildProperty, Containers, Offset + ChildProperty->GetOffset_ForInternal(), IsIdentical, PropertyCustomization))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void FStructPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FStructProperty* StructProperty = CastFieldChecked<FStructProperty>(Property);
 		int32 ElementCount = 0;
-		for (FProperty* ChildProperty = StructProperty->Struct->PropertyLink; ChildProperty; ChildProperty = ChildProperty->PropertyLinkNext)
+		for (const FProperty* ChildProperty = StructProperty->Struct->PropertyLink; ChildProperty; ChildProperty = ChildProperty->PropertyLinkNext)
 		{
 			if (IsPropertyShow(ChildProperty))
 			{
@@ -1447,7 +1638,7 @@ namespace UnrealImGui
 		ImGui::Text("%d Elements %s", ElementCount, IsIdentical ? "" : "*");
 	}
 
-	void FStructPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+	void FStructPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FStructProperty* StructProperty = CastFieldChecked<FStructProperty>(Property);
 		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);

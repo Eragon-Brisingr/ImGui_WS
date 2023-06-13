@@ -89,9 +89,12 @@ void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugge
 	{
 		ImGui::Text("%d Actors", FilteredSelectedActors.Num());
 	}
+
+	static UnrealImGui::FDetailsFilter DetailsFilter;
+	DetailsFilter.Draw();
 	if (FirstActor)
 	{
-		UnrealImGui::DrawDetailTable("Actor", UnrealImGui::GetTopClass(FilteredSelectedActors), FilteredSelectedActors);
+		UnrealImGui::DrawDetailTable("Actor", UnrealImGui::GetTopClass(FilteredSelectedActors), FilteredSelectedActors, &DetailsFilter);
 	}
 
 	if (IsConfigDirty)

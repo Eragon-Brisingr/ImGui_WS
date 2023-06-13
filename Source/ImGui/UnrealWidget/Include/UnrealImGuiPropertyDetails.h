@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 
-/**
- * 
- */
 namespace UnrealImGui
 {
+	struct IUnrealStructCustomization;
+	struct IUnrealPropertyCustomization;
+
 	namespace GlobalValue
 	{
 		IMGUI_API extern bool GEnableEditVisibleProperty;
@@ -16,7 +16,7 @@ namespace UnrealImGui
 	}
 	
 	constexpr int32 ArrayInlineAllocateSize = 1;
-	using FStructArray = TArray<uint8*, TInlineAllocator<ArrayInlineAllocateSize>>;
+	using FPtrArray = TArray<uint8*, TInlineAllocator<ArrayInlineAllocateSize>>;
 	template<typename T>
 	struct TStructArray : TArray<T*, TInlineAllocator<ArrayInlineAllocateSize>>
 	{
@@ -24,9 +24,9 @@ namespace UnrealImGui
 		TStructArray(std::initializer_list<T*> InitList)
 			: TArray<T*, TInlineAllocator<ArrayInlineAllocateSize>>{ InitList }
 		{}
-		operator const FStructArray& () const
+		operator const FPtrArray& () const
 		{
-			return reinterpret_cast<const FStructArray&>(*this);
+			return reinterpret_cast<const FPtrArray&>(*this);
 		}
 	};
 	using FObjectArray = TArray<UObject*, TInlineAllocator<ArrayInlineAllocateSize>>;
@@ -42,6 +42,12 @@ namespace UnrealImGui
 			return reinterpret_cast<const FObjectArray&>(*this);
 		}
 	};
+	struct IMGUI_API FDetailsFilter
+	{
+		FString StringFilter;
+		void Draw(const char* Label = "##DetailsFilter");
+		bool IsFilterEnable() const { return StringFilter.IsEmpty() == false; }
+	};
 	namespace InnerValue
 	{
 		constexpr float ValueRightBaseWidth = -10.f;
@@ -50,8 +56,20 @@ namespace UnrealImGui
 		extern int32 GPropertyDepth;
 		extern int32 GImGuiContainerIndex;
 		extern FObjectArray GOuters;
+		extern const FDetailsFilter* GFilter;
+
+		struct FFilterCacheKey
+		{
+			const void* MemoryKey;
+			const FProperty* Property;
+			friend bool operator==(const FFilterCacheKey& LHS, const FFilterCacheKey& RHS) { return LHS.MemoryKey == RHS.MemoryKey && LHS.Property == RHS.Property; }
+			friend uint32 GetTypeHash(const FFilterCacheKey& Key) { return PointerHash(Key.MemoryKey); }
+		};
+		extern TMap<FFilterCacheKey, bool> FilterCacheMap;
+		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization, const TSharedPtr<IUnrealStructCustomization>& Customization);
+		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization);
 	}
-	
+
 	struct IMGUI_API IUnrealPropertyCustomization : public TSharedFromThis<IUnrealPropertyCustomization>
 	{
 		IUnrealPropertyCustomization()
@@ -63,15 +81,16 @@ namespace UnrealImGui
 		int32 ValueAdditiveRightWidth = 0;
 		uint8 bHasChildProperties : 1;
 		uint8 bOverrideHasChildProperties : 1;
-		
-		bool HasChildProperties(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const
+
+		virtual bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const;
+		bool HasChildProperties(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 		{
 			return bOverrideHasChildProperties ? HasChildPropertiesOverride(Property, Containers, Offset, IsIdentical) : bHasChildProperties;
 		}
 		
-		virtual bool HasChildPropertiesOverride(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const { return false; }
-		virtual void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const = 0;
-		virtual void CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const {}
+		virtual bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const { return false; }
+		virtual void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const = 0;
+		virtual void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const {}
 
 		virtual ~IUnrealPropertyCustomization() {}
 	};
@@ -81,9 +100,10 @@ namespace UnrealImGui
 		// 值控件右侧剩余空间
 		int32 ValueAdditiveRightWidth = 0;
 
-		virtual void CreateNameWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren) const;
-		virtual void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const = 0;
-		virtual void CreateChildrenWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const {}
+		virtual bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const;
+		virtual void CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren) const;
+		virtual void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const = 0;
+		virtual void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const {}
 
 		virtual ~IUnrealStructCustomization() {}
 	};
@@ -98,7 +118,7 @@ namespace UnrealImGui
 	struct IMGUI_API UnrealPropertyCustomizeFactory
 	{
 	public:
-		using PropertyCustomizeFunc = TFunction<void(const FProperty * Property, const FStructArray & Containers, int32 Offset)>;
+		using PropertyCustomizeFunc = TFunction<void(const FProperty * Property, const FPtrArray & Containers, int32 Offset)>;
 
 		static TSharedPtr<IUnrealPropertyCustomization> FindPropertyCustomizer(const FProperty* Property);
 		static TSharedPtr<IUnrealStructCustomization> FindPropertyCustomizer(const UStruct* Struct);
@@ -126,7 +146,7 @@ namespace UnrealImGui
 			FPropertyCustomizerScoped(FFieldClass* FieldClass, const TSharedRef<IUnrealPropertyCustomization>& InCustomization)
 				: FieldClass(FieldClass)
 			{
-				if (TSharedRef<IUnrealPropertyCustomization>* ExistedCustomization = PropertyCustomizeMap.Find(FieldClass))
+				if (const TSharedRef<IUnrealPropertyCustomization>* ExistedCustomization = PropertyCustomizeMap.Find(FieldClass))
 				{
 					Customization = *ExistedCustomization;
 				}
@@ -153,7 +173,7 @@ namespace UnrealImGui
 			FStructCustomizerScoped(UStruct* Struct, const TSharedRef<IUnrealStructCustomization>& InCustomization)
 				: Struct(Struct)
 			{
-				if (TSharedRef<IUnrealStructCustomization>* ExistedCustomization = StructCustomizeMap.Find(Struct))
+				if (const TSharedRef<IUnrealStructCustomization>* ExistedCustomization = StructCustomizeMap.Find(Struct))
 				{
 					Customization = *ExistedCustomization;
 				}
@@ -180,7 +200,7 @@ namespace UnrealImGui
 			FClassCustomizerScoped(UClass* Class, const TSharedRef<IUnrealDetailsCustomization>& InCustomization)
 				: Class(Class)
 			{
-				if (TSharedRef<IUnrealDetailsCustomization>* ExistedCustomization = ClassCustomizeMap.Find(Class))
+				if (const TSharedRef<IUnrealDetailsCustomization>* ExistedCustomization = ClassCustomizeMap.Find(Class))
 				{
 					Customization = *ExistedCustomization;
 				}
@@ -216,7 +236,7 @@ namespace UnrealImGui
 			: DataType(data_type), Format(fmt)
 		{}
 
-		void CreateValueWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical) const override
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override
 		{
 			ComponentT Component[Length];
 			FMemory::Memcpy(&Component, Containers[0] + Offset, sizeof(ComponentT) * Length);
@@ -231,7 +251,7 @@ namespace UnrealImGui
 			}
 		}
 	};
-	
+
 	DECLARE_DELEGATE_OneParam(FPostPropertyValueChanged, const FProperty*);
 	
 	inline bool IsPropertyShow(const FProperty* Property)
@@ -243,19 +263,19 @@ namespace UnrealImGui
 		return Property->HasAllPropertyFlags(CPF_Edit) && Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance) == false;
 	}
 
-	IMGUI_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FStructArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride = nullptr);
+	IMGUI_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride = nullptr);
 	
-	IMGUI_API void AddUnrealProperty(const FProperty* Property, const FStructArray& Containers, int32 Offset = 0);
+	IMGUI_API void AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
 
-	IMGUI_API void DrawDefaultStructDetails(const UStruct* TopStruct, const FStructArray& Instances, int32 Offset);
+	IMGUI_API void DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 	IMGUI_API void DrawDefaultClassDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);
 
-	IMGUI_API void DrawDetailTable(const char* str_id, UStruct* TopStruct, const FStructArray& Instances, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
-	IMGUI_API void DrawDetailTable(const char* str_id, UClass* TopClass, const FObjectArray& Instances, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+	IMGUI_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+	IMGUI_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 
 	IMGUI_API UClass* GetTopClass(const FObjectArray& Instances, const UClass* StopClass = UObject::StaticClass());
 	
-	IMGUI_API bool IsAllPropertiesIdentical(const FProperty* Property, const FStructArray& Containers, int32 Offset);
+	IMGUI_API bool IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
 	IMGUI_API FString GetPropertyDefaultLabel(const FProperty* Property, bool IsIdentical);
 	IMGUI_API FString CreatePropertyLabel(const FProperty* Property, const FString& Name);
 	IMGUI_API void NotifyPostPropertyValueChanged(const FProperty* Property);
