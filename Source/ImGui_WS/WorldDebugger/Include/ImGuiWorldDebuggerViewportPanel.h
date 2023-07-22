@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "ImGuiWorldDebuggerPanel.h"
-#include "UObject/Object.h"
 #include "ImGuiWorldDebuggerViewportPanel.generated.h"
 
 class UImGuiWorldDebuggerDrawerBase;

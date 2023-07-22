@@ -122,3 +122,15 @@ namespace ImGui
     void MyFunction(const char* name, const MyMatrix44& v);
 }
 */
+
+#define IMGUI_DEFINE_MATH_OPERATORS 1
+
+#include "Math/Vector2D.h"
+#include "Math/Vector4.h"
+
+#define IM_VEC2_CLASS_EXTRA \
+    explicit constexpr ImVec2(const FVector2D& V) : x((float)V.X), y((float)V.Y) {} \
+    explicit operator FVector2D() const { return FVector2D(x, y); }
+#define IM_VEC4_CLASS_EXTRA \
+    explicit constexpr ImVec4(const FVector4& V) : x((float)V.X), y((float)V.Y), z((float)V.Z), w((float)V.W) {} \
+    explicit operator FVector4() const { return FVector4(x,y,z,w); }

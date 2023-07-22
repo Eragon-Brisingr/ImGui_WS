@@ -515,9 +515,8 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 }
 
 #if PLATFORM_WINDOWS
-#include <windows.h>
-
 #include "Windows/AllowWindowsPlatformTypes.h"
+#include <windows.h>
 #include "Windows/HideWindowsPlatformTypes.h"
 
 TArray<char, TInlineAllocator<26>> UnrealImGui::GetDrivesBitMask()
