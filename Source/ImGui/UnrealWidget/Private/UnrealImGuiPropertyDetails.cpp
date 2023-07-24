@@ -247,7 +247,7 @@ namespace UnrealImGui
 			}
 		};
 
-		static_assert(TIsSame<FVector::FReal, double>::Value);
+		static_assert(std::is_same<FVector::FReal, double>::value);
 		AddStructCustomizer(TBaseStructure<FVector>::Get(), MakeShared<FComponentPropertyCustomization<FVector::FReal, 3>>(ImGuiDataType_Double, "%.3f"));
 		AddStructCustomizer(TBaseStructure<FRotator>::Get(), MakeShared<FComponentPropertyCustomization<FRotator::FReal, 3>>(ImGuiDataType_Double, "%.3f"));
 		AddStructCustomizer(TBaseStructure<FVector2D>::Get(), MakeShared<FComponentPropertyCustomization<FVector2D::FReal, 2>>(ImGuiDataType_Double, "%.3f"));
@@ -259,7 +259,7 @@ namespace UnrealImGui
 			void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
 				FRotator Rotation = reinterpret_cast<FQuat*>(Containers[0] + Offset)->Rotator();
-				static_assert(TIsSame<FRotator::FReal, double>::Value);
+				static_assert(std::is_same<FVector::FReal, double>::value);
 				ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), ImGuiDataType_Double, (double*)&Rotation, 3);
 				if (ImGui::IsItemDeactivatedAfterEdit())
 				{
@@ -279,7 +279,7 @@ namespace UnrealImGui
 			void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
 				FLinearColor Color = *reinterpret_cast<FLinearColor*>(Containers[0] + Offset);
-				static_assert(TIsSame<decltype(Color.A), float>::Value);
+				static_assert(std::is_same<decltype(Color.A), float>::value);
 				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), (float*)&Color))
 				{
 					for (uint8* Container : Containers)
@@ -297,7 +297,7 @@ namespace UnrealImGui
 			void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override
 			{
 				FLinearColor Color = *reinterpret_cast<FColor*>(Containers[0] + Offset);
-				static_assert(TIsSame<decltype(Color.A), float>::Value);
+				static_assert(std::is_same<decltype(Color.A), float>::value);
 				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), (float*)&Color))
 				{
 					for (uint8* Container : Containers)

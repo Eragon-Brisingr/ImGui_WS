@@ -575,12 +575,12 @@ void UImGuiWorldDebuggerViewportPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 					const FSpatialHashStreamingGridLevel& GridLevel = Grid.GridLevels[LevelIdx];
 					for (const FSpatialHashStreamingGridLayerCell& LayerCell : GridLevel.LayerCells)
 					{
-						for (UWorldPartitionRuntimeSpatialHashCell* SpatialHashCell : LayerCell.GridCells)
+						for (UWorldPartitionRuntimeCell* Cell : LayerCell.GridCells)
 						{
-							const FVector Location = SpatialHashCell->Position;
+							const FVector Location = Cell->GetCellBounds().GetCenter();
 							const int32 CellExtent = Grid.CellSize * (1 << LevelIdx) / 2;
 							const FBox2D CellBox{ FVector2D(Location) - CellExtent, FVector2D(Location) + CellExtent };
-							DebuggerContext.DrawRectFilled(CellBox, SpatialHashCell->GetDebugColor(EWorldPartitionRuntimeCellVisualizeMode::StreamingStatus));
+							DebuggerContext.DrawRectFilled(CellBox, Cell->GetDebugColor(EWorldPartitionRuntimeCellVisualizeMode::StreamingStatus));
 						}
 					}
 				}
