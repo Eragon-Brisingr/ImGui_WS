@@ -301,7 +301,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 			}
 		}
 		ImGui::EndChild();
-		
+
 		if (ImGui::BeginPopupContextItem())
 		{
 			if (ImGui::MenuItem("Clear Log"))

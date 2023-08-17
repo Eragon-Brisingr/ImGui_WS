@@ -522,6 +522,7 @@ private:
 	
 	bool IsTickableWhenPaused() const { return true; }
 	bool IsTickableInEditor() const { return true; }
+	UWorld* GetTickableGameObjectWorld() const { return GWorld; }
 	TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UImGui_WS_Manager_FDrawer, STATGROUP_Tickables); }
 
 	struct FImGuiData : FNoncopyable
@@ -741,8 +742,17 @@ private:
 			const FImGui_WS_EditorContext& DrawContext = Manager.EditorContext;
 			if (DrawContext.bAlwaysDrawDefaultLayout || DrawContext.OnDraw.IsBound() == false)
 			{
-				static FImGuiEditorDefaultLayoutBuilder DefaultLayoutBuilder;
-				DefaultLayoutBuilder.Draw(DeltaTime);
+				if (GWorld)
+				{
+					static UImGuiEditorDefaultDebugger* DefaultDebugger = []
+					{
+						UImGuiEditorDefaultDebugger* Debugger = NewObject<UImGuiEditorDefaultDebugger>();
+						Debugger->AddToRoot();
+						Debugger->Register();
+						return Debugger;
+					}();
+					DefaultDebugger->Draw(DeltaTime);
+				}
 			}
 			DrawContext.OnDraw.Broadcast(DeltaTime);	
 		}

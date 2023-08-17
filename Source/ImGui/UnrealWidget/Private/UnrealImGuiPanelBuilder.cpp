@@ -10,12 +10,12 @@
 
 FUnrealImGuiPanelBuilder::FUnrealImGuiPanelBuilder()
 {
-	SupportPanelTypes.Add(UUnrealImGuiDefaultPanelBase::StaticClass());
+
 }
 
 void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 {
-	if (DockSpaceName == NAME_None || SupportPanelTypes.Num() == 0 || SupportPanelTypes.Contains(nullptr) || SupportLayoutTypes.Num() == 0)
+	if (DockSpaceName == NAME_None)
 	{
 		checkNoEntry();
 		return;
@@ -40,10 +40,9 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	};
 	
 	TSet<const UClass*> VisitedLayoutClasses;
-	for (const TSubclassOf<UUnrealImGuiLayoutBase>& SupportLayoutType : SupportLayoutTypes)
 	{
 		TArray<UClass*> LayoutClasses;
-		GetDerivedClasses(SupportLayoutType, LayoutClasses);
+		GetDerivedClasses(UUnrealImGuiLayoutBase::StaticClass(), LayoutClasses);
 		RemoveNotLeafClass(LayoutClasses);
 		TSet<FName> ExistLayoutNames;
 		for (UClass* Class : LayoutClasses)
@@ -53,13 +52,20 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
-			if (VisitedLayoutClasses.Contains(Class))
+			bool bIsAlreadyInSet;
+			VisitedLayoutClasses.Add(Class, &bIsAlreadyInSet);
+			if (bIsAlreadyInSet)
 			{
 				continue;
 			}
-			VisitedLayoutClasses.Add(Class);
 
-			const FName LayoutName = *Class->GetDefaultObject<UUnrealImGuiLayoutBase>()->LayoutName.ToString();
+			const UUnrealImGuiLayoutBase* CDO = Class->GetDefaultObject<UUnrealImGuiLayoutBase>();
+			if (CDO->ShouldCreateLayout(Owner) == false)
+			{
+				continue;
+			}
+
+			const FName LayoutName = *CDO->LayoutName.ToString();
 			if (ensure(LayoutName != NAME_None && ExistLayoutNames.Contains(LayoutName) == false))
 			{
 				ExistLayoutNames.Add(LayoutName);
@@ -79,10 +85,9 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	}
 
 	TSet<const UClass*> VisitedPanelClasses;
-	for (const TSubclassOf<UUnrealImGuiPanelBase>& SupportPanelType : SupportPanelTypes)
 	{
 		TArray<UClass*> PanelClasses;
-		GetDerivedClasses(SupportPanelType, PanelClasses);
+		GetDerivedClasses(UUnrealImGuiPanelBase::StaticClass(), PanelClasses);
 		RemoveNotLeafClass(PanelClasses);
 		TSet<FName> ExistPanelNames;
 		for (const UClass* Class : PanelClasses)
@@ -92,13 +97,20 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
-			if (VisitedPanelClasses.Contains(Class))
+			bool bIsAlreadyInSet;
+			VisitedPanelClasses.Add(Class, &bIsAlreadyInSet);
+			if (bIsAlreadyInSet)
 			{
 				continue;
 			}
-			VisitedPanelClasses.Add(Class);
-			
-			const FName PanelName = *Class->GetDefaultObject<UUnrealImGuiPanelBase>()->Title.ToString();
+
+			const UUnrealImGuiPanelBase* CDO = Class->GetDefaultObject<UUnrealImGuiPanelBase>();
+			if (CDO->ShouldCreatePanel(Owner) == false)
+			{
+				continue;
+			}
+
+			const FName PanelName = *CDO->Title.ToString();
 			if (ensure(PanelName != NAME_None && ExistPanelNames.Contains(PanelName) == false))
 			{
 				ExistPanelNames.Add(PanelName);

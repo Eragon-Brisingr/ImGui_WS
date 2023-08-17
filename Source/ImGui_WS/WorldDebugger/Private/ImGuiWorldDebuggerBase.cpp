@@ -108,8 +108,6 @@ AImGuiWorldDebuggerBase::AImGuiWorldDebuggerBase()
 	: bEnableImGuiWorldDebugger(true)
 {
 	PanelBuilder.DockSpaceName = TEXT("ImGuiWorldDebuggerDockSpace");
-	PanelBuilder.SupportLayoutTypes.Add(UImGuiWorldDebuggerLayoutBase::StaticClass());
-	PanelBuilder.SupportPanelTypes.Add(UImGuiWorldDebuggerPanelBase::StaticClass());
 }
 
 void AImGuiWorldDebuggerBase::BeginPlay()

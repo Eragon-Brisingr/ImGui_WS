@@ -4,9 +4,15 @@
 #include "ImGuiWorldDebuggerLayout.h"
 
 #include "imgui.h"
+#include "ImGuiWorldDebuggerBase.h"
 #include "imgui_internal.h"
 
 #define LOCTEXT_NAMESPACE "ImGuiWorldDebugger"
+
+bool UImGuiWorldDebuggerLayoutBase::ShouldCreateLayout(UObject* Owner) const
+{
+	return Owner && Owner->IsA<AImGuiWorldDebuggerBase>();
+}
 
 UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 {

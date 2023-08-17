@@ -5,16 +5,14 @@
 #include "CoreMinimal.h"
 #include "UnrealImGuiLayout.h"
 #include "UnrealImGuiPanelBuilder.h"
-#include "UnrealImGuiPanel.h"
 #include "ImGuiEditorDefaultLayout.generated.h"
 
-/**
- * 
- */
 UCLASS(Abstract)
 class UImGuiEditorDefaultLayoutBase : public UUnrealImGuiLayoutBase
 {
 	GENERATED_BODY()
+public:
+	bool ShouldCreateLayout(UObject* Owner) const override;
 };
 
 UCLASS()
@@ -38,21 +36,18 @@ public:
 	void LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) override;
 };
 
-
-UCLASS(Abstract)
-class UImGuiEditorDefaultPanelBase : public UUnrealImGuiPanelBase
+UCLASS()
+class UImGuiEditorDefaultDebugger : public UObject
 {
 	GENERATED_BODY()
 public:
-};
+	UImGuiEditorDefaultDebugger();
 
-class FImGuiEditorDefaultLayoutBuilder : public FUnrealImGuiPanelBuilder, public FGCObject
-{
-	void AddReferencedObjects(FReferenceCollector& Collector) override;
-	FString GetReferencerName() const override;
+	UWorld* GetWorld() const override;
 
-public:
-	FImGuiEditorDefaultLayoutBuilder();
+	UPROPERTY()
+	FUnrealImGuiPanelBuilder PanelBuilder;
 
+	void Register();
 	void Draw(float DeltaSeconds);
 };

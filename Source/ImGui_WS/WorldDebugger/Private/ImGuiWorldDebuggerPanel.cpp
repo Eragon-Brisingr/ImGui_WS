@@ -5,6 +5,11 @@
 
 #include "ImGuiWorldDebuggerBase.h"
 
+bool UImGuiWorldDebuggerPanelBase::ShouldCreatePanel(UObject* Owner) const
+{
+	return Owner && Owner->IsA<AImGuiWorldDebuggerBase>();
+}
+
 void UImGuiWorldDebuggerPanelBase::Register(UObject* Owner)
 {
 	Register(CastChecked<AImGuiWorldDebuggerBase>(Owner));

@@ -57,6 +57,8 @@ protected:
 	UPROPERTY(Config)
 	TMap<FName, bool> PanelOpenState;
 
+	virtual bool ShouldCreatePanel(UObject* Owner) const { return true; }
+
 	virtual void Register(UObject* Owner) {}
 	virtual void Unregister(UObject* Owner) {}
 
@@ -66,10 +68,4 @@ protected:
 	virtual void Draw(UObject* Owner, float DeltaSeconds) {}
 
 	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, float DeltaSeconds);
-};
-
-UCLASS(Abstract)
-class IMGUI_API UUnrealImGuiDefaultPanelBase : public UUnrealImGuiPanelBase
-{
-	GENERATED_BODY()
 };

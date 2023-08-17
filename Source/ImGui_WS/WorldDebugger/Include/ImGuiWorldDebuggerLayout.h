@@ -14,6 +14,7 @@ class IMGUI_WS_API UImGuiWorldDebuggerLayoutBase : public UUnrealImGuiLayoutBase
 {
 	GENERATED_BODY()
 public:
+	bool ShouldCreateLayout(UObject* Owner) const override;
 };
 
 UCLASS()

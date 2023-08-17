@@ -19,6 +19,7 @@ public:
 	UUnrealImGuiLayoutBase()
 	{}
 
+	virtual bool ShouldCreateLayout(UObject* Owner) const { unimplemented(); return false; }
 	virtual void Register(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) {}
 	virtual void Unregister(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) {}
 	virtual void LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) {}

@@ -16,6 +16,7 @@ class IMGUI_WS_API UImGuiWorldDebuggerPanelBase : public UUnrealImGuiPanelBase
 {
 	GENERATED_BODY()
 private:
+	bool ShouldCreatePanel(UObject* Owner) const override;
 	void Register(UObject* Owner) override final;
 	void Draw(UObject* Owner, float DeltaSeconds) override final;
 	void Unregister(UObject* Owner) override final;

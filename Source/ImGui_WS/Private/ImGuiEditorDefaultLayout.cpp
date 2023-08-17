@@ -6,6 +6,11 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+bool UImGuiEditorDefaultLayoutBase::ShouldCreateLayout(UObject* Owner) const
+{
+	return Owner && Owner->IsA<UImGuiEditorDefaultDebugger>();
+}
+
 void UImGuiEditorDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	Super::LoadDefaultLayout(Owner, LayoutBuilder);
@@ -29,49 +34,45 @@ void UImGuiEditorDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealI
 	ImGui::DockBuilderFinish(DockId);
 }
 
-void FImGuiEditorDefaultLayoutBuilder::AddReferencedObjects(FReferenceCollector& Collector)
+UImGuiEditorDefaultDebugger::UImGuiEditorDefaultDebugger()
 {
-	Collector.AddReferencedObjects(Layouts);
-	Collector.AddReferencedObjects(Panels);
+	PanelBuilder.DockSpaceName = TEXT("ImGuiEditorDefaultLayoutDockSpace");
 }
 
-FString FImGuiEditorDefaultLayoutBuilder::GetReferencerName() const
+UWorld* UImGuiEditorDefaultDebugger::GetWorld() const
 {
-	return TEXT("ImGuiEditorDefaultLayoutBuilder");
+	return GWorld;
 }
 
-FImGuiEditorDefaultLayoutBuilder::FImGuiEditorDefaultLayoutBuilder()
+void UImGuiEditorDefaultDebugger::Register()
 {
-	DockSpaceName = TEXT("ImGuiEditorDefaultLayoutDockSpace");
-	SupportLayoutTypes.Add(UImGuiEditorDefaultLayoutBase::StaticClass());
-	SupportPanelTypes.Add(UImGuiEditorDefaultPanelBase::StaticClass());
-	Register(GetTransientPackage());
+	PanelBuilder.Register(this);
 }
 
-void FImGuiEditorDefaultLayoutBuilder::Draw(float DeltaSeconds)
+void UImGuiEditorDefaultDebugger::Draw(float DeltaSeconds)
 {
-	UObject* Owner = GetTransientPackage();
+	UObject* Owner = this;
 
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("Layout"))
 		{
-			DrawLayoutStateMenu(Owner);
+			PanelBuilder.DrawLayoutStateMenu(Owner);
 			if (ImGui::MenuItem("Reset"))
 			{
-				LoadDefaultLayout(Owner);
+				PanelBuilder.LoadDefaultLayout(Owner);
 			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Windows"))
 		{
-			DrawPanelStateMenu(Owner);
+			PanelBuilder.DrawPanelStateMenu(Owner);
 			ImGui::EndMenu();
 		}
 
 		ImGui::EndMainMenuBar();
 	}
-	
+
 	const ImGuiViewport* Viewport = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(Viewport->WorkPos);
 	ImGui::SetNextWindowSize(Viewport->WorkSize);
@@ -83,7 +84,7 @@ void FImGuiEditorDefaultLayoutBuilder::Draw(float DeltaSeconds)
 	WindowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 	if (ImGui::Begin("Background", nullptr, WindowFlags))
 	{
-		DrawPanels(Owner, DeltaSeconds);
+		PanelBuilder.DrawPanels(Owner, DeltaSeconds);
 		ImGui::End();
 	}
 }

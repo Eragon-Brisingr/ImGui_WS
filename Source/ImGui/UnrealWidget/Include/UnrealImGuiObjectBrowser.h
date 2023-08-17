@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class IMGUI_API UUnrealImGuiObjectBrowserPanel : public UUnrealImGuiDefaultPanelBase
+class IMGUI_API UUnrealImGuiObjectBrowserPanel : public UUnrealImGuiPanelBase
 {
 	GENERATED_BODY()
 public:

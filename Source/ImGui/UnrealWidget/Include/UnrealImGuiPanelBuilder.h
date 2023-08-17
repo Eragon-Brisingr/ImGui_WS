@@ -20,12 +20,6 @@ public:
 	
 	// 该布局系统的名称
 	FName DockSpaceName = NAME_None;
-	// 支持的布局类型，该布局的子类都会被搜集至该布局系统
-	UPROPERTY(Transient)
-	TArray<TSubclassOf<UUnrealImGuiLayoutBase>> SupportLayoutTypes;
-	// 支持的面板类型，该面板的子类都会被搜集至该布局系统
-	UPROPERTY(Transient)
-	TArray<TSubclassOf<UUnrealImGuiPanelBase>> SupportPanelTypes;
 
 	void Register(UObject* Owner);
 	void Unregister(UObject* Owner);
