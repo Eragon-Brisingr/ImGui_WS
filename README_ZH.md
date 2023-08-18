@@ -163,8 +163,6 @@ FUnrealImGuiPanelBuilder用于构建所属窗口的布局，需要配置以下�
 | 属性名                | 描述                        |
 |--------------------|---------------------------|
 | DockSpaceName      | 该布局系统的名称                  |
-| SupportLayoutTypes | 支持的布局类型，该布局的子类都会被搜集至该布局系统 |
-| SupportPanelTypes  | 支持的面板类型，该面板的子类都会被搜集至该布局系统 |
 
 配置完布局系统的描述信息后调用以下方法进行面板的绘制
 
@@ -181,6 +179,7 @@ FUnrealImGuiPanelBuilder用于构建所属窗口的布局，需要配置以下�
 
 * 配置LayoutName，没配置布局名的布局不会显示
 * 重写LoadDefaultLayout，声明默认的布局结构
+* 重写ShouldCreateLayout，声明改布局系统支持的Owner
 
 #### ImGuiWorldDebugger默认布局例子
 
@@ -245,6 +244,7 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 * 配置Title，无命名的面板不会被注册
 * 配置DefaultDockSpace，添加面板在布局中的位置
 * 重写Draw，实现面板的绘制
+* 重写ShouldCreatePanel，声明面板支持的Owner（可选）
 
 #### ImGuiWorldDebuggerViewportPanel面板例子
 
@@ -262,6 +262,14 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 	};
 }
 ```
+
+## Viewport拓展
+
+* 继承UUnrealImGuiViewportBase创建特定的Viewport面板
+* 继承UUnrealImGuiViewportExtentBase创建Viewport的绘制拓展
+  * 重写DrawViewportMenu实现菜单的绘制
+  * 重写DrawViewportContent实现Viewport中元素的绘制
+  * 重写ShouldCreateExtent声明该拓展支持的面板（可选）
 
 ## 冒泡消息提示
 

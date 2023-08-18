@@ -87,15 +87,15 @@ void FImGui_EditorModule::StartupModule()
 					SelectedActors.Add(Actor);
 				}
 			}
-			UImGuiWorldDebuggerViewportPanel::WhenEditorSelectionChanged(SelectedActors);
+			UImGuiWorldDebuggerViewportActorExtent::WhenEditorSelectionChanged(SelectedActors);
 		}
 	});
 	SelectNoneEventHandle = USelection::SelectNoneEvent.AddLambda([]()
 	{
-		UImGuiWorldDebuggerViewportPanel::WhenEditorSelectionChanged(TArray<AActor*>{});
+		UImGuiWorldDebuggerViewportActorExtent::WhenEditorSelectionChanged(TArray<AActor*>{});
 	});
 
-	UImGuiWorldDebuggerViewportPanel::EditorSelectActors.BindLambda([](UWorld* World, const TSet<TWeakObjectPtr<AActor>>& SelectedMetaEntities)
+	UImGuiWorldDebuggerViewportActorExtent::EditorSelectActors.BindLambda([](UWorld* World, const TSet<TWeakObjectPtr<AActor>>& SelectedMetaEntities)
 	{
 		USelection* SelectedActors = GEditor->GetSelectedActors();
 		SelectedActors->BeginBatchSelectOperation();

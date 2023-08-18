@@ -68,7 +68,7 @@ World Debugger is the default runtime unreal world debugger provided by this plu
 
 To avoid displaying too many unrelated Actors, the default preview will only display Actors drawn that inherit the UImGuiWorldDebuggerDrawerBase declaration.
 
-![俯视图](Docs/Viewport.png)  
+![Viewport](Docs/Viewport.png)  
 
 ### Filter Actors by Type
 
@@ -149,7 +149,7 @@ See how **FStructCustomizerScoped** is used
 
 ## Panel layout System
 
-![默认布局效果](Docs/DefaultLayout.png)  
+![DefaultLayout](Docs/DefaultLayout.png)  
 
 ### Overview
 
@@ -163,8 +163,6 @@ FUnrealImGuiPanelBuilder is used to build the layout of its window, and the foll
 | property          | describe                                                                                   |
 |-------------------|--------------------------------------------------------------------------------------------|
 | DockSpaceName     | the name of the layout system                                                              |
-| SupportLayoutTypes | Supported layout types, subclasses of the layout will be collected into this layout system |
-| SupportLayoutTypes  | Supported panel types, subclasses of this panel will be collected into this layout system  |
 
 After configuring the description information of the layout system, call the following methods to draw the panel
 
@@ -180,7 +178,8 @@ After configuring the description information of the layout system, call the fol
 Inherit the layout base class types supported under FUnrealImGuiPanelBuilder. For example, ImGuiWorldDebugger extended layout inherits UImGuiWorldDebuggerLayoutBase
 
 * Configure LayoutName. Unnamed layouts will not be displayed
-* Rewrite LoadDefaultLayout to declare the default layout structure
+* implement LoadDefaultLayout to declare the default layout structure
+* implement ShouldCreateLayout to declare support owner
 
 #### ImGuiWorldDebugger default layout example
 
@@ -244,7 +243,8 @@ Inherit the panel base class types supported under FUnrealImGuiPanelBuilder. For
 
 * Configure Title. Unnamed panels will not be registered
 * Configure DefaultDockSpace to add the position of the panel in the layout
-* Rewrite Draw to realize panel drawing
+* Implement Draw to realize panel drawing
+* Implement ShouldCreatePanel to declare support owner (Optional)
 
 #### ImGuiWorldDebuggerViewportPanel panel example
 
@@ -262,6 +262,14 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 	};
 }
 ```
+
+## Viewport Extent
+
+* Inherit UUnrealImGuiViewportBase to declare viewport panel
+* Inherit UUnrealImGuiViewportExtentBase to declare viewport extent draw
+  * Implement DrawViewportMenu draw menu
+  * Implement DrawViewportContent draw viewport content element
+  * Implement ShouldCreateExtent to declare support viewport type (optional)
 
 ## Bubbling message prompt
 

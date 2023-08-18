@@ -7,6 +7,6 @@
 UImGuiWorldDebuggerDrawer_Default::UImGuiWorldDebuggerDrawer_Default()
 {
 	DrawActor = AActor::StaticClass();
-	Color = FLinearColor::Gray;
+	Color = FLinearColor::Gray.ToFColor(true);
 	Radius = 50.f;
 }

@@ -24,8 +24,12 @@ UImGuiWorldDebuggerDetailsPanel::UImGuiWorldDebuggerDetailsPanel()
 void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds)
 {
 	const UImGuiWorldDebuggerViewportPanel* Viewport = WorldDebugger->PanelBuilder.FindPanel<UImGuiWorldDebuggerViewportPanel>();
-
 	if (Viewport == nullptr)
+	{
+		return;
+	}
+	const UImGuiWorldDebuggerViewportActorExtent* ViewportExtent = Viewport->FindExtent<UImGuiWorldDebuggerViewportActorExtent>();
+	if (ViewportExtent == nullptr)
 	{
 		return;
 	}
@@ -64,8 +68,8 @@ void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugge
 
 	UnrealImGui::TObjectArray<AActor> FilteredSelectedActors;
 	{
-		FilteredSelectedActors.Reset(Viewport->SelectedActors.Num());
-		for (const TWeakObjectPtr<AActor>& ActorPtr : Viewport->SelectedActors)
+		FilteredSelectedActors.Reset(ViewportExtent->SelectedActors.Num());
+		for (const TWeakObjectPtr<AActor>& ActorPtr : ViewportExtent->SelectedActors)
 		{
 			if (AActor* Actor = ActorPtr.Get())
 			{

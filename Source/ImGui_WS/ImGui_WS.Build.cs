@@ -33,9 +33,6 @@ public class ImGui_WS : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
         {
-	        "AIModule",
-	        "Navmesh",
-	        "NavigationSystem",
 	        "Projects",
 	        "DeveloperSettings",
 	        "zlib",

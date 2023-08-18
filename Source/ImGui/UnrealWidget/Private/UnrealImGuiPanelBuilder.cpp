@@ -44,7 +44,6 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		TArray<UClass*> LayoutClasses;
 		GetDerivedClasses(UUnrealImGuiLayoutBase::StaticClass(), LayoutClasses);
 		RemoveNotLeafClass(LayoutClasses);
-		TSet<FName> ExistLayoutNames;
 		for (UClass* Class : LayoutClasses)
 		{
 			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
@@ -65,17 +64,15 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
-			const FName LayoutName = *CDO->LayoutName.ToString();
-			if (ensure(LayoutName != NAME_None && ExistLayoutNames.Contains(LayoutName) == false))
+			UUnrealImGuiLayoutBase* Layout = NewObject<UUnrealImGuiLayoutBase>(Owner, Class, Class->GetFName(), RF_Transient);
+			if (Layout->LayoutName.IsEmpty())
 			{
-				ExistLayoutNames.Add(LayoutName);
-
-				UUnrealImGuiLayoutBase* Layout = NewObject<UUnrealImGuiLayoutBase>(Owner, Class, Class->GetFName(), RF_Transient);
-				const int32 Idx = Layouts.Add(Layout);
-				if (ActiveLayoutClass == Class)
-				{
-					ActiveLayoutIndex = Idx;
-				}
+				Layout->LayoutName = FText::FromName(Layout->GetClass()->GetFName());
+			}
+			const int32 Idx = Layouts.Add(Layout);
+			if (ActiveLayoutClass == Class)
+			{
+				ActiveLayoutIndex = Idx;
 			}
 		}
 		for (UUnrealImGuiLayoutBase* Layout : Layouts)
@@ -89,7 +86,6 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		TArray<UClass*> PanelClasses;
 		GetDerivedClasses(UUnrealImGuiPanelBase::StaticClass(), PanelClasses);
 		RemoveNotLeafClass(PanelClasses);
-		TSet<FName> ExistPanelNames;
 		for (const UClass* Class : PanelClasses)
 		{
 			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
@@ -110,14 +106,12 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
-			const FName PanelName = *CDO->Title.ToString();
-			if (ensure(PanelName != NAME_None && ExistPanelNames.Contains(PanelName) == false))
+			UUnrealImGuiPanelBase* Panel = NewObject<UUnrealImGuiPanelBase>(Owner, Class, Class->GetFName(), RF_Transient);
+			if (Panel->Title.IsEmpty())
 			{
-				ExistPanelNames.Add(PanelName);
-
-				UUnrealImGuiPanelBase* Panel = NewObject<UUnrealImGuiPanelBase>(Owner, Class, Class->GetFName(), RF_Transient);
-				Panels.Add(Panel);
+				Panel->Title = FText::FromName(Panel->GetClass()->GetFName());
 			}
+			Panels.Add(Panel);
 		}
 	}
 
@@ -182,11 +176,17 @@ void FUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)
 	for (int32 Idx = 0; Idx < Layouts.Num(); ++Idx)
 	{
 		const UUnrealImGuiLayoutBase* Layout = Layouts[Idx];
-		if (ImGui::RadioButton(TCHAR_TO_UTF8(*Layout->LayoutName.ToString()), ActiveLayoutIndex == Idx))
+		if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Layout->LayoutName.ToString(), *Layout->GetClass()->GetName())), ActiveLayoutIndex == Idx))
 		{
 			ActiveLayoutIndex = Idx;
 			ActiveLayoutClass = Layout->GetClass();
 			Owner->SaveConfig();
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::BeginTooltip();
+			ImGui::Text(TCHAR_TO_UTF8(*Layout->GetClass()->GetName()));
+			ImGui::EndTooltip();
 		}
 	}
 }
@@ -196,12 +196,18 @@ void FUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
 		bool IsOpen = Panel->bIsOpen;
-		if (ImGui::Checkbox(TCHAR_TO_UTF8(*Panel->Title.ToString()), &IsOpen))
+		if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
 		{
 			const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
 			Panel->SetOpenState(IsOpen);
 			Panel->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
 			Panel->SaveConfig();
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::BeginTooltip();
+			ImGui::Text(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
+			ImGui::EndTooltip();
 		}
 	}
 }

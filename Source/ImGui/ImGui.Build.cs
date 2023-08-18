@@ -27,6 +27,8 @@ public class ImGui : ModuleRules
 			"EngineSettings",
 			"Slate",
 			"DesktopPlatform",
+			"Navmesh",
+			"NavigationSystem",
 		});
 		
 		PublicIncludePaths.AddRange(new string[] {

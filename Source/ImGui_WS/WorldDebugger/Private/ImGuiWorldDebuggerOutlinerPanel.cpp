@@ -74,6 +74,11 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 	{
 		return;
 	}
+	UImGuiWorldDebuggerViewportActorExtent* ViewportExtent = Viewport->FindExtent<UImGuiWorldDebuggerViewportActorExtent>();
+	if (ViewportExtent == nullptr)
+	{
+		return;
+	}
 
 	if (bInvokeRefreshSortOrder)
 	{
@@ -140,10 +145,10 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 					// OutlinerTableColumnID_Name
 					if (ImGui::TableNextColumn())
 					{
-						if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), Viewport->SelectedActors.Contains(Actor)))
+						if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), ViewportExtent->SelectedActors.Contains(Actor)))
 						{
-							Viewport->SetSelectedEntities({ Actor });
-							Viewport->FocusActor(Actor);
+							ViewportExtent->SetSelectedEntities({ Actor });
+							ViewportExtent->FocusActor(Actor);
 						}
 						if (ImGui::IsItemHovered())
 						{
@@ -173,7 +178,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 		ImGui::EndChild();
 	}
 
-	ImGui::Text("%d Selected | %d Filtered | %d Existed ", Viewport->SelectedActors.Num(), DisplayActors.Num(), Viewport->GetDrawableActorsCount());
+	ImGui::Text("%d Selected | %d Filtered | %d Existed ", ViewportExtent->SelectedActors.Num(), DisplayActors.Num(), ViewportExtent->GetDrawableActorsCount());
 }
 
 void UImGuiWorldDebuggerOutlinerPanel::RefreshDisplayActors()

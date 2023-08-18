@@ -6,7 +6,7 @@
 #include "UObject/Object.h"
 #include "ImGuiWorldDebuggerDrawer.generated.h"
 
-struct FImGuiWorldViewportContext;
+struct FUnrealImGuiViewportContext;
 
 /**
  * 
@@ -25,7 +25,7 @@ public:
 	TSoftClassPtr<AActor> DrawActor;
 
 	UPROPERTY()
-	FLinearColor Color = FColor::Cyan;
+	FColor Color = FColor::Cyan;
 
 	UPROPERTY()
 	float Radius = 100.f;
@@ -33,7 +33,7 @@ public:
 	UPROPERTY()
 	uint8 bAlwaysDebuggerDraw : 1;
 	
-	virtual void DrawImGuiDebuggerExtendInfo(const AActor* Actor, const FImGuiWorldViewportContext& DebuggerContext) const {}
+	virtual void DrawImGuiDebuggerExtendInfo(const AActor* Actor, const FUnrealImGuiViewportContext& ViewportContext) const {}
 	virtual void DrawImGuiDebuggerToolTips(const AActor* Actor) const {}
 };
 

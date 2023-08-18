@@ -4,6 +4,13 @@
 #include "UnrealImGuiViewportBase.h"
 
 #include "imgui.h"
+#include "UnrealImGuiViewportExtent.h"
+#include "GameFramework/PlayerState.h"
+
+namespace UnrealImGui::Viewport::EFilterType
+{
+	const FString TypeFilter_FilterType = TEXT("type");
+}
 
 UUnrealImGuiViewportBase::UUnrealImGuiViewportBase()
 {
@@ -35,7 +42,7 @@ void UUnrealImGuiViewportBase::Register(UObject* Owner)
 		GetDerivedClasses(UUnrealImGuiViewportExtentBase::StaticClass(), ExtentClasses);
 		RemoveNotLeafClass(ExtentClasses);
 		TSet<const UClass*> VisitedExtentClasses;
-		for (const UClass* Class : ExtentClasses)
+		for (UClass* Class : ExtentClasses)
 		{
 			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
 			{
@@ -49,6 +56,10 @@ void UUnrealImGuiViewportBase::Register(UObject* Owner)
 				continue;
 			}
 
+			if (ShouldCreateExtent(Owner, Class) == false)
+			{
+				continue;
+			}
 			const UUnrealImGuiViewportExtentBase* CDO = Class->GetDefaultObject<UUnrealImGuiViewportExtentBase>();
 			if (CDO->ShouldCreateExtent(Owner, this) == false)
 			{
@@ -56,28 +67,39 @@ void UUnrealImGuiViewportBase::Register(UObject* Owner)
 			}
 
 			UUnrealImGuiViewportExtentBase* Extent = NewObject<UUnrealImGuiViewportExtentBase>(this, Class, Class->GetFName(), RF_Transient);
+			if (Extent->ExtentName.IsEmpty())
+			{
+				Extent->ExtentName = FText::FromName(Class->GetFName());
+			}
 			Extents.Add(Extent);
 		}
 		Extents.Sort([](const UUnrealImGuiViewportExtentBase& LHS, const UUnrealImGuiViewportExtentBase& RHS)
 		{
-			return LHS.Priority > RHS.Priority;
+			return LHS.Priority < RHS.Priority;
 		});
 	}
 	for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 	{
 		Extent->Register(Owner, this);
+		if (Extent->bEnable)
+		{
+			Extent->WhenEnable(Owner, this);
+		}
 	}
 	for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 	{
-		PassDrawers.Add({ Extent->Priority, [Extent](UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)
+		PassDrawers.Add({ Extent, Extent->Priority, [Extent](UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)
 		{
 			Extent->DrawViewportContent(Owner, ViewportContext);
 		}});
-		PassDrawers.Append(Extent->GetPassDrawers(Owner, this));
+		for (auto& PassDrawer : Extent->GetPassDrawers(Owner, this))
+		{
+			PassDrawers.Add({ Extent, PassDrawer.Priority, MoveTemp(PassDrawer.Drawer) });
+		}
 	}
 	PassDrawers.Sort([](const FPassDrawer& LHS, const FPassDrawer& RHS)
 	{
-		return LHS.Priority > RHS.Priority;
+		return LHS.Priority < RHS.Priority;
 	});
 
 	CurrentViewLocation = ViewLocation;
@@ -88,12 +110,22 @@ void UUnrealImGuiViewportBase::Unregister(UObject* Owner)
 {
 	for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 	{
+		if (Extent->bEnable)
+		{
+			Extent->WhenDisable(Owner, this);
+		}
 		Extent->Unregister(Owner, this);
 	}
 }
 
 void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 {
+	const UWorld* World = Owner->GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
 	ImGuiIO& IO = ImGui::GetIO();
 	// Avoid left mouse drag window
 	TGuardValue<bool> ConfigWindowsMoveFromTitleBarOnlyGuard{ IO.ConfigWindowsMoveFromTitleBarOnly, true };
@@ -116,24 +148,59 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			ImGui::Separator();
 			if (ImGui::Button("To View Location"))
 			{
-				if (const UWorld* World = Owner->GetWorld())
+				if (World->ViewLocationsRenderedLastFrame.Num() > 0)
 				{
-					if (World->ViewLocationsRenderedLastFrame.Num() > 0)
-					{
-						const FVector LastViewLocation{ World->ViewLocationsRenderedLastFrame[0] };
-						ViewLocation = FVector2D{ LastViewLocation.X, LastViewLocation.Y };
-					}
+					const FVector LastViewLocation{ World->ViewLocationsRenderedLastFrame[0] };
+					ViewLocation = FVector2D{ LastViewLocation.X, LastViewLocation.Y };
 				}
 			}
 			if (ImGui::Button("To Origin Location"))
 			{
 				ViewLocation = FVector2D::ZeroVector;
 			}
+			DrawViewportMenu(Owner, bIsConfigDirty);
 			ImGui::EndMenu();
 		}
-		for (UUnrealImGuiViewportExtentBase* Extent : Extents)
+		for (int32 Idx = Extents.Num() - 1; Idx >= 0; --Idx)
 		{
-			Extent->DrawViewportMenu(Owner, bIsConfigDirty);
+			UUnrealImGuiViewportExtentBase* Extent = Extents[Idx];
+			if (Extent->bEnable == false)
+			{
+				continue;
+			}
+			bool bIsExtentConfigDirty = false;
+			Extent->DrawViewportMenu(Owner, bIsExtentConfigDirty);
+			if (bIsExtentConfigDirty)
+			{
+				Extent->SaveConfig();
+			}
+		}
+		if (ImGui::BeginMenu("Extents"))
+		{
+			for (UUnrealImGuiViewportExtentBase* Extent : Extents)
+			{
+				bool bEnable = Extent->bEnable;
+				if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Extent->ExtentName.ToString(), *Extent->GetClass()->GetName())), &bEnable))
+				{
+					Extent->bEnable = bEnable;
+					if (bEnable)
+					{
+						Extent->WhenEnable(Owner, this);
+					}
+					else
+					{
+						Extent->WhenDisable(Owner, this);
+					}
+					Extent->SaveConfig();
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::BeginTooltip();
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Extent->GetClass()->GetName()));
+					ImGui::EndTooltip();
+				}
+			}
+			ImGui::EndMenu();
 		}
 
 		{
@@ -149,7 +216,12 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			{
 				for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 				{
-					Extent->WhenFilterStringChanged(UTF8_TO_TCHAR(FilterArray.GetData()));
+					if (Extent->bEnable == false)
+					{
+						continue;
+					}
+					FilterString = UTF8_TO_TCHAR(FilterArray.GetData());
+					Extent->WhenFilterStringChanged(this, FilterString);
 				}
 			}
 			if (ImGui::IsItemHovered() && ImGui::IsItemActive() == false)
@@ -157,7 +229,11 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 				ImGui::BeginTooltip();
 				for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 				{
-					Extent->DrawFilterTooltip();
+					if (Extent->bEnable == false)
+					{
+						continue;
+					}
+					Extent->DrawFilterTooltip(this);
 				}
 				ImGui::EndTooltip();
 			}
@@ -169,7 +245,11 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			{
 				for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 				{
-					Extent->FocusEntitiesByFilter();
+					if (Extent->bEnable == false)
+					{
+						continue;
+					}
+					Extent->FocusEntitiesByFilter(this);
 				}
 			}
 
@@ -178,7 +258,12 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			{
 				for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 				{
-					Extent->WhenFilterStringChanged(TEXT(""));
+					if (Extent->bEnable == false)
+					{
+						continue;
+					}
+					FilterString.Reset();
+					Extent->WhenFilterStringChanged(this, FilterString);
 				}
 			}
 			if (PreInputTextIsActive || InputTextIsActive)
@@ -192,7 +277,11 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 					ImGui::PushAllowKeyboardFocus(false);
 					for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 					{
-						Extent->DrawFilterPopup();
+						if (Extent->bEnable == false)
+						{
+							continue;
+						}
+						Extent->DrawFilterPopup(this);
 					}
 					ImGui::PopAllowKeyboardFocus();
 					ImGui::EndPopup();
@@ -244,6 +333,10 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			{
 				for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 				{
+					if (Extent->bEnable == false)
+					{
+						continue;
+					}
 					Extent->ResetSelection();
 				}
 			}
@@ -277,9 +370,70 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 		ImGui::EndPopup();
 	}
 
+	DrawViewportContent(Owner, Context);
 	for (const auto& Drawer : PassDrawers)
 	{
+		if (Drawer.Extent->bEnable == false)
+		{
+			continue;
+		}
+		FGuardValue_Bitfield(Context.bIsConfigDirty, false);
 		Drawer.Drawer(Owner, Context);
+		if (Context.bIsConfigDirty)
+		{
+			Drawer.Extent->SaveConfig();
+		}
+	}
+
+	// Draw player location
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APlayerController* PlayerController = It->Get())
+		{
+			// Draw Camera
+			FVector ControlLocation;
+			FRotator ControlRotation;
+			PlayerController->GetPlayerViewPoint(ControlLocation, ControlRotation);
+
+			const FTransform CameraViewTransform{ ControlRotation.Quaternion(), ControlLocation };
+			const TArray<FVector2D> CameraViewShape
+			{
+				FVector2D{ CameraViewTransform.TransformPosition({-20.f / CurrentZoom, -3.f / CurrentZoom, 0.f}) },
+				FVector2D{ CameraViewTransform.TransformPosition({-20.f / CurrentZoom, 3.f / CurrentZoom, 0.f}) },
+				FVector2D{ CameraViewTransform.TransformPosition({10.f / CurrentZoom, 10.f / CurrentZoom, 0.f}) },
+				FVector2D{ CameraViewTransform.TransformPosition({10.f / CurrentZoom, -10.f / CurrentZoom, 0.f}) }
+			};
+
+			if (Context.ViewBounds.Intersect(FBox2D(CameraViewShape)))
+			{
+				constexpr ImU32 CameraViewColor = IM_COL32(0, 127, 255, 127);
+
+				TArray<ImVec2> Ploys;
+				for (const FVector2D& Point : CameraViewShape)
+				{
+					Ploys.Add(ImVec2{ Context.WorldToScreenLocation(Point) });
+				}
+				DrawList->AddConvexPolyFilled(Ploys.GetData(), Ploys.Num(), CameraViewColor);
+
+				// Draw PlayerName
+				if (const APlayerState* PlayerState = PlayerController->PlayerState)
+				{
+					const ImVec2 ControllerScreenLocation{ Context.WorldToScreenLocation({ ControlLocation.X, ControlLocation.Y }) };
+					DrawList->AddText({ ControllerScreenLocation.x - 40.f, ControllerScreenLocation.y }, IM_COL32_WHITE, TCHAR_TO_UTF8(*PlayerState->GetPlayerName()));
+				}
+			}
+		}
+	}
+	if (World->WorldType == EWorldType::Editor || (World->GetGameViewport() && World->GetGameViewport()->IsSimulateInEditorViewport()))
+	{
+		if (World->ViewLocationsRenderedLastFrame.Num() > 0)
+		{
+			const FVector LastViewLocation{ World->ViewLocationsRenderedLastFrame[0] };
+			const FVector2D ViewLocation2D{ LastViewLocation.X, LastViewLocation.Y };
+			Context.DrawCircleFilled(ViewLocation2D, 3.f / CurrentZoom, FColor::White);
+			const ImVec2 CameraScreenLocation = ImVec2{ Context.WorldToScreenLocation(ViewLocation2D) };
+			DrawList->AddText({ CameraScreenLocation.x - 20.f, CameraScreenLocation.y + 6.f }, IM_COL32_WHITE, "World View");
+		}
 	}
 
 	// Draw drag area
@@ -341,97 +495,14 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 	}
 }
 
-ImU32 FUnrealImGuiViewportContext::FColorToU32(const FColor& Color)
+UUnrealImGuiViewportExtentBase* UUnrealImGuiViewportBase::FindExtent(const TSubclassOf<UUnrealImGuiViewportExtentBase>& ExtentType) const
 {
-	return IM_COL32(Color.R, Color.G, Color.B, Color.A);
-}
-
-void FUnrealImGuiViewportContext::DrawLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float Thickness) const
-{
-	if (ViewBounds.Intersect(FBox2D(TArray<FVector2D>{Start, End})))
+	for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 	{
-		DrawList->AddLine(ImVec2{ WorldToScreenLocation(Start) }, ImVec2{ WorldToScreenLocation(End) }, FColorToU32(Color), Thickness);
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawTriangle(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FColor& Color, float Thickness) const
-{
-	if (ViewBounds.Intersect(FBox2D{ { P1, P2, P3 } }))
-	{
-		DrawList->AddTriangle(ImVec2{ WorldToScreenLocation(P1) }, ImVec2{ WorldToScreenLocation(P2) }, ImVec2{ WorldToScreenLocation(P3) }, FColorToU32(Color), Thickness);
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawTriangleFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FColor& Color) const
-{
-	if (ViewBounds.Intersect(FBox2D{ { P1, P2, P3 } }))
-	{
-		DrawList->AddTriangleFilled(ImVec2{ WorldToScreenLocation(P1) }, ImVec2{ WorldToScreenLocation(P2) }, ImVec2{ WorldToScreenLocation(P3) }, FColorToU32(Color));
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawRect(const FBox2D& Box, const FColor& Color, float Rounding, float Thickness) const
-{
-	if (ViewBounds.Intersect(Box) && Box.ExpandBy(Rounding).IsInside(ViewBounds) == false)
-	{
-		DrawList->AddRect(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawCornerFlags_All, Thickness);
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawRectFilled(const FBox2D& Box, const FColor& Color, float Rounding) const
-{
-	if (ViewBounds.Intersect(Box))
-	{
-		DrawList->AddRectFilled(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawCornerFlags_All);
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawCircle(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments, float Thickness) const
-{
-	const FBox2D CircleBounds{ FVector2D{Center} - FVector2D(Radius), FVector2D{Center} + FVector2D(Radius) };
-	if (ViewBounds.Intersect(CircleBounds))
-	{
-		const float InnerRectRadius = Radius * 0.7071f;
-		const FBox2D InnerRectBounds = FBox2D{ FVector2D{Center} - FVector2D(InnerRectRadius), FVector2D{Center} + FVector2D(InnerRectRadius) };
-
-		if (InnerRectBounds.IsInside(ViewBounds) == false)
+		if (Extent->bEnable && Extent->IsA(ExtentType))
 		{
-			DrawList->AddCircle(ImVec2{ WorldToScreenLocation(Center) }, Radius * Zoom, FColorToU32(Color), NumSegments, Thickness);
+			return Extent;
 		}
 	}
-}
-
-void FUnrealImGuiViewportContext::DrawCircleFilled(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments) const
-{
-	const FBox2D CircleBounds{ FVector2D{Center} - FVector2D(Radius), FVector2D{Center} + FVector2D(Radius) };
-	if (ViewBounds.Intersect(CircleBounds))
-	{
-		DrawList->AddCircleFilled(ImVec2{ WorldToScreenLocation(Center) }, Radius * Zoom, FColorToU32(Color), NumSegments);
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawQuad(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color, float Thickness) const
-{
-	const FBox2D QuadBounds{ { P1, P2, P3, P4 } };
-	if (ViewBounds.Intersect(QuadBounds))
-	{
-		DrawList->AddQuad(ImVec2{ WorldToScreenLocation(P1) }, ImVec2{ WorldToScreenLocation(P2) }, ImVec2{ WorldToScreenLocation(P3) }, ImVec2{ WorldToScreenLocation(P4) }, FColorToU32(Color), Thickness);
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawQuadFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color) const
-{
-	const FBox2D QuadBounds{ { P1, P2, P3, P4 } };
-	if (ViewBounds.Intersect(QuadBounds))
-	{
-		DrawList->AddQuadFilled(ImVec2{ WorldToScreenLocation(P1) }, ImVec2{ WorldToScreenLocation(P2) }, ImVec2{ WorldToScreenLocation(P3) }, ImVec2{ WorldToScreenLocation(P4) }, FColorToU32(Color));
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawText(const FVector2D& Position, const FString& Text, const FColor& Color) const
-{
-	if (ViewBounds.IsInside(Position))
-	{
-		DrawList->AddText(ImVec2{ WorldToScreenLocation(Position) }, FColorToU32(Color), TCHAR_TO_UTF8(*Text));
-	}
+	return nullptr;
 }
