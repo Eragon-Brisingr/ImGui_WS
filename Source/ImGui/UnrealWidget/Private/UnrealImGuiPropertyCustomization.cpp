@@ -333,10 +333,11 @@ namespace UnrealImGui
 						return LHS->GetFName().FastLess(RHS->GetFName());
 					});
 				}
-				if (ImGui::ListBoxHeader("##Content", CachedClassList.Num()))
+				if (ImGui::BeginListBox("##Content"))
 				{
 					const UClass* FirstValueClass = FirstValue ? FirstValue->GetClass() : nullptr;
-					ImGuiListClipper ListClipper{ CachedClassList.Num() };
+					ImGuiListClipper ListClipper{};
+					ListClipper.Begin(CachedClassList.Num());
 					while (ListClipper.Step())
 					{
 						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
@@ -370,7 +371,7 @@ namespace UnrealImGui
 						}
 					}
 					ListClipper.End();
-					ImGui::ListBoxFooter();
+					ImGui::EndListBox();
 				}
 				ImGui::EndCombo();
 			}
@@ -439,9 +440,10 @@ namespace UnrealImGui
 						return LHS.AssetName.FastLess(RHS.AssetName);
 					});
 				}
-				if (ImGui::ListBoxHeader("##Content", CachedAssetList.Num()))
+				if (ImGui::BeginListBox("##Content"))
 				{
-					ImGuiListClipper ListClipper{ CachedAssetList.Num() };
+					ImGuiListClipper ListClipper{};
+					ListClipper.Begin(CachedAssetList.Num());
 					while (ListClipper.Step())
 					{
 						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
@@ -470,7 +472,7 @@ namespace UnrealImGui
 						}
 					}
 					ListClipper.End();
-					ImGui::ListBoxFooter();
+					ImGui::EndListBox();
 				}
 				ImGui::EndCombo();
 			}
@@ -583,9 +585,10 @@ namespace UnrealImGui
 						CachedActorList.Add(Actor);
 					}
 				}
-				if (ImGui::ListBoxHeader("##Content", CachedActorList.Num()))
+				if (ImGui::BeginListBox("##Content"))
 				{
-					ImGuiListClipper ListClipper{ CachedActorList.Num() };
+					ImGuiListClipper ListClipper{};
+					ListClipper.Begin(CachedActorList.Num());
 					while (ListClipper.Step())
 					{
 						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
@@ -623,7 +626,7 @@ namespace UnrealImGui
 						}
 					}
 					ListClipper.End();
-					ImGui::ListBoxFooter();
+					ImGui::EndListBox();
 				}
 				ImGui::EndCombo();
 			}
@@ -672,9 +675,10 @@ namespace UnrealImGui
 						return LHS.AssetName.FastLess(RHS.AssetName);
 					});
 				}
-				if (ImGui::ListBoxHeader("##Content", CachedAssetList.Num()))
+				if (ImGui::BeginListBox("##Content"))
 				{
-					ImGuiListClipper ListClipper{ CachedAssetList.Num() };
+					ImGuiListClipper ListClipper{};
+					ListClipper.Begin(CachedAssetList.Num());
 					while (ListClipper.Step())
 					{
 						for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
@@ -704,7 +708,7 @@ namespace UnrealImGui
 						}
 					}
 					ListClipper.End();
-					ImGui::ListBoxFooter();
+					ImGui::EndListBox();
 				}
 				ImGui::EndCombo();
 			}
@@ -777,9 +781,10 @@ namespace UnrealImGui
 					return LHS->GetFName().FastLess(RHS->GetFName());
 				});
 			}
-			if (ImGui::ListBoxHeader("##Content", CachedClassList.Num()))
+			if (ImGui::BeginListBox("##Content"))
 			{
-				ImGuiListClipper ListClipper{ CachedClassList.Num() };
+				ImGuiListClipper ListClipper{};
+				ListClipper.Begin(CachedClassList.Num());
 				while (ListClipper.Step())
 				{
 					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
@@ -810,7 +815,7 @@ namespace UnrealImGui
 					}
 				}
 				ListClipper.End();
-				ImGui::ListBoxFooter();
+				ImGui::EndListBox();
 			}
 			ImGui::EndCombo();
 		}
@@ -882,9 +887,10 @@ namespace UnrealImGui
 					return LHS->GetFName().FastLess(RHS->GetFName());
 				});
 			}
-			if (ImGui::ListBoxHeader("##Content", CachedClassList.Num()))
+			if (ImGui::BeginListBox("##Content"))
 			{
-				ImGuiListClipper ListClipper{ CachedClassList.Num() };
+				ImGuiListClipper ListClipper{};
+				ListClipper.Begin(CachedClassList.Num());
 				while (ListClipper.Step())
 				{
 					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
@@ -916,7 +922,7 @@ namespace UnrealImGui
 					}
 				}
 				ListClipper.End();
-				ImGui::ListBoxFooter();
+				ImGui::EndListBox();
 			}
 			ImGui::EndCombo();
 		}

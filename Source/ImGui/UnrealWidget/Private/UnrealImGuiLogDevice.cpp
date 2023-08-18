@@ -248,8 +248,8 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 	const float FooterHeightToReserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing(); 
 	if (ImGui::BeginChild("LogScrollingRegion", ImVec2(0, -FooterHeightToReserve), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar))
 	{
-		ImGuiListClipper Clipper{ DisplayLines.Num() };
-
+		ImGuiListClipper Clipper{};
+		Clipper.Begin(DisplayLines.Num());
 		while (Clipper.Step())
 		{
 			for (int32 Idx = Clipper.DisplayStart; Idx < Clipper.DisplayEnd; ++Idx)

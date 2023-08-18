@@ -160,7 +160,7 @@ struct Session {
         return true;
     }
 
-    bool getFrame(int32_t fid, ImDrawData * drawData, std::vector<ImDrawList> & drawLists, const ImDrawListSharedData * drawListSharedData) {
+    bool getFrame(int32_t fid, ImDrawData* drawData, std::vector<ImDrawList>& drawLists, ImDrawListSharedData* drawListSharedData) {
         if (fid >= (int32_t) frames.size()) return false;
 
         size_t offset = 0;
@@ -178,19 +178,15 @@ struct Session {
         unserialize(drawData->FramebufferScale.y, buf, offset);
 
         if ((int) drawLists.size() < drawData->CmdListsCount) {
-            drawLists.resize(drawData->CmdListsCount, ImDrawList(drawListSharedData));
+            drawLists.resize(drawData->CmdListsCount, ImDrawList{ drawListSharedData });
         }
 
-        if (drawData->CmdLists) {
-            delete [] drawData->CmdLists;
-        }
-
-        drawData->CmdLists = new ImDrawList* [drawData->CmdListsCount];
+        drawData->CmdLists.resize(drawData->CmdListsCount);
 
         for (int32_t iList = 0; iList < drawData->CmdListsCount; ++iList) {
             drawData->CmdLists[iList] = &drawLists[iList];
 
-            auto & cmdList = drawData->CmdLists[iList];
+            auto& cmdList = drawData->CmdLists[iList];
 
             unserialize(cmdList->CmdBuffer, buf, offset);
             unserialize(cmdList->VtxBuffer, buf, offset);

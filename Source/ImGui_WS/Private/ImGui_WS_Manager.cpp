@@ -546,7 +546,7 @@ private:
 			if (Replay && Replay->GetDrawData(ReplayDrawData))
 			{
 				CopiedDrawData.CmdListsCount = ReplayDrawData->CmdListsCount + DrawData->CmdListsCount;
-				CopiedDrawData.CmdLists = new ImDrawList*[CopiedDrawData.CmdListsCount];
+				CopiedDrawData.CmdLists.resize(CopiedDrawData.CmdListsCount);
 				for (int32 Idx = 0; Idx < ReplayDrawData->CmdListsCount; ++Idx)
 				{
 					CopiedDrawData.CmdLists[Idx] = ReplayDrawData->CmdLists[Idx]->CloneOutput();
@@ -558,7 +558,7 @@ private:
 			}
 			else
 			{
-				CopiedDrawData.CmdLists = new ImDrawList*[DrawData->CmdListsCount];
+				CopiedDrawData.CmdLists.resize(DrawData->CmdListsCount);
 				for (int32 Idx = 0; Idx < DrawData->CmdListsCount; ++Idx)
 				{
 					CopiedDrawData.CmdLists[Idx] = DrawData->CmdLists[Idx]->CloneOutput();
@@ -571,7 +571,6 @@ private:
 			{
 				IM_DELETE(CopiedDrawData.CmdLists[Idx]);
 			}
-			delete CopiedDrawData.CmdLists;
 		}
 	};
 	TTripleBuffer<TSharedPtr<FImGuiData>> ImGuiDataTripleBuffer;

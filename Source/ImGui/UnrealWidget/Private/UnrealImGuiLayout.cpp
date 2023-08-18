@@ -43,7 +43,7 @@ void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const FUnrealImGuiP
 		{
 			const FString PanelName = Panel->GetLayoutPanelName(GetName());
 			const ImGuiID WindowId = ImHashStr(TCHAR_TO_UTF8(*PanelName));
-			const ImGuiWindowSettings* Settings = ImGui::FindWindowSettings(WindowId);
+			const ImGuiWindowSettings* Settings = ImGui::FindWindowSettingsByID(WindowId);
 			if (Settings == nullptr)
 			{
 				LoadDefaultLayout(Owner, LayoutBuilder);

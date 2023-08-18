@@ -124,7 +124,8 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, float DeltaSeconds)
 
 		if (ImGui::BeginTable("ContentTable", 1, OutlinerTableFlags))
 		{
-			ImGuiListClipper ListClipper{ DisplayObjects.Num() };
+			ImGuiListClipper ListClipper{};
+			ListClipper.Begin(DisplayObjects.Num());
 			while (ListClipper.Step())
 			{
 				for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
