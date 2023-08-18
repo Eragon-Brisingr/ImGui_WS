@@ -37,6 +37,8 @@ public:
 	UPROPERTY(Transient)
 	TSet<TWeakObjectPtr<AActor>> SelectedActors;
 	void SetSelectedEntities(const TSet<TWeakObjectPtr<AActor>>& NewSelectedActors);
+	void ResetSelection() override { SelectedActors.Reset(); }
+
 	AActor* GetFirstSelectActor() const;
 	void FocusActor(AActor* Actor);
 	void FocusActors(const TArray<AActor*>& Actors);
