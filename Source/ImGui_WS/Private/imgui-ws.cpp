@@ -333,7 +333,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     // start the http/websocket server
     incppect::Parameters parameters;
     parameters.portListen = port;
-    parameters.maxPayloadLength_bytes = 4*1024*1024;
+    parameters.maxPayloadLength_bytes = 8*1024*1024;
     parameters.tLastRequestTimeout_ms = -1;
     parameters.httpRoot = std::move(pathHttp);
     parameters.resources = std::move(resources);

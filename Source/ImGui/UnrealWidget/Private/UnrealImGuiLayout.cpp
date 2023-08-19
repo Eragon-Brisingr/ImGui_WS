@@ -8,7 +8,7 @@
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiPanel.h"
 
-void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuilder& LayoutBuilder, TMap<int32, uint32> DockIdMap, const int32 DefaultDockId)
+void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuilder& LayoutBuilder, const TMap<int32, uint32>& DockIdMap, const int32 DefaultDockId)
 {
 	for (UUnrealImGuiPanelBase* Panel : LayoutBuilder.Panels)
 	{

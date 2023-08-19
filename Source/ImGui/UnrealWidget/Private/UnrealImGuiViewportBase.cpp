@@ -145,6 +145,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 	{
 		if (ImGui::BeginMenu("Viewport"))
 		{
+			DrawViewportMenu(Owner, bIsConfigDirty);
 			ImGui::Separator();
 			if (ImGui::Button("To View Location"))
 			{
@@ -158,7 +159,6 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			{
 				ViewLocation = FVector2D::ZeroVector;
 			}
-			DrawViewportMenu(Owner, bIsConfigDirty);
 			ImGui::EndMenu();
 		}
 		for (int32 Idx = Extents.Num() - 1; Idx >= 0; --Idx)
@@ -175,32 +175,35 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 				Extent->SaveConfig();
 			}
 		}
-		if (ImGui::BeginMenu("Extents"))
+		if (Extents.Num() > 0)
 		{
-			for (UUnrealImGuiViewportExtentBase* Extent : Extents)
+			if (ImGui::BeginMenu("Extents"))
 			{
-				bool bEnable = Extent->bEnable;
-				if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Extent->ExtentName.ToString(), *Extent->GetClass()->GetName())), &bEnable))
+				for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 				{
-					Extent->bEnable = bEnable;
-					if (bEnable)
+					bool bEnable = Extent->bEnable;
+					if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Extent->ExtentName.ToString(), *Extent->GetClass()->GetName())), &bEnable))
 					{
-						Extent->WhenEnable(Owner, this);
+						Extent->bEnable = bEnable;
+						if (bEnable)
+						{
+							Extent->WhenEnable(Owner, this);
+						}
+						else
+						{
+							Extent->WhenDisable(Owner, this);
+						}
+						Extent->SaveConfig();
 					}
-					else
+					if (ImGui::IsItemHovered())
 					{
-						Extent->WhenDisable(Owner, this);
+						ImGui::BeginTooltip();
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Extent->GetClass()->GetName()));
+						ImGui::EndTooltip();
 					}
-					Extent->SaveConfig();
 				}
-				if (ImGui::IsItemHovered())
-				{
-					ImGui::BeginTooltip();
-					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Extent->GetClass()->GetName()));
-					ImGui::EndTooltip();
-				}
+				ImGui::EndMenu();
 			}
-			ImGui::EndMenu();
 		}
 
 		{
