@@ -51,7 +51,7 @@ public:
 	TArray<FPassDrawer> PassDrawers;
 
 	UPROPERTY(Config)
-	int32 ZoomFactor = 5.f;
+	float ZoomFactor = 5.f;
 	float CurrentZoom;
 	UPROPERTY(Config)
 	FVector2D ViewLocation = { 0.f, 0.f };
