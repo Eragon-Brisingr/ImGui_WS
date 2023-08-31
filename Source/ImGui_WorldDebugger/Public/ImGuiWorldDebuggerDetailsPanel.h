@@ -7,7 +7,7 @@
 #include "ImGuiWorldDebuggerDetailsPanel.generated.h"
 
 UCLASS()
-class IMGUI_WS_API UImGuiWorldDebuggerDetailsPanel : public UImGuiWorldDebuggerPanelBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerDetailsPanel : public UImGuiWorldDebuggerPanelBase
 {
 	GENERATED_BODY()
 public:

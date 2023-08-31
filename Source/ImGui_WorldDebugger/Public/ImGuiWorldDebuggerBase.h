@@ -12,13 +12,13 @@ class AImGuiWorldDebuggerBase;
 
 namespace ImGuiWorldDebuggerBootstrap
 {
-	IMGUI_WS_API extern TSubclassOf<AImGuiWorldDebuggerBase> DebuggerClass;
-	IMGUI_WS_API extern bool bLaunchImGuiWorldDebugger;
+	IMGUI_WORLDDEBUGGER_API extern TSubclassOf<AImGuiWorldDebuggerBase> DebuggerClass;
+	IMGUI_WORLDDEBUGGER_API extern bool bLaunchImGuiWorldDebugger;
 	void PostWorldInitialization(UWorld* World, const UWorld::InitializationValues);
 }
 
 UCLASS(Transient, DefaultToInstanced, config = ImGuiWorldDebugger, PerObjectConfig)
-class IMGUI_WS_API AImGuiWorldDebuggerBase : public AActor
+class IMGUI_WORLDDEBUGGER_API AImGuiWorldDebuggerBase : public AActor
 {
 	GENERATED_BODY()
 public:

@@ -12,7 +12,7 @@ struct FUnrealImGuiViewportContext;
  * 
  */
 UCLASS(Const, Abstract)
-class IMGUI_WS_API UImGuiWorldDebuggerDrawerBase : public UObject
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerDrawerBase : public UObject
 {
 	GENERATED_BODY()
 
@@ -38,7 +38,7 @@ public:
 };
 
 UCLASS(Const)
-class IMGUI_WS_API UImGuiWorldDebuggerDrawer_Default : public UImGuiWorldDebuggerDrawerBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerDrawer_Default : public UImGuiWorldDebuggerDrawerBase
 {
 	GENERATED_BODY()
 public:

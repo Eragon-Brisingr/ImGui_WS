@@ -10,7 +10,7 @@
  * 
  */
 UCLASS(Abstract)
-class IMGUI_WS_API UImGuiWorldDebuggerLayoutBase : public UUnrealImGuiLayoutBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerLayoutBase : public UUnrealImGuiLayoutBase
 {
 	GENERATED_BODY()
 public:
@@ -18,7 +18,7 @@ public:
 };
 
 UCLASS()
-class IMGUI_WS_API UImGuiWorldDebuggerDefaultLayout : public UImGuiWorldDebuggerLayoutBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerDefaultLayout : public UImGuiWorldDebuggerLayoutBase
 {
 	GENERATED_BODY()
 public:

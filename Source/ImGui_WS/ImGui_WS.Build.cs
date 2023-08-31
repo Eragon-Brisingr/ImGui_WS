@@ -41,9 +41,5 @@ public class ImGui_WS : ModuleRules
 	        "ImGui",
 	        "UWS",
 		});
-		
-		PublicIncludePaths.AddRange(new string[] {
-			Path.Combine(ModuleDirectory, "WorldDebugger/Include"),
-		});
 	}
 }

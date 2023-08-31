@@ -10,8 +10,5 @@ class FImGui_WSModule : public IModuleInterface
 public:
 	void StartupModule() override;
 	void ShutdownModule() override;
-
-private:
-	FDelegateHandle OnPostWorldInitializationHandle;
 };
 

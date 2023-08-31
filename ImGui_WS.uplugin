@@ -14,25 +14,42 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
-	"SupportedTargetPlatforms": [ "Win64", "Linux" ],
+	"SupportedTargetPlatforms": [
+		"Win64",
+		"Linux"
+	],
 	"Modules": [
 		{
 			"Name": "ImGui",
 			"Type": "DeveloperTool",
 			"LoadingPhase": "PreDefault",
-			"PlatformAllowList": [ "Win64", "Linux" ]
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
 		},
 		{
 			"Name": "ImGui_Editor",
 			"Type": "Editor",
 			"LoadingPhase": "PreDefault",
-			"PlatformAllowList": [ "Win64", "Linux" ]
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
 		},
 		{
 			"Name": "ImGui_WS",
 			"Type": "DeveloperTool",
 			"LoadingPhase": "Default",
-			"PlatformAllowList": [ "Win64", "Linux" ]
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "ImGui_WorldDebugger",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	]
 }

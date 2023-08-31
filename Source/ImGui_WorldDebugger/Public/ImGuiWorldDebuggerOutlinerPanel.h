@@ -10,7 +10,7 @@
  * 
 */
 UCLASS()
-class IMGUI_WS_API UImGuiWorldDebuggerOutlinerPanel : public UImGuiWorldDebuggerPanelBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerOutlinerPanel : public UImGuiWorldDebuggerPanelBase
 {
 	GENERATED_BODY()
 public:

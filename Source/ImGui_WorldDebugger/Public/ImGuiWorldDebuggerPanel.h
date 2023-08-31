@@ -12,7 +12,7 @@
 class AImGuiWorldDebuggerBase;
 
 UCLASS(Abstract, config = ImGuiWorldDebugger, PerObjectConfig)
-class IMGUI_WS_API UImGuiWorldDebuggerPanelBase : public UUnrealImGuiPanelBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerPanelBase : public UUnrealImGuiPanelBase
 {
 	GENERATED_BODY()
 private:

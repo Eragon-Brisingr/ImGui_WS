@@ -11,7 +11,7 @@ class UImGuiWorldDebuggerDrawerBase;
 struct FImGuiWorldViewportContext;
 
 UCLASS()
-class IMGUI_WS_API UImGuiWorldDebuggerViewportPanel : public UUnrealImGuiViewportBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerViewportPanel : public UUnrealImGuiViewportBase
 {
 	GENERATED_BODY()
 public:
@@ -22,7 +22,7 @@ public:
 };
 
 UCLASS()
-class IMGUI_WS_API UImGuiWorldDebuggerViewportActorExtent : public UUnrealImGuiViewportExtentBase
+class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerViewportActorExtent : public UUnrealImGuiViewportExtentBase
 {
 	GENERATED_BODY()
 public:
