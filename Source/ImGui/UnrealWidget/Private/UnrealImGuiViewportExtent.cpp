@@ -44,7 +44,7 @@ void FUnrealImGuiViewportContext::DrawRect(const FBox2D& Box, const FColor& Colo
 {
 	if (ViewBounds.Intersect(Box) && Box.ExpandBy(Rounding).IsInside(ViewBounds) == false)
 	{
-		DrawList->AddRect(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawCornerFlags_All, Thickness);
+		DrawList->AddRect(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawFlags_RoundCornersAll, Thickness);
 	}
 }
 
@@ -52,7 +52,7 @@ void FUnrealImGuiViewportContext::DrawRectFilled(const FBox2D& Box, const FColor
 {
 	if (ViewBounds.Intersect(Box))
 	{
-		DrawList->AddRectFilled(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawCornerFlags_All);
+		DrawList->AddRectFilled(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawFlags_RoundCornersAll);
 	}
 }
 
