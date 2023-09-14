@@ -21,6 +21,7 @@ public:
 	void Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds) override;
 private:
 	FDelegateHandle OnActorSpawnedHandler;
+	FDelegateHandle OnActorDestroyedHandler;
 	FDelegateHandle OnLevelAdd_DelegateHandle;
 	
 	enum EOutlinerTableColumnID : int32
@@ -41,7 +42,4 @@ private:
 	FString FilterString;
 	uint8 bInvokeRefreshSortOrder : 1;
 	bool CanActorDisplay(const AActor* Actor) const;
-
-	UFUNCTION()
-	void WhenActorDestroy(AActor* Actor);
 };

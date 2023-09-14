@@ -93,7 +93,6 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 			if (const TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawerMap.Find(TestClass))
 			{
 				DrawableActors.Add(Actor, *Drawer);
-				Actor->OnEndPlay.AddUniqueDynamic(this, &UImGuiWorldDebuggerViewportActorExtent::WhenActorEndPlay);
 				return;
 			}
 		}
@@ -116,7 +115,17 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 	});
 	OnActorSpawnedHandler = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateWeakLambda(this, [TryAddActorToDraw](AActor* Actor)
 	{
+#if WITH_EDITOR
+		if (Actor->bIsEditorPreviewActor)
+		{
+			return;
+		}
+#endif
 		TryAddActorToDraw(Actor);
+	}));
+	OnActorDestroyedHandler = World->AddOnActorDestroyedHandler(FOnActorDestroyed::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
+	{
+		DrawableActors.Remove(Actor);
 	}));
 }
 
@@ -125,6 +134,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Unregister(UObject* Owner, UUnrealI
 	if (const UWorld* World = Owner->GetWorld())
 	{
 		World->RemoveOnActorSpawnedHandler(OnActorSpawnedHandler);
+		World->RemoveOnActorDestroyededHandler(OnActorDestroyedHandler);
 	}
 	FWorldDelegates::LevelAddedToWorld.Remove(OnLevelAdd_DelegateHandle);
 }
@@ -310,11 +320,6 @@ void UImGuiWorldDebuggerViewportActorExtent::FocusEntitiesByFilter(UUnrealImGuiV
 			}
 		}
 	}
-}
-
-void UImGuiWorldDebuggerViewportActorExtent::WhenActorEndPlay(AActor* Actor, const EEndPlayReason::Type EndPlayReason)
-{
-	DrawableActors.Remove(Actor);
 }
 
 #if WITH_EDITOR

@@ -55,9 +55,8 @@ protected:
 	UPROPERTY(Transient)
 	TMap<TWeakObjectPtr<AActor>, TSubclassOf<UImGuiWorldDebuggerDrawerBase>> DrawableActors;
 	FDelegateHandle OnActorSpawnedHandler;
+	FDelegateHandle OnActorDestroyedHandler;
 	FDelegateHandle OnLevelAdd_DelegateHandle;
-	UFUNCTION()
-	void WhenActorEndPlay(AActor* Actor, const EEndPlayReason::Type EndPlayReason);
 private:
 #if WITH_EDITOR
 	friend class FImGui_EditorModule;

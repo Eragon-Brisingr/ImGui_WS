@@ -21,7 +21,7 @@ UImGuiWorldDebuggerOutlinerPanel::UImGuiWorldDebuggerOutlinerPanel()
 
 void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDebugger)
 {
-	UWorld* World = GetWorld();
+	const UWorld* World = GetWorld();
 	RefreshDisplayActors();
 	OnLevelAdd_DelegateHandle = FWorldDelegates::LevelAddedToWorld.AddWeakLambda(this, [this](ULevel* Level, UWorld* World)
 	{
@@ -29,40 +29,35 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 		{
 			return;
 		}
-
 		for (AActor* Actor : Level->Actors)
 		{
 			if (Actor && CanActorDisplay(Actor))
 			{
 				DisplayActors.Add(Actor);
-				Actor->OnDestroyed.AddUniqueDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
 			}
 		}
 		bInvokeRefreshSortOrder |= true;
 	});
 	OnActorSpawnedHandler = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
 	{
-		if (CanActorDisplay(Actor) && Actor->OnDestroyed.IsAlreadyBound(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy) == false)
+		if (CanActorDisplay(Actor))
 		{
 			DisplayActors.Add(Actor);
-			Actor->OnDestroyed.AddUniqueDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
 			bInvokeRefreshSortOrder |= true;
 		}
+	}));
+	OnActorDestroyedHandler = World->AddOnActorDestroyedHandler(FOnActorDestroyed::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
+	{
+		DisplayActors.RemoveSingle(Actor);
 	}));
 }
 
 void UImGuiWorldDebuggerOutlinerPanel::Unregister(AImGuiWorldDebuggerBase* WorldDebugger)
 {
-	for (const TWeakObjectPtr<AActor>& ActorPtr : DisplayActors)
-	{
-		if (AActor* Actor = ActorPtr.Get())
-		{
-			Actor->OnDestroyed.RemoveAll(this);
-		}
-	}
 	if (UWorld* World = GetWorld())
 	{
 		World->RemoveOnActorSpawnedHandler(OnActorSpawnedHandler);
+		World->RemoveOnActorDestroyededHandler(OnActorDestroyedHandler);
 	}
 	FWorldDelegates::LevelAddedToWorld.Remove(OnLevelAdd_DelegateHandle);
 }
@@ -183,13 +178,6 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 
 void UImGuiWorldDebuggerOutlinerPanel::RefreshDisplayActors()
 {
-	for (const TWeakObjectPtr<AActor>& ActorPtr : DisplayActors)
-	{
-		if (AActor* Actor = ActorPtr.Get())
-		{
-			Actor->OnDestroyed.RemoveAll(this);
-		}
-	}
 	DisplayActors.Empty();
 	for (TActorIterator<AActor> It{ GetWorld() }; It; ++It)
 	{
@@ -197,7 +185,6 @@ void UImGuiWorldDebuggerOutlinerPanel::RefreshDisplayActors()
 		if (Actor && CanActorDisplay(Actor))
 		{
 			DisplayActors.Add(Actor);
-			It->OnDestroyed.AddDynamic(this, &UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy);
 		}
 	}
 	RefreshSortOrder();
@@ -205,10 +192,14 @@ void UImGuiWorldDebuggerOutlinerPanel::RefreshDisplayActors()
 
 void UImGuiWorldDebuggerOutlinerPanel::RefreshSortOrder()
 {
-	const int32 RemoveCount = DisplayActors.Remove(nullptr);
-	ensure(RemoveCount == 0);
-	DisplayActors.Sort([&](const TWeakObjectPtr<AActor>& LHS, const TWeakObjectPtr<AActor>& RHS)
+	DisplayActors.Sort([&](const TWeakObjectPtr<AActor>& LHSPtr, const TWeakObjectPtr<AActor>& RHSPtr)
 	{
+		const AActor* LHS = LHSPtr.Get();
+		const AActor* RHS = RHSPtr.Get();
+		if (LHS == nullptr || RHS == nullptr)
+		{
+			return RHS == nullptr;
+		}
 		for (int32 Idx = 0; Idx < Orders.Num() / 2; ++Idx)
 		{
 			const EOutlinerTableColumnID OutlinerTableColumnID = static_cast<EOutlinerTableColumnID>(Orders[Idx * 2]);
@@ -243,6 +234,13 @@ void UImGuiWorldDebuggerOutlinerPanel::RefreshSortOrder()
 
 bool UImGuiWorldDebuggerOutlinerPanel::CanActorDisplay(const AActor* Actor) const
 {
+#if WITH_EDITOR
+	if (Actor->bIsEditorPreviewActor)
+	{
+		return false;
+	}
+#endif
+
 	if (FilterString.IsEmpty())
 	{
 		return true;
@@ -254,9 +252,4 @@ bool UImGuiWorldDebuggerOutlinerPanel::CanActorDisplay(const AActor* Actor) cons
 	}
 
 	return false;
-}
-
-void UImGuiWorldDebuggerOutlinerPanel::WhenActorDestroy(AActor* Actor)
-{
-	DisplayActors.RemoveSingle(Actor);
 }
