@@ -4,6 +4,11 @@ public class ImGui_WorldDebugger : ModuleRules
 {
     public ImGui_WorldDebugger(ReadOnlyTargetRules Target) : base(Target)
     {
+        if (Target.Platform != UnrealTargetPlatform.Win64 && Target.Platform != UnrealTargetPlatform.Linux)
+        {
+            Type = ModuleType.External;
+        }
+
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
         PublicDependencyModuleNames.AddRange(
