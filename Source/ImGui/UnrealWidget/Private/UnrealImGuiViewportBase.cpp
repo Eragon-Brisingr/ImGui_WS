@@ -296,6 +296,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 	}
 
 	ImGui::InvisibleButton("Content", ImVec2{ ContentSize }, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+	ImGui::PushClipRect(ImVec2{ ContentMin }, ImVec2{ ContentMax }, true);
 	const bool bIsContentHovered = ImGui::IsItemHovered();
 	const bool bIsContentActive = ImGui::IsItemActive();
 	const bool bIsMultiSelect = IO.KeyCtrl;
@@ -470,9 +471,9 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 	}
 
 	{
-		DrawList->AddRect(ImVec2{ ContentMin - 10.f }, ImVec2{ ContentMax + 10.f }, IM_COL32_BLACK, 0.f, ImDrawFlags_None, 20.f);
 		DrawList->AddRect(ImVec2{ ContentMin }, ImVec2{ ContentMax }, IM_COL32_WHITE);
 	}
+	ImGui::PopClipRect();
 
 	{
 		ImGui::SetNextWindowPos(ImVec2{ ContentMin + 10.f }, ImGuiCond_Always);
