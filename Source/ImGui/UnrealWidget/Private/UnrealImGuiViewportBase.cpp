@@ -363,6 +363,18 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 		DeltaSeconds
 	};
 
+	{
+		ImGui::SetNextWindowPos(ImVec2{ ContentMin + 10.f }, ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2{ MessageBoxWidth, -1.f });
+		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
+		ImGui::SetNextWindowBgAlpha(0.5f);
+		if (ImGui::Begin(Context.FloatingContextName, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+		{
+			// Construct
+		}
+		ImGui::End();
+	}
+
 	// Right click menu
 	if (bIsViewDragEnd == false && ImGui::BeginPopupContextItem())
 	{
@@ -476,11 +488,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 	ImGui::PopClipRect();
 
 	{
-		ImGui::SetNextWindowPos(ImVec2{ ContentMin + 10.f }, ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2{ MessageBoxWidth, -1.f });
-		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
-		ImGui::SetNextWindowBgAlpha(0.5f);
-		if (ImGui::Begin("MessageContent", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+		if (ImGui::Begin(Context.FloatingContextName, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
 		{
 			for (const auto& Message : Context.Messages)
 			{

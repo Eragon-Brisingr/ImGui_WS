@@ -95,6 +95,8 @@ struct IMGUI_API FUnrealImGuiViewportContext
 	mutable uint8 bIsSelected : 1;
 	mutable uint8 bIsTopSelected : 1;
 
+	static constexpr auto FloatingContextName = "FloatingContext";
+
 	FBox GetViewBounds3D() const
 	{
 		return FBox{ FVector{ ViewBounds.Min, -MAX_flt }, FVector{ ViewBounds.Max, MAX_FLT } };
