@@ -77,7 +77,7 @@ struct Incppect<SSL>::Impl {
 
         {
             const char * kProtocol = SSL ? "HTTPS" : "HTTP";
-            UE_LOG(LogImGui, Log, TEXT("[incppect] running instance. serving %s from '%s'"), UTF8_TO_TCHAR(kProtocol), UTF8_TO_TCHAR(parameters.httpRoot.c_str()));
+            UE_LOG(LogImGui, Log, TEXT("[incppect] running instance. serving %hs from '%s'"), UTF8_TO_TCHAR(kProtocol), UTF8_TO_TCHAR(parameters.httpRoot.c_str()));
         }
 
         typename uWS::TemplatedApp<SSL>::WebSocketBehavior wsBehaviour;

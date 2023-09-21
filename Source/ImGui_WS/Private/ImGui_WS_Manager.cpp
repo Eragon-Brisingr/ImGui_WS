@@ -402,18 +402,22 @@ private:
 				{
 				case ImGuiKey_LeftCtrl:
 				case ImGuiKey_RightCtrl:
+		    		IO.AddKeyEvent(ImGuiMod_Ctrl, bDown);
 					IO.KeyCtrl = bDown;
 					break;
 				case ImGuiKey_LeftShift:
 				case ImGuiKey_RightShift:
+		    		IO.AddKeyEvent(ImGuiMod_Shift, bDown);
 					IO.KeyShift = bDown;
 					break;
 				case ImGuiKey_LeftAlt:
 				case ImGuiKey_RightAlt:
+		    		IO.AddKeyEvent(ImGuiMod_Alt, bDown);
 					IO.KeyAlt = bDown;
 					break;
 				case ImGuiKey_LeftSuper:
 				case ImGuiKey_RightSuper:
+		    		IO.AddKeyEvent(ImGuiMod_Super, bDown);
 					IO.KeySuper = bDown;
 					break;
 				default:
@@ -434,27 +438,7 @@ private:
 			};
 			if (bIsIdControlChanged)
 			{
-				// when id control changed release all button
-				for (const ImGuiWS::Event& Event : KeyDownEvents)
-				{
-					switch (Event.type)
-					{
-					case ImGuiWS::Event::MouseDown:
-						{
-							IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.key), false);
-						}
-						break;
-					case ImGuiWS::Event::KeyDown:
-						{
-							const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
-							IO.AddKeyEvent(Key, false);
-							SyncKeyMods(Key, false);
-						}
-						break;
-					default:
-						ensure(false);
-					}
-				}
+				IO.ClearInputKeys();
 				KeyDownEvents.Empty();
 				bIsIdControlChanged = false;
 			}

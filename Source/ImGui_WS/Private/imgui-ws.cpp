@@ -21,6 +21,7 @@
 #include <condition_variable>
 
 #include "imgui.h"
+#include "UnrealImGui_Log.h"
 
 // not using ssl
 using incppect = Incppect<false>;
@@ -315,10 +316,12 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
                                 std::string ClipboardText;
                                 ss >> ClipboardText;
                                 event.clipboard_text = ClipboardText;
+                            break;
                             }
                         default:
                             {
-                                printf("Unknown input received from client: id = %d, type = %d\n", clientId, type);
+                                ensure(false);
+                                UE_LOG(LogImGui, Warning, TEXT("Unknown input received from client: id = %d, type = %d"), clientId, type);
                                 return;
                             }
                             break;
