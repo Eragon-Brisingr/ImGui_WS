@@ -40,7 +40,11 @@ public:
 
 	UUnrealImGuiViewportExtentBase* FindExtent(const TSubclassOf<UUnrealImGuiViewportExtentBase>& ExtentType) const;
 	template<typename T>
-	T* FindExtent() const { return (T*)FindExtent(T::StaticClass()); }
+	T* FindExtent() const
+	{
+		static_assert(TIsDerivedFrom<T, UUnrealImGuiViewportExtentBase>::Value);
+		return (T*)FindExtent(T::StaticClass());
+	}
 
 	struct FPassDrawer
 	{

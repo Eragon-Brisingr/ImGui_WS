@@ -32,7 +32,11 @@ public:
 
 	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const;
 	template<typename T>
-	T* FindPanel() const { return (T*)FindPanel(T::StaticClass()); }
+	T* FindPanel() const
+	{
+		static_assert(TIsDerivedFrom<T, UUnrealImGuiPanelBase>::Value);
+		return (T*)FindPanel(T::StaticClass());
+	}
 
 	UPROPERTY(Transient)
 	TArray<UUnrealImGuiLayoutBase*> Layouts;
