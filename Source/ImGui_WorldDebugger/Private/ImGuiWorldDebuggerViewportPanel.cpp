@@ -348,19 +348,6 @@ void UImGuiWorldDebuggerViewportActorExtent::WhenEditorSelectionChanged(const TA
 UImGuiWorldDebuggerViewportActorExtent::FEditorSelectActors UImGuiWorldDebuggerViewportActorExtent::EditorSelectActors;
 #endif
 
-namespace ImGuiHelper
-{
-	inline const ImVec2 Convert(const FVector2D& UnrealVector)
-	{
-		return ImVec2{ (float)UnrealVector.X, (float)UnrealVector.Y };
-	}
-
-	inline const FVector2D Convert(const ImVec2& ImGuiVector)
-	{
-		return FVector2D{ ImGuiVector.x, ImGuiVector.y };
-	}
-}
-
 void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)
 {
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWorldDebuggerViewportExtent_Draw"), STAT_ImGuiWorldDebuggerViewportExtent_Draw, STATGROUP_ImGui);
