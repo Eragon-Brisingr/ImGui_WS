@@ -16,19 +16,20 @@ void FImGuiModule::StartupModule()
 	if (ensure(GLog))
 	{
 		GLog->AddOutputDevice(&UnrealImGui::GUnrealImGuiOutputDevice);
+		FCoreDelegates::OnPreExit.AddLambda([]
+		{
+			if (GLog)
+			{
+				GLog->RemoveOutputDevice(&UnrealImGui::GUnrealImGuiOutputDevice);
+			}
+		});
 	}
 }
 
 
 void FImGuiModule::ShutdownModule()
 {
-	FCoreDelegates::OnEnginePreExit.AddLambda([]
-	{
-		if (GLog)
-		{
-			GLog->RemoveOutputDevice(&UnrealImGui::GUnrealImGuiOutputDevice);
-		}
-	});
+
 }
 
 IMPLEMENT_MODULE(FImGuiModule, ImGui);
