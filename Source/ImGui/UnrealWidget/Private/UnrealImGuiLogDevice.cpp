@@ -15,10 +15,7 @@ TAutoConsoleVariable<float> UnrealImGuiLogMaxSize
 	TEXT("Max Log size in memory, MB, if over will remove top log"),
 	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{
-		if (UnrealImGui::GUnrealImGuiOutputDevice)
-		{
-			UnrealImGui::GUnrealImGuiOutputDevice->MaxLogSize = UnrealImGuiLogMaxSize.GetValueOnGameThread() * 1024 * 1024;
-		}
+		UnrealImGui::GUnrealImGuiOutputDevice.MaxLogSize = UnrealImGuiLogMaxSize.GetValueOnGameThread() * 1024 * 1024;
 	})
 };
 
@@ -46,7 +43,7 @@ namespace UnrealImGui
 		IM_COL32(123, 123, 123, 255), // VeryVerbose
 	};
 
-	TSharedPtr<FUnrealImGuiOutputDevice> GUnrealImGuiOutputDevice;
+	FUnrealImGuiOutputDevice GUnrealImGuiOutputDevice;
 
 	const FUTF8String& ToString(ELogVerbosity::Type Verbosity)
 	{
@@ -60,17 +57,7 @@ namespace UnrealImGui
 
 	FUnrealImGuiOutputDevice::FUnrealImGuiOutputDevice()
 	{
-		check(GLog);
-		GLog->AddOutputDevice(this);
 		MaxLogSize = UnrealImGuiLogMaxSize.GetValueOnGameThread() * 1024 * 1024;
-	}
-
-	FUnrealImGuiOutputDevice::~FUnrealImGuiOutputDevice()
-	{
-		if (GLog != nullptr)
-		{
-			GLog->RemoveOutputDevice(this);
-		}
 	}
 
 	void FUnrealImGuiOutputDevice::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category)
@@ -145,14 +132,14 @@ FUnrealImGuiLogDevice::FUnrealImGuiLogDevice()
 void FUnrealImGuiLogDevice::Register()
 {
 	using namespace UnrealImGui;
-	GUnrealImGuiOutputDevice->Register(this);
+	GUnrealImGuiOutputDevice.Register(this);
 	RefreshDisplayLines();
 }
 
 void FUnrealImGuiLogDevice::Unregister()
 {
 	using namespace UnrealImGui;
-	GUnrealImGuiOutputDevice->Unregister(this);
+	GUnrealImGuiOutputDevice.Unregister(this);
 }
 
 void FUnrealImGuiLogDevice::Draw(UObject* Owner)
@@ -202,12 +189,12 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 			}
 			if (ImGui::MenuItem("Hide All"))
 			{
-				HideCategoryNames = UnrealImGui::GUnrealImGuiOutputDevice->CategoryNames;
+				HideCategoryNames = UnrealImGui::GUnrealImGuiOutputDevice.CategoryNames;
 				RefreshDisplayLines();
 				Owner->SaveConfig();
 			}
 			ImGui::Separator();
-			for (const FName& CategoryName : UnrealImGui::GUnrealImGuiOutputDevice->CategoryNames)
+			for (const FName& CategoryName : UnrealImGui::GUnrealImGuiOutputDevice.CategoryNames)
 			{
 				bool IsDisplay = HideCategoryNames.Contains(CategoryName) == false;
 				if (ImGui::Checkbox(TCHAR_TO_UTF8(*CategoryName.ToString()), &IsDisplay))
@@ -244,7 +231,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 		Owner->SaveConfig();
 	}
 	ImGui::SameLine();
-	ImGui::Text("Log Memory: %.2f MB / %.2f MB", UnrealImGui::GUnrealImGuiOutputDevice->AllLogSize / 1024.f / 1024.f, UnrealImGui::GUnrealImGuiOutputDevice->MaxLogSize / 1024.f / 1024.f);
+	ImGui::Text("Log Memory: %.2f MB / %.2f MB", UnrealImGui::GUnrealImGuiOutputDevice.AllLogSize / 1024.f / 1024.f, UnrealImGui::GUnrealImGuiOutputDevice.MaxLogSize / 1024.f / 1024.f);
 	const float FooterHeightToReserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing(); 
 	if (ImGui::BeginChild("LogScrollingRegion", ImVec2(0, -FooterHeightToReserve), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar))
 	{
@@ -255,7 +242,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 			for (int32 Idx = Clipper.DisplayStart; Idx < Clipper.DisplayEnd; ++Idx)
 			{
 				const int32 LogIndex = DisplayLines[Idx] + DisplayLineIndexOffset;
-				const auto& Log = UnrealImGui::GUnrealImGuiOutputDevice->Logs[LogIndex];
+				const auto& Log = UnrealImGui::GUnrealImGuiOutputDevice.Logs[LogIndex];
 
 				ImGui::PushStyleColor(ImGuiCol_Text, UnrealImGui::ToColor(Log.Verbosity));
 				if (bDisplayTime)
@@ -309,11 +296,11 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 				ClearCurrentLines();
 			}
 			ImGui::Separator();
-			if (UnrealImGui::GUnrealImGuiOutputDevice->Logs.IsValidIndex(HoveredLogIndex))
+			if (UnrealImGui::GUnrealImGuiOutputDevice.Logs.IsValidIndex(HoveredLogIndex))
 			{
 				if (ImGui::MenuItem("Copy Selected"))
 				{
-					const auto& Log = UnrealImGui::GUnrealImGuiOutputDevice->Logs[HoveredLogIndex];
+					const auto& Log = UnrealImGui::GUnrealImGuiOutputDevice.Logs[HoveredLogIndex];
 					const FString ToClipboardText = FString::Printf(TEXT("%s: %s: %s"), *Log.Category.ToString(), ToString(Log.Verbosity), UTF8_TO_TCHAR(*Log.LogString));
 					ImGui::SetClipboardText(TCHAR_TO_UTF8(*ToClipboardText));
 				}
@@ -321,7 +308,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 			if (ImGui::MenuItem("Copy All"))
 			{
 				FString ToClipboardText;
-				const auto& Logs = UnrealImGui::GUnrealImGuiOutputDevice->Logs;
+				const auto& Logs = UnrealImGui::GUnrealImGuiOutputDevice.Logs;
 				for (int32 Idx = 0; Idx < DisplayLines.Num(); ++Idx)
 				{
 					const auto& Log = Logs[DisplayLines[Idx] + DisplayLineIndexOffset];
@@ -347,9 +334,9 @@ void FUnrealImGuiLogDevice::RefreshDisplayLines()
 	using namespace UnrealImGui;
 	DisplayLines.Reset();
 	DisplayLineIndexOffset = 0;
-	for (int32 Idx = StartDisplayLine; Idx < GUnrealImGuiOutputDevice->Logs.Num(); ++Idx)
+	for (int32 Idx = StartDisplayLine; Idx < GUnrealImGuiOutputDevice.Logs.Num(); ++Idx)
 	{
-		const auto& Log = GUnrealImGuiOutputDevice->Logs[Idx];
+		const auto& Log = GUnrealImGuiOutputDevice.Logs[Idx];
 		if (CanLogDisplay(Log) == false)
 		{
 			continue;
@@ -362,7 +349,7 @@ void FUnrealImGuiLogDevice::RefreshDisplayLines()
 void FUnrealImGuiLogDevice::ClearCurrentLines()
 {
 	using namespace UnrealImGui;
-	StartDisplayLine = GUnrealImGuiOutputDevice->Logs.Num();
+	StartDisplayLine = GUnrealImGuiOutputDevice.Logs.Num();
 	DisplayLines.Empty();
 }
 

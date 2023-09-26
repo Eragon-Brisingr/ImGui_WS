@@ -13,14 +13,22 @@ void FImGuiModule::StartupModule()
 	{
 		UnrealImGui::UnrealPropertyCustomizeFactory::InitialDefaultCustomizer();
 	});
-
-	UnrealImGui::GUnrealImGuiOutputDevice = MakeShared<UnrealImGui::FUnrealImGuiOutputDevice>();
+	if (ensure(GLog))
+	{
+		GLog->AddOutputDevice(&UnrealImGui::GUnrealImGuiOutputDevice);
+	}
 }
 
 
 void FImGuiModule::ShutdownModule()
 {
-	UnrealImGui::GUnrealImGuiOutputDevice.Reset();
+	FCoreDelegates::OnEnginePreExit.AddLambda([]
+	{
+		if (GLog)
+		{
+			GLog->RemoveOutputDevice(&UnrealImGui::GUnrealImGuiOutputDevice);
+		}
+	});
 }
 
 IMPLEMENT_MODULE(FImGuiModule, ImGui);

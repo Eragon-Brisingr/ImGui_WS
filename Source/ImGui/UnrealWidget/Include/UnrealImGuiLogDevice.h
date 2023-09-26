@@ -20,7 +20,6 @@ namespace UnrealImGui
 	{
 	public:
 		FUnrealImGuiOutputDevice();
-		~FUnrealImGuiOutputDevice() override;
 
 		void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category) override;
 
@@ -51,7 +50,7 @@ namespace UnrealImGui
 		SIZE_T MaxLogSize;
 	};
 
-	extern IMGUI_API TSharedPtr<FUnrealImGuiOutputDevice> GUnrealImGuiOutputDevice;
+	extern IMGUI_API FUnrealImGuiOutputDevice GUnrealImGuiOutputDevice;
 }
 
 USTRUCT()
