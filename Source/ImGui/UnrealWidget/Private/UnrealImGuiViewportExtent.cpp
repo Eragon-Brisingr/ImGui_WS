@@ -24,6 +24,18 @@ void FUnrealImGuiViewportContext::DrawLine(const FVector2D& Start, const FVector
 	}
 }
 
+void FUnrealImGuiViewportContext::DrawArrow(const FVector2D& Start, const FVector2D& End, const FColor& Color, float ArrowSize, float Thickness) const
+{
+	if (ViewBounds.Intersect(FBox2D(TArray<FVector2D>{Start, End})))
+	{
+		const FVector2D ScreenEnd{ WorldToScreenLocation(End) };
+		DrawList->AddLine(ImVec2{ WorldToScreenLocation(Start) }, ImVec2{ ScreenEnd }, FColorToU32(Color), Thickness);
+		const FVector2D ArrowVec{ (Start - End).GetSafeNormal() * ArrowSize };
+		DrawList->AddLine(ImVec2{ ScreenEnd }, ImVec2{ ScreenEnd + ArrowVec.GetRotated(-22.5f) }, FColorToU32(Color), Thickness);
+		DrawList->AddLine(ImVec2{ ScreenEnd }, ImVec2{ ScreenEnd + ArrowVec.GetRotated(22.5f) }, FColorToU32(Color), Thickness);
+	}
+}
+
 void FUnrealImGuiViewportContext::DrawTriangle(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FColor& Color, float Thickness) const
 {
 	if (ViewBounds.Intersect(FBox2D{ { P1, P2, P3 } }))
