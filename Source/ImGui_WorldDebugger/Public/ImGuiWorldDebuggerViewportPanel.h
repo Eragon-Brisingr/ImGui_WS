@@ -54,9 +54,9 @@ public:
 protected:
 	UPROPERTY(Transient)
 	TMap<TWeakObjectPtr<AActor>, TSubclassOf<UImGuiWorldDebuggerDrawerBase>> DrawableActors;
-	FDelegateHandle OnActorSpawnedHandler;
-	FDelegateHandle OnActorDestroyedHandler;
-	FDelegateHandle OnLevelAdd_DelegateHandle;
+	FDelegateHandle OnActorSpawnedHandle;
+	FDelegateHandle OnActorDestroyedHandle;
+	FDelegateHandle OnLevelAddHandle;
 private:
 #if WITH_EDITOR
 	friend class FImGui_EditorModule;

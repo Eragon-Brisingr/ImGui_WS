@@ -101,7 +101,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 	{
 		TryAddActorToDraw(*It);
 	}
-	OnLevelAdd_DelegateHandle = FWorldDelegates::LevelAddedToWorld.AddWeakLambda(this, [this, TryAddActorToDraw](ULevel* Level, UWorld* World)
+	OnLevelAddHandle = FWorldDelegates::LevelAddedToWorld.AddWeakLambda(this, [this, TryAddActorToDraw](ULevel* Level, UWorld* World)
 	{
 		if (World != GetWorld())
 		{
@@ -113,7 +113,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 			TryAddActorToDraw(Actor);
 		}
 	});
-	OnActorSpawnedHandler = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateWeakLambda(this, [TryAddActorToDraw](AActor* Actor)
+	OnActorSpawnedHandle = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateWeakLambda(this, [TryAddActorToDraw](AActor* Actor)
 	{
 #if WITH_EDITOR
 		if (Actor->bIsEditorPreviewActor)
@@ -123,7 +123,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 #endif
 		TryAddActorToDraw(Actor);
 	}));
-	OnActorDestroyedHandler = World->AddOnActorDestroyedHandler(FOnActorDestroyed::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
+	OnActorDestroyedHandle = World->AddOnActorDestroyedHandler(FOnActorDestroyed::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
 	{
 		DrawableActors.Remove(Actor);
 	}));
@@ -133,10 +133,10 @@ void UImGuiWorldDebuggerViewportActorExtent::Unregister(UObject* Owner, UUnrealI
 {
 	if (const UWorld* World = Owner->GetWorld())
 	{
-		World->RemoveOnActorSpawnedHandler(OnActorSpawnedHandler);
-		World->RemoveOnActorDestroyededHandler(OnActorDestroyedHandler);
+		World->RemoveOnActorSpawnedHandler(OnActorSpawnedHandle);
+		World->RemoveOnActorDestroyededHandler(OnActorDestroyedHandle);
 	}
-	FWorldDelegates::LevelAddedToWorld.Remove(OnLevelAdd_DelegateHandle);
+	FWorldDelegates::LevelAddedToWorld.Remove(OnLevelAddHandle);
 }
 
 void UImGuiWorldDebuggerViewportActorExtent::DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty)
@@ -253,7 +253,9 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawFilterPopup(UUnrealImGuiViewpor
 						ImGui::EndTooltip();
 						if (IO.MouseDown[ImGuiMouseButton_Left])
 						{
-							WhenFilterStringChanged(Viewport, FString::Printf(TEXT("%s:%s"), *EFilterType::TypeFilter_FilterType, *ClassPathName));
+							const FString FilterString = FString::Printf(TEXT("%s:%s"), *EFilterType::TypeFilter_FilterType, *ClassPathName);
+							Viewport->FilterString = FilterString;
+							WhenFilterStringChanged(Viewport, FilterString);
 							FocusEntitiesByFilter(Viewport);
 						}
 					}
@@ -281,7 +283,7 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawFilterPopup(UUnrealImGuiViewpor
 					ImGui::EndTooltip();
 					if (IO.MouseDown[ImGuiMouseButton_Left])
 					{
-						const auto StringPoint = FTCHARToUTF8(*Actor->GetName());
+						Viewport->FilterString = Actor->GetName();
 						WhenFilterStringChanged(Viewport, Actor->GetName());
 						FocusActor(Actor);
 					}
