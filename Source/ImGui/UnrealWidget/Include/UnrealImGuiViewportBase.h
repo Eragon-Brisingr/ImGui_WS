@@ -56,6 +56,8 @@ public:
 
 	UPROPERTY(Config)
 	float ZoomFactor = 5.f;
+	float MinZoomFactor = 0.f;
+	float MaxZoomFactor = 10.f;
 	float CurrentZoom;
 	UPROPERTY(Config)
 	FVector2D ViewLocation = { 0.f, 0.f };

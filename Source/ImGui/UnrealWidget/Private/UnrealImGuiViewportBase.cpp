@@ -309,7 +309,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			const FVector2D ScreenMousePos{ ImGui::GetMousePos() };
 			const FTransform2D PreZoomScreenToWorldTransform{ FTransform2D{ FScale2D{CurrentZoom}, -ViewLocation * CurrentZoom + ContentSize / 2.f + ContentMin }.Inverse() };
 			const FVector2D MouseWorldPos{ PreZoomScreenToWorldTransform.TransformPoint(ScreenMousePos) };
-			ZoomFactor = FMath::Clamp(int32(ZoomFactor - IO.MouseWheel), 0, 10);
+			ZoomFactor = FMath::Clamp(int32(ZoomFactor - IO.MouseWheel), MinZoomFactor, MaxZoomFactor);
 			const float Zoom = FMath::Pow(2.f, -ZoomFactor);
 			const FTransform2D PostZoomWorldToScreenTransform{ FTransform2D{ FScale2D{Zoom}, -ViewLocation * Zoom + ContentSize / 2.f + ContentMin }.Inverse() };
 			const FVector2D NextWorldPos{ PostZoomWorldToScreenTransform.TransformPoint(ScreenMousePos) };
