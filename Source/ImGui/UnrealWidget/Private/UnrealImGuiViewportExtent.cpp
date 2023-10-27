@@ -36,19 +36,19 @@ void FUnrealImGuiViewportContext::DrawArrow(const FVector2D& Start, const FVecto
 	}
 }
 
-void FUnrealImGuiViewportContext::DrawTriangle(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FColor& Color, float Thickness) const
+void FUnrealImGuiViewportContext::DrawTriangle(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color, float Thickness) const
 {
-	if (ViewBounds.Intersect(FBox2D{ { P1, P2, P3 } }))
+	if (ViewBounds.Intersect(FBox2D{ { A, B, C } }))
 	{
-		DrawList->AddTriangle(ImVec2{ WorldToScreenLocation(P1) }, ImVec2{ WorldToScreenLocation(P2) }, ImVec2{ WorldToScreenLocation(P3) }, FColorToU32(Color), Thickness);
+		DrawList->AddTriangle(ImVec2{ WorldToScreenLocation(A) }, ImVec2{ WorldToScreenLocation(B) }, ImVec2{ WorldToScreenLocation(C) }, FColorToU32(Color), Thickness);
 	}
 }
 
-void FUnrealImGuiViewportContext::DrawTriangleFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FColor& Color) const
+void FUnrealImGuiViewportContext::DrawTriangleFilled(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color) const
 {
-	if (ViewBounds.Intersect(FBox2D{ { P1, P2, P3 } }))
+	if (ViewBounds.Intersect(FBox2D{ { A, B, C } }))
 	{
-		DrawList->AddTriangleFilled(ImVec2{ WorldToScreenLocation(P1) }, ImVec2{ WorldToScreenLocation(P2) }, ImVec2{ WorldToScreenLocation(P3) }, FColorToU32(Color));
+		DrawList->AddTriangleFilled(ImVec2{ WorldToScreenLocation(A) }, ImVec2{ WorldToScreenLocation(B) }, ImVec2{ WorldToScreenLocation(C) }, FColorToU32(Color));
 	}
 }
 

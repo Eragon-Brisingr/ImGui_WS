@@ -127,17 +127,28 @@ struct IMGUI_API FUnrealImGuiViewportContext
 	}
 
 	void DrawLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float Thickness = 1.f) const;
+	void DrawLine(const FVector2f& Start, const FVector2f& End, const FColor& Color, float Thickness = 1.f) const { DrawLine(FVector2D{ Start }, FVector2D{ End }, Color, Thickness); }
 	void DrawArrow(const FVector2D& Start, const FVector2D& End, const FColor& Color, float ArrowSize = 12.f, float Thickness = 1.f) const;
-	void DrawTriangle(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FColor& Color, float Thickness = 1.f) const;
-	void DrawTriangleFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FColor& Color) const;
+	void DrawArrow(const FVector2f& Start, const FVector2f& End, const FColor& Color, float ArrowSize = 12.f, float Thickness = 1.f) const { DrawArrow(FVector2D{ Start }, FVector2D{ End }, Color, ArrowSize, Thickness); }
+	void DrawTriangle(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color, float Thickness = 1.f) const;
+	void DrawTriangle(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color, float Thickness = 1.f) const { DrawTriangle(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color, Thickness); }
+	void DrawTriangleFilled(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color) const;
+	void DrawTriangleFilled(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color) const { DrawTriangleFilled(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color); }
 	void DrawRect(const FBox2D& Box, const FColor& Color, float Rounding = 0.f, float Thickness = 1.f) const;
+	void DrawRect(const FBox2f& Box, const FColor& Color, float Rounding = 0.f, float Thickness = 1.f) const { DrawRect(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding, Thickness); }
 	void DrawRectFilled(const FBox2D& Box, const FColor& Color, float Rounding = 0.f) const;
+	void DrawRectFilled(const FBox2f& Box, const FColor& Color, float Rounding = 0.f) const { DrawRectFilled(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding); }
 	void DrawCircle(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.0f) const;
+	void DrawCircle(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.0f) const { DrawCircle(FVector2D{ Center }, Radius, Color, NumSegments, Thickness); }
 	void DrawCircleFilled(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments = 0) const;
+	void DrawCircleFilled(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0) const { DrawCircleFilled(FVector2D{ Center }, Radius, Color, NumSegments); }
 	void DrawQuad(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color, float Thickness = 1.0f) const;
+	void DrawQuad(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color, float Thickness = 1.0f) const { DrawQuad(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color, Thickness); }
 	void DrawQuadFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color) const;
+	void DrawQuadFilled(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color) const { DrawQuadFilled(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color); }
 	void DrawText(const FVector2D& Position, const FString& Text, const FColor& Color) const;
-	void AddMessageText(const FString& Message, const FColor& Color) const { Messages.Add(FMessage{ Message, Color }); }
+	void DrawText(const FVector2f& Position, const FString& Text, const FColor& Color) const { DrawText(FVector2D{ Position }, Text, Color); }
+	void AddMessageText(const FString& Message, const FColor& Color = FColor::White) const { Messages.Add(FMessage{ Message, Color }); }
 	void MarkConfigDirty() const { bIsConfigDirty |= true; }
 private:
 	friend class UUnrealImGuiViewportBase;
