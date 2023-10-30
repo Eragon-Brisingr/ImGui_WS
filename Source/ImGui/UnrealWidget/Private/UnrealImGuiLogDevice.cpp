@@ -63,9 +63,29 @@ namespace UnrealImGui
 	void FUnrealImGuiOutputDevice::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category)
 	{
 		const ELogVerbosity::Type TestVerbosity = static_cast<ELogVerbosity::Type>(Verbosity & ELogVerbosity::VerbosityMask);
-		if (TestVerbosity)
+		if (TestVerbosity == 0)
 		{
-			int32 LogLine = Logs.AddElement(FLog{ Message, TestVerbosity, Category, FDateTime::Now(), GFrameCounter });
+			return;
+		}
+
+		PendingConsumeLogs.Enqueue(FLog{ Message, TestVerbosity, Category, FDateTime::Now(), GFrameCounter });
+		if (bIsFlushInvoked == false)
+		{
+			bIsFlushInvoked = true;
+			AsyncTask(ENamedThreads::GameThread, [this]
+			{
+				Flush();
+				bIsFlushInvoked = false;
+			});
+		}
+	}
+
+	void FUnrealImGuiOutputDevice::Flush()
+	{
+		while (PendingConsumeLogs.IsEmpty() == false)
+		{
+			int32 LogLine = Logs.AddElement({});
+			PendingConsumeLogs.Dequeue(Logs[LogLine]);
 			const SIZE_T LogSize = sizeof(FLog) + Logs[LogLine].LogString.GetAllocatedSize();
 			AllLogSize += LogSize;
 
@@ -77,9 +97,9 @@ namespace UnrealImGui
 				{
 					SIZE_T RemoveLogSize = 0;
 					int32 RemoveLogCounter = 0;
+					RemoveLogCounter += PreChunkLogCount;
 					for (int32 Idx = 0; Idx < PreChunkLogCount; ++Idx)
 					{
-						RemoveLogCounter += 1;
 						RemoveLogSize += sizeof(FLog) + Logs[Idx].LogString.GetAllocatedSize();
 					}
 					LogLine -= RemoveLogCounter;
@@ -99,10 +119,12 @@ namespace UnrealImGui
 				}
 			}
 			SET_MEMORY_STAT(Stat_UnrealImGuiOutputDevice_Logs, AllLogSize);
-			CategoryNames.Add(Category);
+
+			const FLog& Log = Logs[LogLine];
+			CategoryNames.Add(Log.Category);
 			for (FUnrealImGuiLogDevice* LogDevice : LogDevices)
 			{
-				LogDevice->PostLogAdded(Logs[LogLine], LogLine);
+				LogDevice->PostLogAdded(Log, LogLine);
 			}
 		}
 	}

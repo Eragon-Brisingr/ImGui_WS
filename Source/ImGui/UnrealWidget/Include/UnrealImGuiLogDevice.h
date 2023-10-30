@@ -21,8 +21,6 @@ namespace UnrealImGui
 	public:
 		FUnrealImGuiOutputDevice();
 
-		void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category) override;
-
 		struct FLog
 		{
 			FUTF8String LogString;
@@ -32,7 +30,7 @@ namespace UnrealImGui
 			uint64 Frame;
 		};
 		static constexpr int32 PreChunkLogCount = 1024 * 1024 / sizeof(FLog);
-		struct FLogCollections : TChunkedArray<FLog, sizeof(FLog) * PreChunkLogCount>
+		struct FLogChunkedArray : TChunkedArray<FLog, sizeof(FLog) * PreChunkLogCount>
 		{
 			void RemoveFirstChunk()
 			{
@@ -40,14 +38,21 @@ namespace UnrealImGui
 				Chunks.RemoveAt(0);
 			}
 		};
-		FLogCollections Logs;
+		FLogChunkedArray Logs;
 		TSet<FName> CategoryNames;
 
 		void Register(FUnrealImGuiLogDevice* LogDevice);
 		void Unregister(FUnrealImGuiLogDevice* LogDevice);
+
 		TArray<FUnrealImGuiLogDevice*> LogDevices;
 		SIZE_T AllLogSize = 0;
 		SIZE_T MaxLogSize;
+	private:
+		void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category) override;
+
+		std::atomic<bool> bIsFlushInvoked{ false };
+		TQueue<FLog> PendingConsumeLogs;
+		void Flush();
 	};
 
 	extern IMGUI_API FUnrealImGuiOutputDevice GUnrealImGuiOutputDevice;
