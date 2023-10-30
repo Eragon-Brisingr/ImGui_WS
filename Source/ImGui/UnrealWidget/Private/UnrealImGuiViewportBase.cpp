@@ -363,12 +363,13 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 		DeltaSeconds
 	};
 
+	constexpr int32 FloatContextFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	{
 		ImGui::SetNextWindowPos(ImVec2{ ContentMin + 10.f }, ImGuiCond_Always);
 		ImGui::SetNextWindowSize(ImVec2{ MessageBoxWidth, -1.f });
 		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
 		ImGui::SetNextWindowBgAlpha(0.5f);
-		if (ImGui::Begin(Context.FloatingContextName, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+		if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
 		{
 			// Construct
 		}
@@ -488,7 +489,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 	ImGui::PopClipRect();
 
 	{
-		if (ImGui::Begin(Context.FloatingContextName, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+		if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
 		{
 			for (const auto& Message : Context.Messages)
 			{
