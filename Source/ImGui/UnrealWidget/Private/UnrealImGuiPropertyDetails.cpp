@@ -6,7 +6,7 @@
 #include "imgui.h"
 #include "UnrealImGuiPropertyCustomization.h"
 #include "UnrealImGuiStat.h"
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
 
 namespace UnrealImGui

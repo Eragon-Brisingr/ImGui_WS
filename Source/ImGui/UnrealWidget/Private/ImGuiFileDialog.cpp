@@ -10,7 +10,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_notify.h"
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
 
 namespace UnrealImGui

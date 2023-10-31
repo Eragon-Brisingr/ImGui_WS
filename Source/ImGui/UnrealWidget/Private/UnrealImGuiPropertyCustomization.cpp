@@ -5,7 +5,7 @@
 
 #include "EngineUtils.h"
 #include "imgui.h"
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"

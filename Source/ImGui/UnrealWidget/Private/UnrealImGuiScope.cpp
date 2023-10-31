@@ -1,10 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiScope.h"
 
 #include "imgui.h"
-#include "imgui_internal.h"
 
 namespace UnrealImGui
 {

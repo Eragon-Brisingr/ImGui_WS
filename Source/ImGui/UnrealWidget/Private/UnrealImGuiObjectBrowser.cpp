@@ -7,7 +7,7 @@
 #include "imgui_internal.h"
 #include "imgui_notify.h"
 #include "UnrealImGuiPropertyDetails.h"
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
 
 #define LOCTEXT_NAMESPACE "UnrealImGui"

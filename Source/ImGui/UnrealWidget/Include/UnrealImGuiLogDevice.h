@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiString.h"
 #include "UnrealImGuiLogDevice.generated.h"
 
 struct FUnrealImGuiLogDevice;

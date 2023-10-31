@@ -1,6 +1,6 @@
 # ImGui_WS
 
-[English ReadMe click here](README.md)
+[中文](README_ZH.md)|[English](README.md)
 
 [[toc]]
 
@@ -56,6 +56,26 @@ ImGui_WS插件提供了虚幻调试信息远程网页显示的能力，支持打
 * 从**UImGui_WS_Manager::GetImGuiContext**获取到ImGuiContext  
 * 成员**OnDraw**为ImGui_WS绘制调用的事件  
 * 绑定该事件调用ImGui绘制特定的面板
+
+### 绘制图片
+
+1. UnrealImGui::FImGuiTextureHandle创建图片的句柄
+2. 调用UnrealImGui::UpdateTextureData更新图片信息
+3. ImGui::Image绘制该图片
+
+``` cpp
+static UnrealImGui::FImGuiTextureHandle TextureHandle = []
+{
+    UTexture2D* Texture2D = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EditorResources/S_Actor"));
+    // 步骤1
+    const UnrealImGui::FImGuiTextureHandle Handle{ Texture2D };
+    // 步骤2
+    UnrealImGui::UpdateTextureData(Handle, UnrealImGui::ETextureFormat::RGB8, Texture2D);
+    return Handle;
+}();
+// 步骤3
+ImGui::Image(TextureHandle, ImVec2{ 256.f, 256.f });
+```
 
 ## World Debugger
 

@@ -3,7 +3,7 @@
 
 #include "UnrealImGuiWrapper.h"
 
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiString.h"
 
 namespace UnrealImGui
 {

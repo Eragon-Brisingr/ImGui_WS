@@ -12,7 +12,8 @@
 #include "imgui_notify.h"
 #include "implot.h"
 #include "UnrealImGuiStat.h"
-#include "UnrealImGuiUtils.h"
+#include "UnrealImGuiString.h"
+#include "UnrealImGuiTexture.h"
 #include "UnrealImGuiWrapper.h"
 #include "WebKeyCodeToImGui.h"
 #include "Containers/TripleBuffer.h"
@@ -254,13 +255,24 @@ public:
 			unsigned char* pixels;
 			int width, height;
 			ImGui::GetIO().Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
-			ImGuiWS.setTexture(0, ImGuiWS::Texture::Type::Alpha8, width, height, (const char*)pixels);
+			ImGuiWS.setTexture(0, ImGuiWS::Texture::Type::Alpha8, width, height, reinterpret_cast<const char*>(pixels));
 		}
+
+		using namespace UnrealImGui;
+		Private::UpdateTextureData_WS = [this](FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data)
+		{
+			static_assert((int32_t)ImGuiWS::Texture::Type::Alpha8 == (uint8)ETextureFormat::Alpha8);
+			static_assert((int32_t)ImGuiWS::Texture::Type::Gray8 == (uint8)ETextureFormat::Gray8);
+			static_assert((int32_t)ImGuiWS::Texture::Type::RGB24 == (uint8)ETextureFormat::RGB8);
+			static_assert((int32_t)ImGuiWS::Texture::Type::RGBA32 == (uint8)ETextureFormat::RGBA8);
+			ImGuiWS.setTexture(Handle, ImGuiWS::Texture::Type{ static_cast<uint8>(TextureFormat) }, Width, Height, reinterpret_cast<const char*>(Data));
+		};
 	}
 	virtual ~FDrawer()
 	{
 		ImGui::DestroyContext(Context);
 		ImPlot::DestroyContext(PlotContext);
+		UnrealImGui::Private::UpdateTextureData_WS.Reset();
 	}
 private:
 	struct FVSync

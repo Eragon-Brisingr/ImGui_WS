@@ -1,6 +1,6 @@
 # ImGui_WS
 
-[中文ReadMe点击这里](README_ZH.md)
+[中文](README_ZH.md)|[English](README.md)
 
 ![Overview](Docs/Overview.gif)
 
@@ -56,6 +56,25 @@ You can set the port number through Config or the command line
 2. Function **OnDraw** draws the invoked event for the ImGui_WS drawing 
 3. Bind this event to call ImGui to draw a specific panel
 
+### Draw Image
+
+1. UnrealImGui::FImGuiTextureHandle create texture handle
+2. Call UnrealImGui::UpdateTextureData update texture data
+3. Call ImGui::Image draw the texture
+
+``` cpp
+static UnrealImGui::FImGuiTextureHandle TextureHandle = []
+{
+    UTexture2D* Texture2D = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EditorResources/S_Actor"));
+    // step 1
+    const UnrealImGui::FImGuiTextureHandle Handle{ Texture2D };
+    // step 2
+    UnrealImGui::UpdateTextureData(Handle, UnrealImGui::ETextureFormat::RGB8, Texture2D);
+    return Handle;
+}();
+// step 3
+ImGui::Image(TextureHandle, ImVec2{ 256.f, 256.f });
+```
 
 ## World Debugger
 

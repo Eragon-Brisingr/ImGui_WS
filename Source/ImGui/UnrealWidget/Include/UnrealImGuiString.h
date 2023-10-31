@@ -1,12 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 
-/**
- * 
- */
 namespace UnrealImGui
 {
 	struct IMGUI_API FUTF8String : private TArray<ANSICHAR>
@@ -27,7 +24,7 @@ namespace UnrealImGui
 			*this = FUTF8String{ Message };
 			return *this;
 		}
-		
+
 		const ANSICHAR* operator*() const { return GetData(); }
 		FString ToString() const { return UTF8_TO_TCHAR(GetData()); }
 		void Reset(SizeType NewSize = 0) { Super::Reset(NewSize + 1); Add('\0'); }
@@ -40,13 +37,5 @@ namespace UnrealImGui
 		SIZE_T GetAllocatedSize() const { return Super::GetAllocatedSize(); }
 		void SetNum(SIZE_T NewNum) { Super::SetNum(NewNum + 1); }
 		SIZE_T Max() const { return Super::Max(); }
-	};
-	
-	struct IMGUI_API FWidgetDisableScope
-	{
-		FWidgetDisableScope(bool IsDisable);
-		~FWidgetDisableScope();
-	private:
-		bool Disable;
 	};
 }

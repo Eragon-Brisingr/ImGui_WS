@@ -6,6 +6,7 @@
 #include "ConsoleSettings.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "UnrealImGuiScope.h"
 #include "UnrealImGuiStat.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/LevelScriptActor.h"
