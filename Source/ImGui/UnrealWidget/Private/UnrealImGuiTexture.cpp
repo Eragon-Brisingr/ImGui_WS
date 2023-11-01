@@ -10,6 +10,32 @@ namespace UnrealImGui
 {
 	Private::FUpdateTextureData_WS Private::UpdateTextureData_WS;
 
+	namespace ImGuiTextureId
+	{
+		// note: font texture use id 0
+		uint32 HandleIdCounter = 0;
+		TMap<const void*, uint32> HandleIdMap;
+	}
+
+	FImGuiTextureHandle::FImGuiTextureHandle(const UTexture* Texture)
+	{
+		using namespace ImGuiTextureId;
+		uint32& Id = HandleIdMap.FindOrAdd(Texture);
+		if (Id == 0)
+		{
+			HandleIdCounter += 1;
+			Id = HandleIdCounter;
+		}
+		ImTextureId = Id;
+	}
+
+	FImGuiTextureHandle FImGuiTextureHandle::MakeUnique()
+	{
+		using namespace ImGuiTextureId;
+		HandleIdCounter += 1;
+		return { HandleIdCounter };
+	}
+
 	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data)
 	{
 		if (ensure(Private::UpdateTextureData_WS))

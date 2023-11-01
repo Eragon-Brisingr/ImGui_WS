@@ -1,6 +1,6 @@
 # ImGui_WS
 
-[中文](README_ZH.md)|[English](README.md)
+[中文](README_ZH.md) | [English](README.md)
 
 [[toc]]
 

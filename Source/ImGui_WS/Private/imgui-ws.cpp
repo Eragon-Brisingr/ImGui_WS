@@ -173,11 +173,12 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
         static std::vector<char> data;
         {
             std::shared_lock lock(m_impl->mutex);
-            if (m_impl->dataRead.textures.find(idxs[0]) == m_impl->dataRead.textures.end()) {
+            const auto texture_id = idxs[0];
+            if (m_impl->dataRead.textures.find(texture_id) == m_impl->dataRead.textures.end()) {
                 return std::string_view { 0, 0 };
             }
             data.clear();
-            std::copy(m_impl->dataRead.textures[idxs[0]].data.data(), m_impl->dataRead.textures[idxs[0]].data.data() + m_impl->dataRead.textures[idxs[0]].data.size(),
+            std::copy(m_impl->dataRead.textures[texture_id].data.data(), m_impl->dataRead.textures[texture_id].data.data() + m_impl->dataRead.textures[texture_id].data.size(),
                       std::back_inserter(data));
         }
 

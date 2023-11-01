@@ -138,11 +138,22 @@ struct Incppect<SSL>::Impl {
                             ss >> requestId;
                             int nidxs = 0;
                             ss >> nidxs;
-                            for (int i = 0; i < nidxs; ++i) {
-                                int idx = 0;
-                                ss >> idx;
-                                if (idx == -1) idx = sd->clientId;
-                                request.idxs.push_back(idx);
+                            if (path == "my_id[%d]")
+                            {
+                                for (int i = 0; i < nidxs; ++i) {
+                                    int idx = 0;
+                                    ss >> idx;
+                                    if (idx == -1) idx = sd->clientId;
+                                    request.idxs.push_back(idx);
+                                }
+                            }
+                            else
+                            {
+                                for (int i = 0; i < nidxs; ++i) {
+                                    int idx = 0;
+                                    ss >> idx;
+                                    request.idxs.push_back(idx);
+                                }
                             }
 
                             if (pathToGetter.find(path) != pathToGetter.end()) {

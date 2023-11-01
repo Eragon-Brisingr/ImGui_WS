@@ -300,7 +300,8 @@ var imgui_ws = {
             for (var i_cmd = 0; i_cmd < n_cmd; ++i_cmd) {
                 var pi = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, 4);
                 var n_elements = pi[0]; draw_data_offset += 4;
-                var texture_id = pi[1]; draw_data_offset += 4;
+                // uint32 -> int32
+                var texture_id = (pi[1] << 0); draw_data_offset += 4;
                 var offset_vtx = pi[2]; draw_data_offset += 4;
                 var offset_idx = pi[3]; draw_data_offset += 4;
 

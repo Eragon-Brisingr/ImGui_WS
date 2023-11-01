@@ -6,21 +6,20 @@
 
 namespace UnrealImGui
 {
-	struct FImGuiTextureHandle
+	struct IMGUI_API FImGuiTextureHandle
 	{
-		FImGuiTextureHandle(const UTexture* Texture)
-			: ImTextureID{ reinterpret_cast<intptr_t>(Texture) }
-		{}
-		operator void*() const
+		FImGuiTextureHandle(const UTexture* Texture);
+		static FImGuiTextureHandle MakeUnique();
+
+		operator uint32() const
 		{
-			return reinterpret_cast<void*>(ImTextureID);
-		}
-		operator intptr_t() const
-		{
-			return ImTextureID;
+			return ImTextureId;
 		}
 	private:
-		intptr_t ImTextureID;
+		FImGuiTextureHandle(uint32 Id)
+			: ImTextureId(Id)
+		{}
+		uint32 ImTextureId;
 	};
 
 	enum class ETextureFormat : uint8
