@@ -4,6 +4,7 @@
 #include "UnrealImGuiViewportExtent.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "UnrealImGuiViewportBase.h"
 
 ImU32 FUnrealImGuiViewportContext::FColorToU32(const FColor& Color)
@@ -52,22 +53,6 @@ void FUnrealImGuiViewportContext::DrawTriangleFilled(const FVector2D& A, const F
 	}
 }
 
-void FUnrealImGuiViewportContext::DrawRect(const FBox2D& Box, const FColor& Color, float Rounding, float Thickness) const
-{
-	if (ViewBounds.Intersect(Box) && Box.ExpandBy(Rounding).IsInside(ViewBounds) == false)
-	{
-		DrawList->AddRect(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawFlags_RoundCornersAll, Thickness);
-	}
-}
-
-void FUnrealImGuiViewportContext::DrawRectFilled(const FBox2D& Box, const FColor& Color, float Rounding) const
-{
-	if (ViewBounds.Intersect(Box))
-	{
-		DrawList->AddRectFilled(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawFlags_RoundCornersAll);
-	}
-}
-
 void FUnrealImGuiViewportContext::DrawCircle(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments, float Thickness) const
 {
 	const FBox2D CircleBounds{ FVector2D{Center} - FVector2D(Radius), FVector2D{Center} + FVector2D(Radius) };
@@ -89,6 +74,59 @@ void FUnrealImGuiViewportContext::DrawCircleFilled(const FVector2D& Center, floa
 	if (ViewBounds.Intersect(CircleBounds))
 	{
 		DrawList->AddCircleFilled(ImVec2{ WorldToScreenLocation(Center) }, Radius * Zoom, FColorToU32(Color), NumSegments);
+	}
+}
+
+namespace ImGuiExpand
+{
+	void AddCapsule(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius, ImU32 color, int num_segments = 0, float thickness = 1.0f)
+	{
+		const ImVec2 diff{ (b - a) };
+		const float angle = atan2(diff.y, diff.x) + IM_PI * 0.5f;
+		draw_list->PathArcTo(a, radius, angle, angle + IM_PI, num_segments);
+		draw_list->PathArcTo(b, radius, angle + IM_PI, angle + IM_PI * 2.f, num_segments);
+		draw_list->PathStroke(color, ImDrawFlags_Closed, thickness);
+	}
+
+	void AddCapsuleFilled(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius, ImU32 color, int num_segments = 0)
+	{
+		const ImVec2 diff{ (b - a) };
+		const float angle = atan2(diff.y, diff.x) + IM_PI * 0.5f;
+		draw_list->PathArcTo(a, radius, angle, angle + IM_PI, num_segments);
+		draw_list->PathArcTo(b, radius, angle + IM_PI, angle + IM_PI * 2.f, num_segments);
+		draw_list->PathFillConvex(color);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawCapsule(const FVector2D& A, const FVector2D& B, float Radius, const FColor& Color, int NumSegments, float Thickness) const
+{
+	if (ViewBounds.Intersect(FBox2D{ { A, B } }.ExpandBy(Radius)))
+	{
+		ImGuiExpand::AddCapsule(DrawList, ImVec2{ WorldToScreenLocation(A) }, ImVec2{ WorldToScreenLocation(B) }, Radius * Zoom, FColorToU32(Color), NumSegments, Thickness);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawCapsuleFilled(const FVector2D& A, const FVector2D& B, float Radius, const FColor& Color, int NumSegments) const
+{
+	if (ViewBounds.Intersect(FBox2D{ { A, B } }.ExpandBy(Radius)))
+	{
+		ImGuiExpand::AddCapsuleFilled(DrawList, ImVec2{ WorldToScreenLocation(A) }, ImVec2{ WorldToScreenLocation(B) }, Radius * Zoom, FColorToU32(Color), NumSegments);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawRect(const FBox2D& Box, const FColor& Color, float Rounding, float Thickness) const
+{
+	if (ViewBounds.Intersect(Box) && Box.ExpandBy(Box.GetSize() * -Rounding).IsInside(ViewBounds) == false)
+	{
+		DrawList->AddRect(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawFlags_RoundCornersAll, Thickness);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawRectFilled(const FBox2D& Box, const FColor& Color, float Rounding) const
+{
+	if (ViewBounds.Intersect(Box))
+	{
+		DrawList->AddRectFilled(ImVec2{ WorldToScreenLocation(Box.Min) }, ImVec2{ WorldToScreenLocation(Box.Max) }, FColorToU32(Color), Rounding, ImDrawFlags_RoundCornersAll);
 	}
 }
 
