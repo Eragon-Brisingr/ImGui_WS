@@ -127,31 +127,35 @@ struct IMGUI_API FUnrealImGuiViewportContext
 	}
 
 	void DrawLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float Thickness = 1.f) const;
-	void DrawLine(const FVector2f& Start, const FVector2f& End, const FColor& Color, float Thickness = 1.f) const { DrawLine(FVector2D{ Start }, FVector2D{ End }, Color, Thickness); }
+	void FDrawLine(const FVector2f& Start, const FVector2f& End, const FColor& Color, float Thickness = 1.f) const { DrawLine(FVector2D{ Start }, FVector2D{ End }, Color, Thickness); }
 	void DrawArrow(const FVector2D& Start, const FVector2D& End, const FColor& Color, float ArrowSize = 12.f, float Thickness = 1.f) const;
-	void DrawArrow(const FVector2f& Start, const FVector2f& End, const FColor& Color, float ArrowSize = 12.f, float Thickness = 1.f) const { DrawArrow(FVector2D{ Start }, FVector2D{ End }, Color, ArrowSize, Thickness); }
+	void FDrawArrow(const FVector2f& Start, const FVector2f& End, const FColor& Color, float ArrowSize = 12.f, float Thickness = 1.f) const { DrawArrow(FVector2D{ Start }, FVector2D{ End }, Color, ArrowSize, Thickness); }
 	void DrawTriangle(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color, float Thickness = 1.f) const;
-	void DrawTriangle(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color, float Thickness = 1.f) const { DrawTriangle(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color, Thickness); }
+	void FDrawTriangle(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color, float Thickness = 1.f) const { DrawTriangle(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color, Thickness); }
 	void DrawTriangleFilled(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color) const;
-	void DrawTriangleFilled(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color) const { DrawTriangleFilled(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color); }
+	void FDrawTriangleFilled(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color) const { DrawTriangleFilled(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color); }
 	void DrawCircle(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.0f) const;
-	void DrawCircle(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.0f) const { DrawCircle(FVector2D{ Center }, Radius, Color, NumSegments, Thickness); }
+	void FDrawCircle(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.0f) const { DrawCircle(FVector2D{ Center }, Radius, Color, NumSegments, Thickness); }
 	void DrawCircleFilled(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments = 0) const;
-	void DrawCircleFilled(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0) const { DrawCircleFilled(FVector2D{ Center }, Radius, Color, NumSegments); }
+	void FDrawCircleFilled(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0) const { DrawCircleFilled(FVector2D{ Center }, Radius, Color, NumSegments); }
 	void DrawCapsule(const FVector2D& A, const FVector2D& B, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const;
-	void DrawCapsule(const FVector2f& A, const FVector2f& B, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const { DrawCapsule(FVector2D{ A }, FVector2D{ B }, Radius, Color, NumSegments, Thickness); }
+	void FDrawCapsule(const FVector2f& A, const FVector2f& B, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const { DrawCapsule(FVector2D{ A }, FVector2D{ B }, Radius, Color, NumSegments, Thickness); }
 	void DrawCapsuleFilled(const FVector2D& A, const FVector2D& B, float Radius, const FColor& Color, int NumSegments = 0) const;
-	void DrawCapsuleFilled(const FVector2f& A, const FVector2f& B, float Radius, const FColor& Color, int NumSegments = 0) const { DrawCapsuleFilled(FVector2D{ A }, FVector2D{ B }, Radius, Color, NumSegments); }
+	void FDrawCapsuleFilled(const FVector2f& A, const FVector2f& B, float Radius, const FColor& Color, int NumSegments = 0) const { DrawCapsuleFilled(FVector2D{ A }, FVector2D{ B }, Radius, Color, NumSegments); }
+	void DrawTaperedCapsule(const FVector2D& A, const FVector2D& B, float RadiusA, float RadiusB, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const;
+	void FDrawTaperedCapsule(const FVector2f& A, const FVector2f& B, float RadiusA, float RadiusB, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const { DrawTaperedCapsule(FVector2D{ A }, FVector2D{ B }, RadiusA, RadiusB, Color, NumSegments, Thickness); }
+	void DrawTaperedCapsuleFilled(const FVector2D& A, const FVector2D& B, float RadiusA, float RadiusB, const FColor& Color, int NumSegments = 0) const;
+	void FDrawTaperedCapsuleFilled(const FVector2f& A, const FVector2f& B, float RadiusA, float RadiusB, const FColor& Color, int NumSegments = 0) const { DrawTaperedCapsuleFilled(FVector2D{ A }, FVector2D{ B }, RadiusA, RadiusB, Color, NumSegments); }
 	void DrawRect(const FBox2D& Box, const FColor& Color, float Rounding = 0.f, float Thickness = 1.f) const;
-	void DrawRect(const FBox2f& Box, const FColor& Color, float Rounding = 0.f, float Thickness = 1.f) const { DrawRect(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding, Thickness); }
+	void FDrawRect(const FBox2f& Box, const FColor& Color, float Rounding = 0.f, float Thickness = 1.f) const { DrawRect(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding, Thickness); }
 	void DrawRectFilled(const FBox2D& Box, const FColor& Color, float Rounding = 0.f) const;
-	void DrawRectFilled(const FBox2f& Box, const FColor& Color, float Rounding = 0.f) const { DrawRectFilled(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding); }
+	void FDrawRectFilled(const FBox2f& Box, const FColor& Color, float Rounding = 0.f) const { DrawRectFilled(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding); }
 	void DrawQuad(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color, float Thickness = 1.0f) const;
-	void DrawQuad(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color, float Thickness = 1.0f) const { DrawQuad(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color, Thickness); }
+	void FDrawQuad(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color, float Thickness = 1.0f) const { DrawQuad(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color, Thickness); }
 	void DrawQuadFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color) const;
-	void DrawQuadFilled(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color) const { DrawQuadFilled(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color); }
+	void FDrawQuadFilled(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color) const { DrawQuadFilled(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color); }
 	void DrawText(const FVector2D& Position, const FString& Text, const FColor& Color) const;
-	void DrawText(const FVector2f& Position, const FString& Text, const FColor& Color) const { DrawText(FVector2D{ Position }, Text, Color); }
+	void FDrawText(const FVector2f& Position, const FString& Text, const FColor& Color) const { DrawText(FVector2D{ Position }, Text, Color); }
 	void AddMessageText(const FString& Message, const FColor& Color = FColor::White) const { Messages.Add(FMessage{ Message, Color }); }
 	void MarkConfigDirty() const { bIsConfigDirty |= true; }
 private:

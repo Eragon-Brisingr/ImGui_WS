@@ -79,22 +79,32 @@ void FUnrealImGuiViewportContext::DrawCircleFilled(const FVector2D& Center, floa
 
 namespace ImGuiExpand
 {
-	void AddCapsule(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius, ImU32 color, int num_segments = 0, float thickness = 1.0f)
+	void AddTaperedCapsule(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius_a, float radius_b, ImU32 color, int num_segments = 0, float thickness = 1.0f)
 	{
 		const ImVec2 diff{ (b - a) };
 		const float angle = atan2(diff.y, diff.x) + IM_PI * 0.5f;
-		draw_list->PathArcTo(a, radius, angle, angle + IM_PI, num_segments);
-		draw_list->PathArcTo(b, radius, angle + IM_PI, angle + IM_PI * 2.f, num_segments);
+		draw_list->PathArcTo(a, radius_a, angle, angle + IM_PI, num_segments);
+		draw_list->PathArcTo(b, radius_b, angle + IM_PI, angle + IM_PI * 2.f, num_segments);
 		draw_list->PathStroke(color, ImDrawFlags_Closed, thickness);
+	}
+
+	void AddCapsule(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius, ImU32 color, int num_segments = 0, float thickness = 1.0f)
+	{
+		AddTaperedCapsule(draw_list, a, b, radius, radius, color, num_segments, thickness);
+	}
+
+	void AddTaperedCapsuleFilled(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius_a, float radius_b, ImU32 color, int num_segments = 0)
+	{
+		const ImVec2 diff{ (b - a) };
+		const float angle = atan2(diff.y, diff.x) + IM_PI * 0.5f;
+		draw_list->PathArcTo(a, radius_a, angle, angle + IM_PI, num_segments);
+		draw_list->PathArcTo(b, radius_b, angle + IM_PI, angle + IM_PI * 2.f, num_segments);
+		draw_list->PathFillConvex(color);
 	}
 
 	void AddCapsuleFilled(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius, ImU32 color, int num_segments = 0)
 	{
-		const ImVec2 diff{ (b - a) };
-		const float angle = atan2(diff.y, diff.x) + IM_PI * 0.5f;
-		draw_list->PathArcTo(a, radius, angle, angle + IM_PI, num_segments);
-		draw_list->PathArcTo(b, radius, angle + IM_PI, angle + IM_PI * 2.f, num_segments);
-		draw_list->PathFillConvex(color);
+		AddTaperedCapsuleFilled(draw_list, a, b, radius, radius, color, num_segments);
 	}
 }
 
@@ -111,6 +121,22 @@ void FUnrealImGuiViewportContext::DrawCapsuleFilled(const FVector2D& A, const FV
 	if (ViewBounds.Intersect(FBox2D{ { A, B } }.ExpandBy(Radius)))
 	{
 		ImGuiExpand::AddCapsuleFilled(DrawList, ImVec2{ WorldToScreenLocation(A) }, ImVec2{ WorldToScreenLocation(B) }, Radius * Zoom, FColorToU32(Color), NumSegments);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawTaperedCapsule(const FVector2D& A, const FVector2D& B, float RadiusA, float RadiusB, const FColor& Color, int NumSegments, float Thickness) const
+{
+	if (ViewBounds.Intersect(FBox2D{ { A, B } }.ExpandBy(FMath::Max(RadiusA, RadiusB))))
+	{
+		ImGuiExpand::AddTaperedCapsule(DrawList, ImVec2{ WorldToScreenLocation(A) }, ImVec2{ WorldToScreenLocation(B) }, RadiusA * Zoom, RadiusB * Zoom, FColorToU32(Color), NumSegments, Thickness);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawTaperedCapsuleFilled(const FVector2D& A, const FVector2D& B, float RadiusA, float RadiusB, const FColor& Color, int NumSegments) const
+{
+	if (ViewBounds.Intersect(FBox2D{ { A, B } }.ExpandBy(FMath::Max(RadiusA, RadiusB))))
+	{
+		ImGuiExpand::AddTaperedCapsuleFilled(DrawList, ImVec2{ WorldToScreenLocation(A) }, ImVec2{ WorldToScreenLocation(B) }, RadiusA * Zoom, RadiusB * Zoom, FColorToU32(Color), NumSegments);
 	}
 }
 
