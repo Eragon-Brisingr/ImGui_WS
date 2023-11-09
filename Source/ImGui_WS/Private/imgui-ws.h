@@ -33,20 +33,21 @@ class ImGuiWS {
         };
 
         struct Event {
-            enum Type {
+            enum Type : int32 {
                 Unknown = 0,
-                Connected,
-                Disconnected,
-                MouseMove,
-                MouseDown,
-                MouseUp,
-                MouseWheel,
-                KeyPress,
-                KeyDown,
-                KeyUp,
-                Resize,
-                TakeControl,
-                PasteClipboard,
+                Connected = 1,
+                Disconnected = 2,
+                MouseMove = 3,
+                MouseDown = 4,
+                MouseUp = 5,
+                MouseWheel = 6,
+                KeyPress = 7,
+                KeyDown = 8,
+                KeyUp = 9,
+                Resize = 10,
+                TakeControl = 11,
+                PasteClipboard = 12,
+                InputText = 13,
             };
 
             Type type = Unknown;
@@ -69,6 +70,7 @@ class ImGuiWS {
             uint32_t ip;
             
             std::string clipboard_text;
+            std::string input_text;
         };
 
         ImGuiWS();
@@ -77,7 +79,20 @@ class ImGuiWS {
         bool init(int32_t port, std::string pathHttp, std::vector<std::string> resources, const std::function<void()>& preMainLoop);
         bool init(int32_t port, std::string pathHttp, std::vector<std::string> resources, THandler && connect_handler, THandler && disconnect_handler, const std::function<void()>& preMainLoop);
         bool setTexture(TextureId textureId, Texture::Type textureType, int32_t width, int32_t height, const char * data);
-        bool setDrawData(const struct ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText, int32_t controlId, uint32_t controlIp, float mousePosX, float mousePosY, float viewportSizeX, float viewportSizeY);
+        bool setDrawData(const struct ImDrawData* drawData);
+        struct DrawInfo
+        {
+            int32_t mouseCursor = 0;
+            std::string clipboardText;
+            int32_t controlId;
+            uint32_t controlIp;
+            float mousePosX;
+            float mousePosY;
+            float viewportSizeX;
+            float viewportSizeY;
+            uint8 bWantTextInput;
+        };
+        bool setDrawInfo(DrawInfo&& drawInfo);
         bool addVar(const TPath & path, TGetter && getter);
 
 

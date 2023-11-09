@@ -38,6 +38,29 @@ public:
 	FImGui_WS_Context Context;
 };
 
+UENUM()
+enum class EImGuiFontGlyphRanges : uint8
+{
+	// Basic Latin, Extended Latin
+	Default,
+	// Default + Greek and Coptic
+	Greek,
+	// Default + Korean characters
+	Korean,
+	// Default + Hiragana, Katakana, Half-Width, Selection of 2999 Ideographs
+	Japanese,
+	// Default + Half-Width + Japanese Hiragana/Katakana + full set of about 21000 CJK Unified Ideographs
+	ChineseFull,
+	// Default + Half-Width + Japanese Hiragana/Katakana + set of 2500 CJK Unified Ideographs for common simplified Chinese
+	ChineseSimplifiedCommon,
+	// Default + about 400 Cyrillic characters
+	Cyrillic,
+	// Default + Thai characters
+	Thai,
+	// Default + Vietnamese characters
+	Vietnamese,
+};
+
 UCLASS(Config=ImGui_WS, DisplayName = "ImGui WS")
 class UImGui_WS_Settings : public UDeveloperSettings
 {
@@ -72,6 +95,9 @@ public:
 	bool bGameEnableImGui_WS = false;
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	int32 GamePort = 8890;
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	EImGuiFontGlyphRanges FontGlyphRanges = EImGuiFontGlyphRanges::ChineseFull;
 };
 
 UCLASS()

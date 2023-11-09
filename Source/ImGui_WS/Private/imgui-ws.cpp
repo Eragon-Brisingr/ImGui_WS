@@ -57,15 +57,8 @@ struct ImGuiWS::Impl {
     Data dataWrite;
     Data dataRead;
 
-    int32_t mouseCursor = 0;
-    std::string clipboardText;
-    int32_t controlId;
-    uint32_t controlIp;
-    float mousePosX;
-    float mousePosY;
-    float viewportSizeX;
-    float viewportSizeY;
-    
+    DrawInfo drawInfo;
+
     Events events;
 
     incppect incpp;
@@ -107,13 +100,13 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     // sync mouse cursor
     m_impl->incpp.var("imgui.mouse_cursor", [this](const auto& )
     {
-        return incppect::view(m_impl->mouseCursor);
+        return incppect::view(m_impl->drawInfo.mouseCursor);
     });
 
     // current control_id
     m_impl->incpp.var("control_id", [this](const auto& )
    {
-       return incppect::view(m_impl->controlId);
+       return incppect::view(m_impl->drawInfo.controlId);
    });
 
     // current control IP
@@ -121,20 +114,25 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
    {
        std::shared_lock lock(m_impl->mutex);
 
-       return incppect::view(m_impl->controlIp);
+       return incppect::view(m_impl->drawInfo.controlIp);
    });
 
     // sync clipboard
     m_impl->incpp.var("imgui.clipboard", [this](const auto& )
     {
-        return incppect::view(m_impl->clipboardText);
+        return incppect::view(m_impl->drawInfo.clipboardText);
+    });
+
+    m_impl->incpp.var("imgui.want_input_text", [this](const auto& )
+    {
+        return incppect::view(m_impl->drawInfo.bWantTextInput);
     });
 
     // sync to uncontrol mouse position
     m_impl->incpp.var("imgui.mouse_pos", [this](const auto& )
     {
         static std::array<float, 2> mousePos;
-        mousePos = { m_impl->mousePosX, m_impl->mousePosY };
+        mousePos = { m_impl->drawInfo.mousePosX, m_impl->drawInfo.mousePosY };
         return incppect::view(mousePos);
     });
     
@@ -142,7 +140,7 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     m_impl->incpp.var("imgui.viewport_size", [this](const auto& )
     {
         static std::array<float, 2> viewportSize;
-        viewportSize = { m_impl->viewportSizeX, m_impl->viewportSizeY };
+        viewportSize = { m_impl->drawInfo.viewportSizeX, m_impl->drawInfo.viewportSizeY };
         return incppect::view(viewportSize);
     });
     
@@ -243,87 +241,68 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
                     int type = -1;
                     ss >> type;
 
-                    //printf("Received event %d '%s'\n", type, ss.str().c_str());
-                    switch (type) {
-                        case 0:
+                    event.type = Event::Type{ type };
+                    switch (event.type) {
+                        case Event::MouseMove:
                             {
-                                // mouse move
-                                event.type = Event::MouseMove;
                                 ss >> event.mouse_x >> event.mouse_y;
-                                //printf("    mouse %g %g\n", event.mouse_x, event.mouse_y);
                             }
                             break;
-                        case 1:
+                        case Event::MouseDown:
                             {
-                                // mouse down
-                                event.type = Event::MouseDown;
                                 ss >> event.mouse_but >> event.mouse_x >> event.mouse_y;
-                                //printf("    mouse %d down\n", event.mouse_but);
                             }
                             break;
-                        case 2:
+                        case Event::MouseUp:
                             {
-                                // mouse up
-                                event.type = Event::MouseUp;
                                 ss >> event.mouse_but >> event.mouse_x >> event.mouse_y;
-                                //printf("    mouse %d up\n", event.mouse_but);
                             }
                             break;
-                        case 3:
+                        case Event::MouseWheel:
                             {
-                                // mouse wheel
-                                event.type = Event::MouseWheel;
                                 ss >> event.wheel_x >> event.wheel_y;
                             }
                             break;
-                        case 4:
+                        case Event::KeyPress:
                             {
-                                // key press
-                                event.type = Event::KeyPress;
                                 ss >> event.key;
                             }
                             break;
-                        case 5:
+                        case Event::KeyDown:
                             {
-                                // key down
-                                event.type = Event::KeyDown;
                                 ss >> event.key;
                             }
                             break;
-                        case 6:
+                        case Event::KeyUp:
                             {
-                                // key up
-                                event.type = Event::KeyUp;
                                 ss >> event.key;
                             }
                             break;
-                        case 7:
+                        case Event::Resize:
                             {
-                                // resize
-                                event.type = Event::Resize;
                                 ss >> event.client_width >> event.client_height;
                             }
                             break;
-                        case 8:
+                        case Event::TakeControl:
                             {
                                 // take control
-                                event.type = Event::TakeControl;
                             }
                             break;
-                        case 9:
+                        case Event::PasteClipboard:
                             {
-                                // clipboard
-                                event.type = Event::PasteClipboard;
-                                std::string ClipboardText;
-                                ss >> ClipboardText;
-                                event.clipboard_text = ClipboardText;
-                            break;
+                                ss >> event.clipboard_text;
                             }
+                            break;
+                        case Event::InputText:
+                            {
+                                ss >> event.input_text;
+                            }
+                            break;
                         default:
                             {
+                                event.type = Event::Unknown;
                                 ensure(false);
                                 UE_LOG(LogImGui, Warning, TEXT("Unknown input received from client: id = %d, type = %d"), clientId, type);
-                                return;
                             }
                             break;
                     };
@@ -400,29 +379,26 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, std::vector<std::string> 
     return init(port, std::move(pathHttp), std::move(resources), preMainLoop);
 }
 
-bool ImGuiWS::setDrawData(const ImDrawData* drawData, int32_t mouseCursor, const std::string& clipboardText, int32_t controlId, uint32_t controlIp, float mousePosX, float mousePosY, float viewportSizeX, float viewportSizeY) {
+bool ImGuiWS::setDrawData(const ImDrawData* drawData) {
     bool result = true;
 
     result &= m_impl->compressorDrawData->setDrawData(drawData);
 
-    auto & drawLists = m_impl->compressorDrawData->getDrawLists();
+    auto& drawLists = m_impl->compressorDrawData->getDrawLists();
 
     // make the draw lists available to incppect clients
     {
         // std::unique_lock lock(m_impl->mutex);
 
         m_impl->dataRead.drawLists = std::move(drawLists);
-        m_impl->mouseCursor = mouseCursor;
-        m_impl->clipboardText = clipboardText;
-        m_impl->controlId = controlId;
-        m_impl->controlIp = controlIp;
-        m_impl->mousePosX = mousePosX;
-        m_impl->mousePosY = mousePosY;
-        m_impl->viewportSizeX = viewportSizeX;
-        m_impl->viewportSizeY = viewportSizeY;
     }
 
     return result;
+}
+
+bool ImGuiWS::setDrawInfo(DrawInfo&& drawInfo) {
+    m_impl->drawInfo = std::move(drawInfo);
+    return true;
 }
 
 int32_t ImGuiWS::nConnected() const {

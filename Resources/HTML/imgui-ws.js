@@ -1,3 +1,17 @@
+const EventType = {
+    MouseMove : '3 ',
+    MouseDown : '4 ',
+    MouseUp : '5 ',
+    MouseWheel : '6 ',
+    KeyPress : '7 ',
+    KeyDown : '8 ',
+    KeyUp : '9 ',
+    Resize : '10 ',
+    TakeControl : '11 ',
+    PasteClipboard : '12 ',
+    InputText : '13 ',
+};
+
 var imgui_ws = {
     canvas: null,
     gl: null,
@@ -29,41 +43,173 @@ var imgui_ws = {
         want_capture_keyboard: true,
     },
 
-    init: function(canvas_name) {
-        this.canvas = document.getElementById(canvas_name);
+    isComposing: false,
 
-        var onkeyup = this.canvas_on_keyup.bind(this);
-        var onkeydown = this.canvas_on_keydown.bind(this);
-        var onkeypress = this.canvas_on_keypress.bind(this);
-        var onpointermove = this.canvas_on_pointermove.bind(this);
-        var onpointerdown = this.canvas_on_pointerdown.bind(this);
-        var onpointerup = this.canvas_on_pointerup.bind(this);
-        var onwheel = this.canvas_on_wheel.bind(this);
-        var ontouch = this.canvas_on_touch.bind(this);
+    init: function(incppect, canvas_name, virtual_input_name) {
+        this.canvas = document.getElementById(canvas_name);
+        this.virtual_input = document.getElementById(virtual_input_name);
 
         //this.canvas.style.touchAction = 'none'; // Disable browser handling of all panning and zooming gestures.
         //this.canvas.addEventListener('blur', this.canvas_on_blur);
 
-        this.canvas.addEventListener('keyup', onkeyup, true);
-        this.canvas.addEventListener('keydown', onkeydown, true);
-        this.canvas.addEventListener('keypress', onkeypress, true);
+        let ctrlDown = false;
+        const ctrlKey = 17;
+        const spaceKey = 32;
+        const cmdKey = 91;
+        const vKey = 86;
+        const cKey = 67;
+        const xKey = 88;
 
+        let onkeyup = (event) => {
+            if (event.keyCode === ctrlKey || event.keyCode === cmdKey) {
+                ctrlDown = false;
+            }
+            incppect.send(EventType.KeyUp + event.keyCode);
+        };
+        this.canvas.addEventListener('keyup', onkeyup, true);
+        let onkeydown = (event) => {
+            if (event.keyCode === ctrlKey || event.keyCode === cmdKey) {
+                ctrlDown = true;
+            }
+
+            if (ctrlDown && (event.keyCode === cKey || event.keyCode === xKey)) {
+                // copy & cut in render impl
+            }
+
+            if (ctrlDown && event.keyCode === vKey) {
+                navigator.clipboard.readText().then(text => {
+                    incppect.send(EventType.PasteClipboard + text)
+                    incppect.send(EventType.KeyDown + event.keyCode);
+                })
+            }
+            else {
+                incppect.send(EventType.KeyDown + event.keyCode);
+            }
+        };
+        this.canvas.addEventListener('keydown', onkeydown, true);
+        this.canvas.addEventListener('keypress', (event) => {
+            incppect.send(EventType.KeyPress + event.keyCode);
+
+            if (this.io.want_capture_keyboard) {
+                event.preventDefault();
+            }
+        }, true);
+
+        let onpointermove = (event) => {
+            this.io.mouse_x = event.offsetX * this.device_pixel_ratio;
+            this.io.mouse_y = event.offsetY * this.device_pixel_ratio;
+
+            incppect.send(EventType.MouseMove + this.io.mouse_x + ' ' + this.io.mouse_y);
+
+            if (this.io.want_capture_mouse) {
+                event.preventDefault();
+            }
+        };
         this.canvas.addEventListener('pointermove', onpointermove);
         this.canvas.addEventListener('mousemove', onpointermove);
 
+        let onpointerdown = (event) => {
+            this.io.mouse_x = event.offsetX * this.device_pixel_ratio;
+            this.io.mouse_y = event.offsetY * this.device_pixel_ratio;
+
+            incppect.send(EventType.MouseDown + event.button + ' ' + this.io.mouse_x + ' ' + this.io.mouse_y);
+        };
         this.canvas.addEventListener('pointerdown', onpointerdown);
         this.canvas.addEventListener('mousedown', onpointerdown);
 
+        let onpointerup = (event) => {
+            incppect.send(EventType.MouseUp + event.button + ' ' + this.io.mouse_x + ' ' + this.io.mouse_y);
+
+            if (this.io.want_capture_mouse) {
+                event.preventDefault();
+            }
+        }
         this.canvas.addEventListener('pointerup', onpointerup);
         this.canvas.addEventListener('mouseup', onpointerup);
 
         this.canvas.addEventListener('contextmenu', function(event) { event.preventDefault(); });
-        this.canvas.addEventListener('wheel', onwheel, false);
+        this.canvas.addEventListener('wheel', (event) => {
+            let scale = 1.0;
+            switch (event.deltaMode) {
+                case event.DOM_DELTA_PIXEL:
+                    scale = 0.01;
+                    break;
+                case event.DOM_DELTA_LINE:
+                    scale = 0.2;
+                    break;
+                case event.DOM_DELTA_PAGE:
+                    scale = 1.0;
+                    break;
+            }
 
+            let wheel_x =  event.deltaX * scale;
+            let wheel_y = -event.deltaY * scale;
+
+            incppect.send(EventType.MouseWheel + wheel_x + ' ' + wheel_y);
+
+            if (this.io.want_capture_mouse) {
+                event.preventDefault();
+            }
+        }, false);
+
+        let ontouch = (event) => {
+            if (event.touches.length > 1) {
+                return;
+            }
+
+            var touches = event.changedTouches,
+                first = touches[0],
+                type = "";
+
+            switch(event.type) {
+                case "touchstart": type = "mousedown"; break;
+                case "touchmove":  type = "mousemove"; break;
+                case "touchend":   type = "mouseup";   break;
+                default:           return;
+            }
+
+            // initMouseEvent(type, canBubble, cancelable, view, clickCount,
+            //                screenX, screenY, clientX, clientY, ctrlKey,
+            //                altKey, shiftKey, metaKey, button, relatedTarget);
+
+            var simulatedEvent = document.createEvent("MouseEvent");
+            simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0/*left*/, null);
+
+            first.target.dispatchEvent(simulatedEvent);
+            event.preventDefault();
+        };
         this.canvas.addEventListener('touchstart', ontouch);
         this.canvas.addEventListener('touchmove', ontouch);
         this.canvas.addEventListener('touchend', ontouch);
         this.canvas.addEventListener('touchcancel', ontouch);
+
+        this.virtual_input.addEventListener('keydown', (event)=> {
+            onkeydown(event);
+            if (this.io.want_capture_keyboard) {
+                event.preventDefault();
+            }
+        }, true);
+        this.virtual_input.addEventListener('keyup', onkeyup, true)
+
+        this.virtual_input.addEventListener('compositionstart', () => {
+            this.isComposing = true;
+        });
+        this.virtual_input.addEventListener('compositionend', () => {
+            this.isComposing = false;
+            incppect.send(EventType.InputText + this.virtual_input.value);
+            this.virtual_input.value = '';
+        });
+        this.virtual_input.addEventListener('input', () => {
+            if (!this.isComposing) {
+                if (this.virtual_input.value === ' ') {
+                    incppect.send(EventType.KeyPress + spaceKey);
+                }
+                else {
+                    incppect.send(EventType.InputText + this.virtual_input.value);
+                }
+                this.virtual_input.value = '';
+            }
+        });
 
         this.gl = this.canvas.getContext('webgl');
 
@@ -324,135 +470,4 @@ var imgui_ws = {
 
         this.gl.disable(this.gl.SCISSOR_TEST);
     },
-
-    canvas_on_keyup: function(event) {},
-    canvas_on_keydown: function(event) {},
-    canvas_on_keypress: function(event) {},
-    canvas_on_pointermove: function(event) {},
-    canvas_on_pointerdown: function(event) {},
-    canvas_on_pointerup: function(event) {},
-    canvas_on_wheel: function(event) {},
-    canvas_on_touch: function(event) {},
-
-    set_incppect_handlers: function(incppect) {
-        var ctrlDown = false;
-        const ctrlKey = 17;
-        const cmdKey = 91;
-        const vKey = 86;
-        const cKey = 67;
-        const xKey = 88;
-
-        this.canvas_on_keyup = function(event) {
-            if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
-                ctrlDown = false;
-            }
-            incppect.send('6 ' + event.keyCode);
-        };
-
-        this.canvas_on_keydown = function(event) {
-            if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
-                ctrlDown = true;
-            }
-
-            if (ctrlDown && (event.keyCode == cKey || event.keyCode == xKey)) {
-                // copy & cut in render impl
-            }
-
-            if (ctrlDown && event.keyCode == vKey) {
-                navigator.clipboard.readText().then(text => {
-                    incppect.send('9 ' + text)
-                    incppect.send('5 ' + event.keyCode);
-                })
-            }
-            else {
-                incppect.send('5 ' + event.keyCode);
-            }
-        };
-
-        this.canvas_on_keypress = function(event) {
-            incppect.send('4 ' + event.keyCode);
-
-            if (this.io.want_capture_keyboard) {
-                event.preventDefault();
-            }
-        };
-
-        this.canvas_on_pointermove = function(event) {
-            this.io.mouse_x = event.offsetX * this.device_pixel_ratio;
-            this.io.mouse_y = event.offsetY * this.device_pixel_ratio;
-
-            incppect.send('0 ' + this.io.mouse_x + ' ' + this.io.mouse_y);
-
-            if (this.io.want_capture_mouse) {
-                event.preventDefault();
-            }
-        };
-
-        this.canvas_on_pointerdown = function(event) {
-            this.io.mouse_x = event.offsetX * this.device_pixel_ratio;
-            this.io.mouse_y = event.offsetY * this.device_pixel_ratio;
-
-            incppect.send('1 ' + event.button + ' ' + this.io.mouse_x + ' ' + this.io.mouse_y);
-        };
-
-        this.canvas_on_pointerup = function(event) {
-            incppect.send('2 ' + event.button + ' ' + this.io.mouse_x + ' ' + this.io.mouse_y);
-
-            if (this.io.want_capture_mouse) {
-                event.preventDefault();
-            }
-        };
-
-        this.canvas_on_wheel = function(event) {
-            let scale = 1.0;
-            switch (event.deltaMode) {
-                case event.DOM_DELTA_PIXEL:
-                    scale = 0.01;
-                    break;
-                case event.DOM_DELTA_LINE:
-                    scale = 0.2;
-                    break;
-                case event.DOM_DELTA_PAGE:
-                    scale = 1.0;
-                    break;
-            }
-
-            var wheel_x =  event.deltaX * scale;
-            var wheel_y = -event.deltaY * scale;
-
-            incppect.send('3 ' + wheel_x + ' ' + wheel_y);
-
-            if (this.io.want_capture_mouse) {
-                event.preventDefault();
-            }
-        };
-
-        this.canvas_on_touch = function (event) {
-            if (event.touches.length > 1) {
-                return;
-            }
-
-            var touches = event.changedTouches,
-                first = touches[0],
-                type = "";
-
-            switch(event.type) {
-                case "touchstart": type = "mousedown"; break;
-                case "touchmove":  type = "mousemove"; break;
-                case "touchend":   type = "mouseup";   break;
-                default:           return;
-            }
-
-            // initMouseEvent(type, canBubble, cancelable, view, clickCount,
-            //                screenX, screenY, clientX, clientY, ctrlKey,
-            //                altKey, shiftKey, metaKey, button, relatedTarget);
-
-            var simulatedEvent = document.createEvent("MouseEvent");
-            simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0/*left*/, null);
-
-            first.target.dispatchEvent(simulatedEvent);
-            event.preventDefault();
-        };
-    },
-
 }
