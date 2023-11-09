@@ -14,46 +14,37 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
-	"SupportedTargetPlatforms": [
-		"Win64",
-		"Linux"
-	],
 	"Modules": [
 		{
 			"Name": "ImGui",
 			"Type": "DeveloperTool",
-			"LoadingPhase": "PreDefault",
-			"PlatformAllowList": [
-				"Win64",
-				"Linux"
-			]
+			"LoadingPhase": "PreDefault"
 		},
 		{
 			"Name": "ImGui_Editor",
 			"Type": "Editor",
-			"LoadingPhase": "PreDefault",
-			"PlatformAllowList": [
-				"Win64",
-				"Linux"
-			]
+			"LoadingPhase": "PreDefault"
 		},
 		{
 			"Name": "ImGui_WS",
 			"Type": "DeveloperTool",
-			"LoadingPhase": "Default",
-			"PlatformAllowList": [
-				"Win64",
-				"Linux"
-			]
+			"LoadingPhase": "Default"
 		},
 		{
 			"Name": "ImGui_WorldDebugger",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"PlatformAllowList": [
-				"Win64",
-				"Linux"
-			]
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "Incppect",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "WebSocketNetworking",
+			"Enabled": true
 		}
 	]
 }

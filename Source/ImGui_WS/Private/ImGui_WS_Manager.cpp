@@ -173,9 +173,42 @@ public:
 		const FString PluginPath = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir();
 		// fonts
 		{
+			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
 			ImFontConfig FontConfig;
 			FontConfig.FontDataOwnedByAtlas = false;
-			FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseSimplifiedCommon();
+			switch (Settings->FontGlyphRanges)
+			{
+			case EImGuiFontGlyphRanges::Default:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesDefault();
+				break;
+			case EImGuiFontGlyphRanges::Greek:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesGreek();
+				break;
+			case EImGuiFontGlyphRanges::Korean:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesKorean();
+				break;
+			case EImGuiFontGlyphRanges::Japanese:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesJapanese();
+				break;
+			case EImGuiFontGlyphRanges::ChineseFull:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseFull();
+				break;
+			case EImGuiFontGlyphRanges::ChineseSimplifiedCommon:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseSimplifiedCommon();
+				break;
+			case EImGuiFontGlyphRanges::Cyrillic:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesCyrillic();
+				break;
+			case EImGuiFontGlyphRanges::Thai:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesThai();
+				break;
+			case EImGuiFontGlyphRanges::Vietnamese:
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesVietnamese();
+				break;
+			default:
+				ensure(false);
+				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesDefault();
+			}
 			FPlatformString::Strcpy(FontConfig.Name, sizeof(FontConfig.Name), "zpix, 12px");
 			const FString ChineseFontPath = PluginPath / TEXT("Resources/zpix.ttf");
 			FontAtlas.AddFontFromFileTTF(TCHAR_TO_UTF8(*ChineseFontPath), 12.0f * DPIScale, &FontConfig);
@@ -245,7 +278,7 @@ public:
 		
 		// setup imgui-ws
 		const FString HtmlPath = PluginPath / TEXT("Resources/HTML");
-		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), { "", "index.html", "imgui-ws.js", "draw-mouse-pos.js" }, [this]
+		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), [this]
 		{
 			WS_ThreadUpdate();
 		});
@@ -279,10 +312,6 @@ private:
 	{
 		FVSync(double RateFps = 60.0) : tStep_us(1000000.0/RateFps) {}
 
-		uint64_t tStep_us;
-		uint64_t tLast_us = t_us();
-		uint64_t tNext_us = tLast_us + tStep_us;
-
 		uint64_t t_us() const
 		{
 			return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(); // duh ..
@@ -295,6 +324,10 @@ private:
 			tLast_us = tNow_us;
 			return float(res)/1e6f;
 		}
+
+		uint64_t tStep_us;
+		uint64_t tLast_us = t_us();
+		uint64_t tNext_us = tLast_us + tStep_us;
 	};
 	struct FState
 	{
@@ -343,32 +376,6 @@ private:
 	                Clients.Remove(Event.clientId);
 	            }
 	            break;
-	        case ImGuiWS::Event::MouseMove:
-	        case ImGuiWS::Event::MouseDown:
-	        case ImGuiWS::Event::MouseUp:
-	        case ImGuiWS::Event::MouseWheel:
-	        case ImGuiWS::Event::KeyUp:
-	        case ImGuiWS::Event::KeyDown:
-	        case ImGuiWS::Event::KeyPress:
-				{
-	                if (Event.clientId == CurControlId)
-					{
-		                PendingEvents.Add(Event);
-	                }
-	            }
-	            break;
-			case ImGuiWS::Event::Resize:
-				{
-					if (Event.clientId == CurControlId)
-					{
-						ImGuiIO& IO = ImGui::GetIO();
-						if (Event.clientId == CurControlId)
-						{
-							IO.DisplaySize = { (float)Event.client_width, (float)Event.client_height };
-						}
-					}
-				}
-		    	break;
 		    case ImGuiWS::Event::TakeControl:
 			    {
 		    		if (auto* Client = Clients.Find(Event.clientId))
@@ -379,18 +386,13 @@ private:
 		    		}
 			    }
 		    	break;
-		    case ImGuiWS::Event::PasteClipboard:
-		    	{
-		    		if (Event.clientId == CurControlId)
-		    		{
-		    			ImGui::SetClipboardText(Event.clipboard_text.c_str());
-		    		}
-		    	}
-		    	break;
 	        default:
-				{
-	                ensureMsgf(false, TEXT("Unknown input event\n"));
-	            }
+	        	{
+	        		if (Event.clientId == CurControlId)
+	        		{
+	        			PendingEvents.Add(Event);
+	        		}
+	        	}
 		    }
 		}
 
@@ -505,7 +507,23 @@ private:
 		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::Event& E) { return E.type == Event.type && E.mouse_but == Event.mouse_but; } );
 			            }
 		            	break;
-		            default: ;
+		    		case ImGuiWS::Event::Resize:
+		    			{
+		    				IO.DisplaySize = { (float)Event.client_width, (float)Event.client_height };
+		    			}
+		    			break;
+		    		case ImGuiWS::Event::PasteClipboard:
+		    			{
+		    				ImGui::SetClipboardText(Event.clipboard_text.c_str());
+		    			}
+		    			break;
+		    		case ImGuiWS::Event::InputText:
+		    			{
+		    				IO.AddInputCharactersUTF8(Event.input_text.c_str());
+		    			}
+		    			break;
+		            default:
+		            	ensureMsgf(false, TEXT("Unhandle input event %d"), Event.type);
 		            }
 		    	}
 		    	PendingEvents.Empty();
@@ -529,14 +547,16 @@ private:
 		const uint32 ControlIp;
 		const ImVec2 MousePos;
 		const ImVec2 ViewportSize;
+		const uint8 bWantTextInput : 1;
 
-		FImGuiData(const ImDrawData* DrawData, ImGuiWS_Record::FImGuiWS_Replay* Replay, const ImGuiMouseCursor MouseCursor, const int32 ControlId, uint32 ControlIp, const ImVec2& MousePos, const ImVec2& ViewportSize)
+		FImGuiData(const ImDrawData* DrawData, ImGuiWS_Record::FImGuiWS_Replay* Replay, const ImGuiMouseCursor MouseCursor, const int32 ControlId, uint32 ControlIp, const ImVec2& MousePos, const ImVec2& ViewportSize, bool bWantTextInput)
 			: CopiedDrawData{ *DrawData }
-			, MouseCursor(MouseCursor)
-			, ControlId(ControlId)
-			, ControlIp(ControlIp)
+			, MouseCursor{ MouseCursor }
+			, ControlId{ ControlId }
+			, ControlIp{ ControlIp }
 			, MousePos{ MousePos }
-			, ViewportSize(ViewportSize)
+			, ViewportSize{ ViewportSize }
+			, bWantTextInput{ bWantTextInput }
 		{
 			ImGuiWS_Record::FImGuiWS_Replay::FDrawData ReplayDrawData;
 			if (Replay && Replay->GetDrawData(ReplayDrawData))
@@ -879,7 +899,7 @@ private:
 			const ImDrawData* DrawData = ImGui::GetDrawData();
 			const ImVec2 MousePos = ImGui::GetMousePos();
 			const auto CurControlIp = State.Clients.FindRef(State.CurControlId).Ip;
-			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, RecordReplay.Get(), ImGui::GetMouseCursor(), State.CurControlId, CurControlIp, MousePos, IO.DisplaySize));
+			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, RecordReplay.Get(), ImGui::GetMouseCursor(), State.CurControlId, CurControlIp, MousePos, IO.DisplaySize, IO.WantTextInput));
 		}
 
 	    ImGui::EndFrame();
@@ -893,13 +913,24 @@ private:
 	{
 		if (ImGuiDataTripleBuffer.IsDirty())
 		{
-			const FImGuiData* ImGuiData = ImGuiDataTripleBuffer.SwapAndRead().Get();
+			const TSharedPtr<FImGuiData> ImGuiData = ImGuiDataTripleBuffer.SwapAndRead();
 			{
 				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
 				const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
 				const ImVec2 MousePos = ImGuiData->MousePos;
 				const ImVec2 ViewportSize = ImGuiData->ViewportSize;
-				ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData, ImGuiData->MouseCursor, ClipboardText, ImGuiData->ControlId, ImGuiData->ControlIp, MousePos.x, MousePos.y, ViewportSize.x, ViewportSize.y);
+				ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData);
+				ImGuiWS.setDrawInfo({
+					ImGuiData->MouseCursor,
+					ClipboardText,
+					ImGuiData->ControlId,
+					ImGuiData->ControlIp,
+					MousePos.x,
+					MousePos.y,
+					ViewportSize.x,
+					ViewportSize.y,
+					ImGuiData->bWantTextInput
+				});
 			}
 
 			if (const auto RecordSessionKeeper = RecordSession)

@@ -12,8 +12,8 @@
 #include <thread>
 #include <vector>
 
-template <bool SSL>
-class Incppect {
+class INCPPECT_API FIncppect
+{
     public:
         enum EventType {
             Connect,
@@ -21,53 +21,40 @@ class Incppect {
             Custom,
         };
 
-        using TUrl = std::string;
+        using TUrl = FName;
         using TResourceContent = std::string;
-        using TPath = std::string;
-        using TIdxs = std::vector<int>;
-        using TGetter = std::function<std::string_view(const TIdxs & idxs)>;
-        using THandler = std::function<void(int clientId, EventType etype, std::string_view)>;
+        using TPath = FName;
+        using TIdxs = TArray<int32>;
+        using TGetter = TFunction<std::string_view(const TIdxs& idxs)>;
+        using THandler = TFunction<void(int32 clientId, EventType etype, std::string_view)>;
 
         // service parameters
         struct Parameters {
-            int32_t portListen = 3000;
-            int32_t maxPayloadLength_bytes = 256*1024;
-            int64_t tLastRequestTimeout_ms = 3000;
-            int32_t tIdleTimeout_s = 120;
+            uint32 PortListen = 3000;
+            int64 tLastRequestTimeout_ms = 3000;
+            uint32 tIdleTimeout_s = 120;
 
-            std::string httpRoot = ".";
-            std::vector<std::string> resources;
-
-            std::string sslKey = "key.pem";
-            std::string sslCert = "cert.pem";
-
-            // todo:
-            // max clients
-            // max buffered amount
-            // etc.
-
-            std::function<void()> preMainLoop;
+            FString HttpRoot = ".";
+            FString PathOnDisk;
         };
 
-        Incppect();
-        ~Incppect();
+        FIncppect();
+        ~FIncppect();
 
         // run the incppect service main loop in the current thread
         // blocking call
-        void run(Parameters parameters);
+        void Init(const Parameters& Parameters);
+
+        void Tick();
 
         // terminate the server instance
-        void stop();
+        void Stop();
 
         // set a resource. useful for serving html/js files from within the application
-        void setResource(const TUrl & url, const TResourceContent & content);
+        void setResource(const TUrl& url, const TResourceContent& content);
 
         // number of connected clients
-        int32_t nConnected() const;
-
-        // run the incppect service main loop in dedicated thread
-        // non-blocking call, returns the created std::thread
-        std::thread runAsync(Parameters parameters);
+        int32 nConnected() const;
 
         // define variable/memory to inspect
         //
@@ -77,14 +64,14 @@ class Incppect {
         //   var("path1[%d]", [](auto idxs) { ... idxs[0] ... });
         //   var("path2[%d].foo[%d]", [](auto idxs) { ... idxs[0], idxs[1] ... });
         //
-        bool var(const TPath & path, TGetter && getter);
+        bool var(const TPath& path, TGetter && getter);
 
         // handle input from the clients
         void handler(THandler && handler);
 
         // shorthand for string_view from var
         template <typename T>
-            static std::string_view view(T & v) {
+            static std::string_view view(T& v) {
                 if constexpr (std::is_same<T, std::string>::value) {
                     return std::string_view { v.data(), v.size() };
                 }
@@ -99,13 +86,12 @@ class Incppect {
             }
 
         // get global instance
-        static Incppect & getInstance() {
-            static Incppect instance;
+        static FIncppect& getInstance() {
+            static FIncppect instance;
             return instance;
         }
 
     private:
         struct Impl;
-        std::unique_ptr<Impl> m_impl;
+        TUniquePtr<Impl> m_impl;
 };
-

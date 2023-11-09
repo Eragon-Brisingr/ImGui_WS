@@ -26,6 +26,18 @@
     .menu-button:hover .menu-content {
         display: block;
     }
+
+    .virtual-input {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+        border: none;
+        outline: none;
+        caret-color: black;
+        background-color: transparent;
+        color: transparent;
+    }
 </style>
 
 <html>
@@ -54,32 +66,33 @@
 <script>
     var pre_control_id = -1;
     function init() {
-        var output = document.getElementById('client-info');
-        var canvas_main = document.getElementById('canvas_main');
-        var take_control_btn = document.getElementById('take_control_btn');
+        let output = document.getElementById('client-info');
+        let canvas_main = document.getElementById('canvas_main');
+        let virtual_input = document.getElementById('virtual_input');
+        let take_control_btn = document.getElementById('take_control_btn');
 
         // sync control viewport size
-        window.addEventListener('resize', resizeCanvas, false);
-        function resizeCanvas() {
+        let resizeCanvas = () => {
             canvas_main.width = window.innerWidth;
             canvas_main.height = window.innerHeight;
-            incppect.send('7 ' + canvas_main.width + ' ' + canvas_main.height);
+            incppect.send(EventType.Resize + canvas_main.width + ' ' + canvas_main.height);
         }
+        window.addEventListener('resize', resizeCanvas, false);
         canvas_main.width = window.innerWidth;
         canvas_main.height = window.innerHeight;
 
         // take control
         take_control_btn.onclick = function () {
-            incppect.send('8');
+            incppect.send(EventType.TakeControl);
         }
 
         function intToIp(int) {
-            var part1 = int & 255;
-            var part2 = ((int >> 8) & 255);
-            var part3 = ((int >> 16) & 255);
-            var part4 = ((int >> 24) & 255);
+            let part1 = int & 255;
+            let part2 = ((int >> 8) & 255);
+            let part3 = ((int >> 16) & 255);
+            let part4 = ((int >> 24) & 255);
 
-            if (part1 == 0 && part2 == 0 && part3 == 0 && part4 == 1) {
+            if (part1 === 0 && part2 === 0 && part3 === 0 && part4 === 1) {
                 return 'localhost';
             }
 
@@ -87,26 +100,26 @@
         }
 
         function displayMessage(message) {
-            var div = document.getElementById('messageDev');
+            let div = document.getElementById('messageDev');
             div.style.opacity = 1;
             div.style.display = 'block';
             div.innerHTML = message;
             setTimeout(function () {
-                div.style.opacity = 0;
+                div.style.opacity = '0';
                 setTimeout(function () { div.style.display = 'none'; }, 600);
             }, 3600);
         }
 
         incppect.render = function () {
-            var my_id = this.get_int32('my_id[%d]', -1) || 0;
-            var control_id = this.get_int32('control_id');
-            var control_ip = this.get_int32('control_ip');
-            var nclients = this.get_int32('incppect.nclients');
-            var tx_total = this.get_double('incppect.tx_total');
-            var rx_total = this.get_double('incppect.rx_total');
+            let my_id = this.get_int32('my_id[%d]', -1) || 0;
+            let control_id = this.get_int32('control_id');
+            let control_ip = this.get_int32('control_ip');
+            let nclients = this.get_int32('incppect.nclients');
+            let tx_total = this.get_double('incppect.tx_total');
+            let rx_total = this.get_double('incppect.rx_total');
 
-            const is_control_take = pre_control_id != my_id && control_id == my_id;
-            const is_control_lost = pre_control_id == my_id && control_id != my_id;
+            const is_control_take = pre_control_id !== my_id && control_id === my_id;
+            const is_control_lost = pre_control_id === my_id && control_id !== my_id;
             pre_control_id = control_id;
             if (is_control_take) {
                 resizeCanvas();
@@ -132,9 +145,9 @@
             output.innerHTML += 'tx client = ' + (this.stats.tx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.tx_n) + ' msgs<br>';
             output.innerHTML += 'rx client = ' + (this.stats.rx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.rx_n) + ' msgs<br>';
 
-            if (my_id == control_id) {
-                var mouse_cursor = this.get_int32('imgui.mouse_cursor', -1) || 0;
-                var mouse_cursor_type =
+            if (my_id === control_id) {
+                let mouse_cursor = this.get_int32('imgui.mouse_cursor', -1) || 0;
+                let mouse_cursor_type =
                     [
                         'none', // ImGuiMouseCursor_None
                         'default', // ImGuiMouseCursor_Arrow
@@ -149,13 +162,29 @@
                     ];
                 canvas_main.style.cursor = mouse_cursor_type[mouse_cursor + 1];
 
-                var clipboard_text = this.get_str('imgui.clipboard');
+                let clipboard_text = this.get_str('imgui.clipboard');
                 if (clipboard_text.length > 0) {
                     navigator.clipboard.writeText(clipboard_text);
                 }
+
+                let want_input_text = this.get_uint8('imgui.want_input_text');
+                if (want_input_text)
+                {
+                    if (want_input_text !== 0) {
+                        if (document.activeElement !== virtual_input) {
+                            virtual_input.focus();
+                        }
+                    }
+                    else {
+                        if (this.pre_want_input_text !== want_input_text) {
+                            canvas_main.focus();
+                        }
+                    }
+                    this.pre_want_input_text = want_input_text;
+                }
             }
             else {
-                var viewport_size = this.get_float_arr('imgui.viewport_size');
+                let viewport_size = this.get_float_arr('imgui.viewport_size');
                 canvas_main.width = viewport_size[0];
                 canvas_main.height = viewport_size[1];
             }
@@ -167,7 +196,7 @@
             imgui_ws.incppect_draw_lists(this);
             imgui_ws.render();
 
-            if (my_id != control_id) {
+            if (my_id !== control_id) {
                 var mouse_pos = this.get_float_arr('imgui.mouse_pos');
                 draw_mouse_pos.render(mouse_pos[0], mouse_pos[1]);
             }
@@ -185,8 +214,7 @@
         incppect.k_requests_update_freq_ms = document.getElementById('update_freq_ms').value;
         incppect.init();
 
-        imgui_ws.set_incppect_handlers(incppect);
-        imgui_ws.init('canvas_main');
+        imgui_ws.init(incppect, 'canvas_main', 'virtual_input');
 
         draw_mouse_pos.init('canvas_main');
     }
@@ -237,6 +265,7 @@
     <canvas id="canvas_main" class="canvas" tabindex="0">
         Your browser does not support the HTML5 canvas tag.
     </canvas>
+    <input id="virtual_input" class="virtual-input" type="text" />
     <div class="message" id="messageDev"></div>
 </body>
 

@@ -1,14 +1,4 @@
-/*! \file common.h
- *  \brief Auto-generated file. Do not modify.
- *  \author Georgi Gerganov
- */
-
-#pragma once
-
-// the main js module
-constexpr auto kIncppect_js = R"js(
-
-var incppect = {
+﻿var incppect = {
     // websocket data
     ws: null,
 
@@ -49,7 +39,7 @@ var incppect = {
 
     timestamp: function() {
         return window.performance && window.performance.now && window.performance.timing &&
-            window.performance.timing.navigationStart ? window.performance.now() + window.performance.timing.navigationStart : Date.now();
+        window.performance.timing.navigationStart ? window.performance.now() + window.performance.timing.navigationStart : Date.now();
     },
 
     init: function() {
@@ -221,12 +211,20 @@ var incppect = {
         return output;
     },
 
+    set_data_num: function (data, num) {
+        data[0] = num & 0xFF;
+        data[1] = (num >> 8) & 0xFF;
+        data[2] = (num >> 16) & 0xFF;
+        data[3] = (num >> 24) & 0xFF;
+    },
+
     send: function(msg) {
         var enc_msg = new TextEncoder().encode(msg);
-        var data = new Int8Array(4 + enc_msg.length + 1);
-        data[0] = 4;
-        data.set(enc_msg, 4);
-        data[4 + enc_msg.length] = 0;
+        var data = new Int8Array(8 + enc_msg.length + 1);
+        this.set_data_num(data, data.length - 4);
+        data[4] = 4;
+        data.set(enc_msg, 8);
+        data[8 + enc_msg.length] = 0;
         this.ws.send(data);
 
         this.stats.tx_n += 1;
@@ -242,11 +240,12 @@ var incppect = {
             var keyp = key.replace(/\[-?\d*\]/g, function(m) { ++nidxs; idxs += m.replace(/[\[\]]/g, '') + delim; return '[%d]'; });
             msg += keyp + delim + this.var_to_id[key].toString() + delim + nidxs + idxs;
         }
-        var data = new Int8Array(4 + msg.length + 1);
+        var data = new Int8Array(8 + msg.length + 1);
         var enc = new TextEncoder();
-        data[0] = 1;
-        data.set(enc.encode(msg), 4);
-        data[4 + msg.length] = 0;
+        this.set_data_num(data, data.length - 4);
+        data[4] = 1;
+        data.set(enc.encode(msg), 8);
+        data[8 + msg.length] = 0;
         this.ws.send(data);
 
         this.stats.tx_n += 1;
@@ -267,16 +266,18 @@ var incppect = {
         }
 
         if (same) {
-            var data = new Int32Array(1);
-            data[0] = 3;
+            let data = new Int32Array(2);
+            data[0] = 4;
+            data[1] = 3;
             this.ws.send(data);
 
             this.stats.tx_n += 1;
             this.stats.tx_bytes += data.length;
         } else {
-            var data = new Int32Array(this.requests.length + 1);
-            data.set(new Int32Array(this.requests), 1);
-            data[0] = 2;
+            let data = new Int32Array(2 + this.requests.length);
+            data[0] = data.length * 4 - 4;
+            data[1] = 2;
+            data.set(new Int32Array(this.requests), 2);
             this.ws.send(data);
 
             this.stats.tx_n += 1;
@@ -301,19 +302,19 @@ var incppect = {
         this.stats.rx_n += 1;
         this.stats.rx_bytes += evt.data.byteLength;
 
-        var type_all = (new Uint32Array(evt.data))[0];
+        const type_all = (new Uint32Array(evt.data))[0];
 
-        if (this.last_data != null && type_all == 1) {
-            var ntotal = evt.data.byteLength/4 - 1;
+        if (this.last_data != null && type_all === 1) {
+            const ntotal = evt.data.byteLength / 4 - 1;
 
-            var src_view = new Uint32Array(evt.data, 4);
-            var dst_view = new Uint32Array(this.last_data, 4);
+            const src_view = new Uint32Array(evt.data, 4);
+            const dst_view = new Uint32Array(this.last_data, 4);
 
-            var k = 0;
-            for (var i = 0; i < ntotal/2; ++i) {
-                var n = src_view[2*i + 0];
-                var c = src_view[2*i + 1];
-                for (var j = 0; j < n; ++j) {
+            let k = 0;
+            for (let i = 0; i < ntotal/2; ++i) {
+                const n = src_view[2*i + 0];
+                const c = src_view[2*i + 1];
+                for (let j = 0; j < n; ++j) {
                     dst_view[k] = dst_view[k] ^ c;
                     ++k;
                 }
@@ -322,30 +323,34 @@ var incppect = {
             this.last_data = evt.data;
         }
 
-        var int_view = new Uint32Array(this.last_data);
-        var offset = 1;
-        var offset_new = 0;
-        var total_size = this.last_data.byteLength;
-        var id = 0;
-        var type = 0;
-        var len = 0;
+        const int_view = new Uint32Array(this.last_data);
+        let offset = 1;
+        let offset_new = 0;
+        const total_size = this.last_data.byteLength;
+        let id = 0;
+        let type = 0;
+        let len = 0;
         while (4*offset < total_size) {
             id = int_view[offset + 0];
             type = int_view[offset + 1];
             len = int_view[offset + 2];
+            if ((len / 4) % 1 !== 0)
+            {
+                break;
+            }
             offset += 3;
             offset_new = offset + len/4;
-            if (type == 0) {
+            if (type === 0) {
                 this.vars_map[this.id_to_var[id]] = this.last_data.slice(4*offset, 4*offset_new);
             } else {
-                var src_view = new Uint32Array(this.last_data, 4*offset);
-                var dst_view = new Uint32Array(this.vars_map[this.id_to_var[id]]);
+                const src_view = new Uint32Array(this.last_data, 4 * offset);
+                const dst_view = new Uint32Array(this.vars_map[this.id_to_var[id]]);
 
-                var k = 0;
-                for (var i = 0; i < len/8; ++i) {
-                    var n = src_view[2*i + 0];
-                    var c = src_view[2*i + 1];
-                    for (var j = 0; j < n; ++j) {
+                let k = 0;
+                for (let i = 0; i < len/8; ++i) {
+                    const n = src_view[2 * i + 0];
+                    const c = src_view[2 * i + 1];
+                    for (let j = 0; j < n; ++j) {
                         dst_view[k] = dst_view[k] ^ c;
                         ++k;
                     }
@@ -362,6 +367,3 @@ var incppect = {
     render: function() {
     },
 }
-
-
-)js";
