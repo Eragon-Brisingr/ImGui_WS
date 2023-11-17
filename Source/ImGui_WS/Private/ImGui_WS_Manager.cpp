@@ -156,6 +156,9 @@ class UImGui_WS_Manager::FDrawer final : FTickableGameObject
 
 public:
 	ImGuiWS ImGuiWS;
+	FThread WS_Thread;
+    std::atomic_bool bRequestedExit{ false };
+
 	ImGuiContext* Context;
 	ImPlotContext* PlotContext;
 	TArray<ANSICHAR> IniFileNameArray;
@@ -275,37 +278,52 @@ public:
 
 		PlotContext = ImPlot::CreateContext();
 		ImPlot::SetCurrentContext(PlotContext);
-		
+
 		// setup imgui-ws
 		const FString HtmlPath = PluginPath / TEXT("Resources/HTML");
-		ImGuiWS.init(Manager.GetPort(), TCHAR_TO_UTF8(*HtmlPath), [this]
+		ImGuiWS.Init(Manager.GetPort(), HtmlPath);
+		WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGui_WS_Settings>()->ServerTickInterval]
 		{
-			WS_ThreadUpdate();
-		});
+			while (bRequestedExit == false)
+			{
+				const double StartSeconds = FPlatformTime::Seconds();
+				WS_ThreadUpdate();
+				const double SleepSeconds = Interval - (FPlatformTime::Seconds() - StartSeconds);
+				if (SleepSeconds > 0.f)
+				{
+					FPlatformProcess::SleepNoStats(SleepSeconds);
+				}
+			}
+		}, 0, TPri_Lowest };
 
 		// prepare font texture
 		{
 			unsigned char* pixels;
 			int width, height;
 			ImGui::GetIO().Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
-			ImGuiWS.setTexture(0, ImGuiWS::Texture::Type::Alpha8, width, height, reinterpret_cast<const char*>(pixels));
+			ImGuiWS.SetTexture(0, ImGuiWS::FTexture::Type::Alpha8, width, height, pixels);
 		}
 
 		using namespace UnrealImGui;
 		Private::UpdateTextureData_WS = [this](FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data)
 		{
-			static_assert((int32_t)ImGuiWS::Texture::Type::Alpha8 == (uint8)ETextureFormat::Alpha8);
-			static_assert((int32_t)ImGuiWS::Texture::Type::Gray8 == (uint8)ETextureFormat::Gray8);
-			static_assert((int32_t)ImGuiWS::Texture::Type::RGB24 == (uint8)ETextureFormat::RGB8);
-			static_assert((int32_t)ImGuiWS::Texture::Type::RGBA32 == (uint8)ETextureFormat::RGBA8);
-			ImGuiWS.setTexture(Handle, ImGuiWS::Texture::Type{ static_cast<uint8>(TextureFormat) }, Width, Height, reinterpret_cast<const char*>(Data));
+			static_assert((int32_t)ImGuiWS::FTexture::Type::Alpha8 == (uint8)ETextureFormat::Alpha8);
+			static_assert((int32_t)ImGuiWS::FTexture::Type::Gray8 == (uint8)ETextureFormat::Gray8);
+			static_assert((int32_t)ImGuiWS::FTexture::Type::RGB24 == (uint8)ETextureFormat::RGB8);
+			static_assert((int32_t)ImGuiWS::FTexture::Type::RGBA32 == (uint8)ETextureFormat::RGBA8);
+			ImGuiWS.SetTexture(Handle, ImGuiWS::FTexture::Type{ static_cast<uint8>(TextureFormat) }, Width, Height, Data);
 		};
 	}
-	virtual ~FDrawer()
+	~FDrawer() override
 	{
 		ImGui::DestroyContext(Context);
 		ImPlot::DestroyContext(PlotContext);
 		UnrealImGui::Private::UpdateTextureData_WS.Reset();
+		bRequestedExit = true;
+		if (WS_Thread.IsJoinable())
+		{
+			WS_Thread.Join();
+		}
 	}
 private:
 	struct FVSync
@@ -350,37 +368,37 @@ private:
 		TMap<int32, ClientData> Clients;
 
 		// client input
-		TArray<ImGuiWS::Event, TInlineAllocator<16>> PendingEvents;
+		TArray<ImGuiWS::FEvent, TInlineAllocator<16>> PendingEvents;
 		// recover key down state
-		TArray<ImGuiWS::Event, TInlineAllocator<16>> KeyDownEvents;
+		TArray<ImGuiWS::FEvent, TInlineAllocator<16>> KeyDownEvents;
 		
-		void Handle(const ImGuiWS::Event& Event)
+		void Handle(const ImGuiWS::FEvent& Event)
 		{
-		    switch (Event.type)
+		    switch (Event.Type)
 			{
-	        case ImGuiWS::Event::Connected:
+	        case ImGuiWS::FEvent::Connected:
 				{
-	                ClientData& Client = Clients.Add(Event.clientId);
+	                ClientData& Client = Clients.Add(Event.ClientId);
 	        		
 	        		std::stringstream ss;
-			        { int32 a = uint8(Event.ip); if (a < 0) a += 256; ss << a << "."; }
-			        { int32 a = uint8(Event.ip >> 8); if (a < 0) a += 256; ss << a << "."; }
-			        { int32 a = uint8(Event.ip >> 16); if (a < 0) a += 256; ss << a << "."; }
-			        { int32 a = uint8(Event.ip >> 24); if (a < 0) a += 256; ss << a; }
-	        		Client.Ip = Event.ip;
+			        { int32 a = uint8(Event.Ip); if (a < 0) a += 256; ss << a << "."; }
+			        { int32 a = uint8(Event.Ip >> 8); if (a < 0) a += 256; ss << a << "."; }
+			        { int32 a = uint8(Event.Ip >> 16); if (a < 0) a += 256; ss << a << "."; }
+			        { int32 a = uint8(Event.Ip >> 24); if (a < 0) a += 256; ss << a; }
+	        		Client.Ip = Event.Ip;
 	        		Client.IpString = ss.str();
 	            }
 	            break;
-	        case ImGuiWS::Event::Disconnected:
+	        case ImGuiWS::FEvent::Disconnected:
 				{
-	                Clients.Remove(Event.clientId);
+	                Clients.Remove(Event.ClientId);
 	            }
 	            break;
-		    case ImGuiWS::Event::TakeControl:
+		    case ImGuiWS::FEvent::TakeControl:
 			    {
-		    		if (auto* Client = Clients.Find(Event.clientId))
+		    		if (auto* Client = Clients.Find(Event.ClientId))
 		    		{
-		    			CurControlId = Event.clientId;
+		    			CurControlId = Event.ClientId;
 		    			bIsIdControlChanged = true;
 		    			Client->ControlStartTime = ImGui::GetTime();
 		    		}
@@ -388,7 +406,7 @@ private:
 		    	break;
 	        default:
 	        	{
-	        		if (Event.clientId == CurControlId)
+	        		if (Event.ClientId == CurControlId)
 	        		{
 	        			PendingEvents.Add(Event);
 	        		}
@@ -458,72 +476,72 @@ private:
 			}
 		    if (CurControlId > 0)
 			{
-		    	for (const ImGuiWS::Event& Event : PendingEvents)
+		    	for (const ImGuiWS::FEvent& Event : PendingEvents)
 		    	{
-		    		switch (Event.type)
+		    		switch (Event.Type)
 		    		{
-		    		case ImGuiWS::Event::MouseMove:
+		    		case ImGuiWS::FEvent::MouseMove:
 		    			{
-				            IO.AddMousePosEvent(Event.mouse_x, Event.mouse_y);
+				            IO.AddMousePosEvent(Event.MouseX, Event.MouseY);
 		    			}
 		    			break;
-		    		case ImGuiWS::Event::MouseDown:
+		    		case ImGuiWS::FEvent::MouseDown:
 		    			{
-		    				IO.AddMousePosEvent(Event.mouse_x, Event.mouse_y);
-		    				IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.mouse_but), true);
+		    				IO.AddMousePosEvent(Event.MouseX, Event.MouseY);
+		    				IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.MouseBtn), true);
 		    				KeyDownEvents.Add(Event);
 		    			}
 		    			break;
-		    		case ImGuiWS::Event::MouseUp:
+		    		case ImGuiWS::FEvent::MouseUp:
 		    			{
-		    				IO.AddMousePosEvent(Event.mouse_x, Event.mouse_y);
-		    				IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.mouse_but), false);
-		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::Event& E) { return E.type == Event.type && E.mouse_but == Event.mouse_but; } );
+		    				IO.AddMousePosEvent(Event.MouseX, Event.MouseY);
+		    				IO.AddMouseButtonEvent(ConvertWebMouseButtonToImGui(Event.MouseBtn), false);
+		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::FEvent& E) { return E.Type == Event.Type && E.MouseBtn == Event.MouseBtn; } );
 		    			}
 		    			break;
-		    		case ImGuiWS::Event::MouseWheel:
+		    		case ImGuiWS::FEvent::MouseWheel:
 		    			{
-		    				IO.AddMouseWheelEvent(Event.wheel_x, Event.wheel_y);
+		    				IO.AddMouseWheelEvent(Event.WheelX, Event.WheelY);
 		    			}
 		    			break;
-		    		case ImGuiWS::Event::KeyPress:
+		    		case ImGuiWS::FEvent::KeyPress:
 		    			{
-		    				IO.AddInputCharacter(Event.key);
+		    				IO.AddInputCharacter(Event.Key);
 		    			}
 		    			break;
-		    		case ImGuiWS::Event::KeyDown:
+		    		case ImGuiWS::FEvent::KeyDown:
 		    			{
-		    				const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
+		    				const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.Key));
 		    				IO.AddKeyEvent(Key, true);
 		    				SyncKeyMods(Key, true);
 		    				KeyDownEvents.Add(Event);
 		    			}
 		            	break;
-		            case ImGuiWS::Event::KeyUp:
+		            case ImGuiWS::FEvent::KeyUp:
 			            {
-		            		const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.key));
+		            		const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.Key));
 		    				IO.AddKeyEvent(Key, false);
 				            SyncKeyMods(Key, false);
-		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::Event& E) { return E.type == Event.type && E.mouse_but == Event.mouse_but; } );
+		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::FEvent& E) { return E.Type == Event.Type && E.MouseBtn == Event.MouseBtn; } );
 			            }
 		            	break;
-		    		case ImGuiWS::Event::Resize:
+		    		case ImGuiWS::FEvent::Resize:
 		    			{
-		    				IO.DisplaySize = { (float)Event.client_width, (float)Event.client_height };
+		    				IO.DisplaySize = { (float)Event.ClientWidth, (float)Event.ClientHeight };
 		    			}
 		    			break;
-		    		case ImGuiWS::Event::PasteClipboard:
+		    		case ImGuiWS::FEvent::PasteClipboard:
 		    			{
-		    				ImGui::SetClipboardText(Event.clipboard_text.c_str());
+		    				ImGui::SetClipboardText(Event.ClipboardText.c_str());
 		    			}
 		    			break;
-		    		case ImGuiWS::Event::InputText:
+		    		case ImGuiWS::FEvent::InputText:
 		    			{
-		    				IO.AddInputCharactersUTF8(Event.input_text.c_str());
+		    				IO.AddInputCharactersUTF8(Event.InputtedText.c_str());
 		    			}
 		    			break;
 		            default:
-		            	ensureMsgf(false, TEXT("Unhandle input event %d"), Event.type);
+		            	ensureMsgf(false, TEXT("Unhandle input event %d"), Event.Type);
 		            }
 		    	}
 		    	PendingEvents.Empty();
@@ -811,7 +829,7 @@ private:
 				}
 				
 				{
-					ImGui::Text("Connections: %d", ImGuiWS.nConnected());
+					ImGui::Text("Connections: %d", ImGuiWS.NumConnected());
 					if (ImGui::IsItemHovered())
 					{
 						ImGui::BeginTooltip();
@@ -854,7 +872,7 @@ private:
 	
 	void Tick(float DeltaTime) override
 	{
-		if (ImGuiWS.nConnected() == 0 && RecordSession.IsValid() == false)
+		if (ImGuiWS.NumConnected() == 0 && RecordSession.IsValid() == false)
 		{
 	        return;
 	    }
@@ -870,8 +888,8 @@ private:
 	    ImGui::NewFrame();
 
 	    // websocket event handling
-	    const auto Events = ImGuiWS.takeEvents();
-	    for (const ImGuiWS::Event& Event : Events)
+	    const auto Events = ImGuiWS.TakeEvents();
+	    for (const ImGuiWS::FEvent& Event : Events)
 		{
 	        State.Handle(Event);
 	    }
@@ -919,8 +937,8 @@ private:
 				const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
 				const ImVec2 MousePos = ImGuiData->MousePos;
 				const ImVec2 ViewportSize = ImGuiData->ViewportSize;
-				ImGuiWS.setDrawData(&ImGuiData->CopiedDrawData);
-				ImGuiWS.setDrawInfo({
+				ImGuiWS.SetDrawData(&ImGuiData->CopiedDrawData);
+				ImGuiWS.SetDrawInfo({
 					ImGuiData->MouseCursor,
 					ClipboardText,
 					ImGuiData->ControlId,
@@ -940,6 +958,7 @@ private:
 				RecordSessionKeeper->addFrame(&ImGuiData->CopiedDrawData);
 			}
 		}
+		ImGuiWS.Tick();
 	}
 
 public:
@@ -1031,7 +1050,7 @@ int32 UImGui_WS_Manager::GetPort() const
 
 int32 UImGui_WS_Manager::GetConnectionCount() const
 {
-	return Drawer ? Drawer->ImGuiWS.nConnected() : 0;
+	return Drawer ? Drawer->ImGuiWS.NumConnected() : 0;
 }
 
 bool UImGui_WS_Manager::IsRecording() const

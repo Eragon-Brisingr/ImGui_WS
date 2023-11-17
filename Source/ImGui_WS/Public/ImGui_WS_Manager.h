@@ -98,6 +98,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	EImGuiFontGlyphRanges FontGlyphRanges = EImGuiFontGlyphRanges::ChineseFull;
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	float ServerTickInterval = 1 / 120.f;
 };
 
 UCLASS()

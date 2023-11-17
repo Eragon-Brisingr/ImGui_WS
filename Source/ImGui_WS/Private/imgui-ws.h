@@ -5,102 +5,105 @@
 
 #pragma once
 
-#include <functional>
 #include <vector>
 #include <queue>
 #include <string>
 #include <memory>
 
-class ImGuiWS {
-    public:
-        using TextureId = uint32_t;
+class ImGuiWS
+{
+public:
+    using FTextureId = uint32;
 
-        using THandler = TFunction<void()>;
-        using TPath = FName;
-        using TIdxs = TArray<int>;
-        using TGetter = TFunction<std::string_view(const TIdxs& idxs)>;
+    using THandler = TFunction<void()>;
+    using TPath = FName;
+    using TIdxs = TArray<int32>;
+    using TGetter = TFunction<std::string_view(const TIdxs& idxs)>;
 
-        struct Texture {
-            enum class Type : int32_t {
-                Alpha8 = 0,
-                Gray8  = 1,
-                RGB24  = 2,
-                RGBA32 = 3,
-            };
-
-            int revision = 0;
-            std::vector<char> data;
-        };
-
-        struct Event {
-            enum Type : int32 {
-                Unknown = 0,
-                Connected = 1,
-                Disconnected = 2,
-                MouseMove = 3,
-                MouseDown = 4,
-                MouseUp = 5,
-                MouseWheel = 6,
-                KeyPress = 7,
-                KeyDown = 8,
-                KeyUp = 9,
-                Resize = 10,
-                TakeControl = 11,
-                PasteClipboard = 12,
-                InputText = 13,
-            };
-
-            Type type = Unknown;
-
-            int32_t clientId = -1;
-
-            float mouse_x = 0.0f;
-            float mouse_y = 0.0f;
-
-            float wheel_x = 0.0f;
-            float wheel_y = 0.0f;
-
-            int32_t mouse_but = 0;
-
-            int32_t key = 0;
-
-            int32_t client_width = 1920;
-            int32_t client_height = 1080;
-
-            uint32_t ip;
-            
-            std::string clipboard_text;
-            std::string input_text;
-        };
-
-        ImGuiWS();
-        ~ImGuiWS();
-
-        bool init(int32_t port, std::string pathHttp, const std::function<void()>& preMainLoop);
-        bool init(int32_t port, std::string pathHttp, THandler&& connect_handler, THandler&& disconnect_handler, const std::function<void()>& preMainLoop);
-        bool setTexture(TextureId textureId, Texture::Type textureType, int32_t width, int32_t height, const char * data);
-        bool setDrawData(const struct ImDrawData* drawData);
-        struct DrawInfo
+    struct FTexture
+    {
+        enum class Type : int32
         {
-            int32_t mouseCursor = 0;
-            std::string clipboardText;
-            int32_t controlId;
-            uint32_t controlIp;
-            float mousePosX;
-            float mousePosY;
-            float viewportSizeX;
-            float viewportSizeY;
-            uint8 bWantTextInput;
+            Alpha8 = 0,
+            Gray8  = 1,
+            RGB24  = 2,
+            RGBA32 = 3,
         };
-        bool setDrawInfo(DrawInfo&& drawInfo);
-        bool addVar(const TPath& path, TGetter&& getter);
 
+        int32 Revision = 0;
+        TArray<uint8> Data;
+    };
 
-        int32_t nConnected() const;
+    struct FEvent
+    {
+        enum EType : int32
+        {
+            Unknown = 0,
+            Connected = 1,
+            Disconnected = 2,
+            MouseMove = 3,
+            MouseDown = 4,
+            MouseUp = 5,
+            MouseWheel = 6,
+            KeyPress = 7,
+            KeyDown = 8,
+            KeyUp = 9,
+            Resize = 10,
+            TakeControl = 11,
+            PasteClipboard = 12,
+            InputText = 13,
+        };
 
-        std::deque<Event> takeEvents();
+        EType Type = Unknown;
 
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
+        int32 ClientId = -1;
+
+        float MouseX = 0.0f;
+        float MouseY = 0.0f;
+
+        float WheelX = 0.0f;
+        float WheelY = 0.0f;
+
+        int32 MouseBtn = 0;
+
+        int32 Key = 0;
+
+        int32 ClientWidth = 1920;
+        int32 ClientHeight = 1080;
+
+        uint32 Ip;
+
+        std::string ClipboardText;
+        std::string InputtedText;
+    };
+
+    ImGuiWS();
+    ~ImGuiWS();
+
+    bool Init(int32 PortListen, const FString& PathOnDisk);
+    bool Init(int32 PortListen, const FString& PathOnDisk, THandler&& ConnectHandler, THandler&& DisconnectHandler);
+    void Tick();
+    bool SetTexture(FTextureId TextureId, FTexture::Type TextureType, int32 Width, int32 Height, const uint8* Data);
+    bool SetDrawData(const struct ImDrawData* DrawData);
+    struct FDrawInfo
+    {
+        int32 mouseCursor = 0;
+        std::string clipboardText;
+        int32 controlId;
+        uint32 controlIp;
+        float mousePosX;
+        float mousePosY;
+        float viewportSizeX;
+        float viewportSizeY;
+        uint8 bWantTextInput;
+    };
+    bool SetDrawInfo(FDrawInfo&& DrawInfo);
+    bool addVar(const TPath& Path, TGetter&& Getter);
+
+    int32 NumConnected() const;
+
+    std::deque<FEvent> TakeEvents();
+private:
+    struct FImpl;
+    TUniquePtr<FImpl> Impl;
 };

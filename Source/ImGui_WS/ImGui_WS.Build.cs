@@ -15,7 +15,7 @@ public class ImGui_WS : ModuleRules
 		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/HTML/draw-mouse-pos.js"), StagedFileType.NonUFS);
 		
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
+
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core",

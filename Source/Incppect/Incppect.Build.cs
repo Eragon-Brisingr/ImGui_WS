@@ -4,7 +4,9 @@ public class Incppect : ModuleRules
 {
     public Incppect(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        OptimizeCode = CodeOptimization.Always;
 
         PublicDependencyModuleNames.AddRange(
             new string[]

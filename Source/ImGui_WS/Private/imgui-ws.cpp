@@ -9,329 +9,289 @@
 // #include "common.h"
 
 #include <atomic>
-#include <array>
-#include <map>
-#include <thread>
 #include <sstream>
 #include <cstring>
 #include <mutex>
 #include <shared_mutex>
-#include <condition_variable>
 
 #include "imgui.h"
-#include "incppect.h"
+#include "Incppect.h"
 #include "UnrealImGui_Log.h"
 
-// not using ssl
-using incppect = FIncppect;
-
-struct ImGuiWS::Impl {
-    struct Events {
-        std::deque<Event> data;
-
-        std::mutex mutex;
-        std::condition_variable cv;
-
-        void push(Event&& event)
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            data.push_back(std::move(event));
-            cv.notify_one();
-        }
+struct ImGuiWS::FImpl
+{
+    struct FData
+    {
+        TMap<int32, FTextureId> TextureIdMap;
+        TMap<FTextureId, FTexture> Textures;
     };
 
-    struct Data {
-        std::map<int, TextureId> textureIdMap;
-        std::map<TextureId, Texture> textures;
-
-        ImDrawDataCompressor::Interface::DrawLists drawLists;
-    };
-
-    Impl()
-        : drawInfo()
-        , compressorDrawData(new ImDrawDataCompressor::XorRlePerDrawListWithVtxOffset())
+    FImpl()
+        : DrawInfo()
+        , CompressorDrawData(new ImDrawDataCompressor::XorRlePerDrawListWithVtxOffset())
     {
     }
 
-    std::atomic<int32_t> nConnected = 0;
+    std::atomic<int32> NumConnected = 0;
 
-    FThread worker;
-    mutable std::shared_mutex mutex;
+    TMap<int32, FTextureId> TextureIdMap;
+    TMap<FTextureId, FTexture> Textures;
 
-    Data dataWrite;
-    Data dataRead;
+    ImDrawDataCompressor::Interface::DrawLists DrawLists;
+    FDrawInfo DrawInfo;
 
-    DrawInfo drawInfo;
+    std::deque<FEvent> Events;
 
-    Events events;
+    FIncppect Incpp;
 
-    incppect incpp;
+    THandler HandlerConnect;
+    THandler HandlerDisconnect;
 
-    THandler handlerConnect;
-    THandler handlerDisconnect;
+    std::unique_ptr<ImDrawDataCompressor::Interface> CompressorDrawData;
 
-    std::unique_ptr<ImDrawDataCompressor::Interface> compressorDrawData;
+    using FAsyncTask = TFunction<void(FImpl&)>;
+    TQueue<FAsyncTask> AsyncTasks;
 };
 
-ImGuiWS::ImGuiWS() : m_impl(new Impl())
-{
-}
+ImGuiWS::ImGuiWS()
+    : Impl(new FImpl())
+{}
 
 ImGuiWS::~ImGuiWS()
 {
-    m_impl->incpp.Stop();
-    if (m_impl->worker.IsJoinable())
-    {
-        m_impl->worker.Join();
-    }
+    Impl->Incpp.Stop();
 }
 
-bool ImGuiWS::addVar(const TPath& path, TGetter&& getter)
+bool ImGuiWS::addVar(const TPath& Path, TGetter&& Getter)
 {
-    return m_impl->incpp.var(path, std::move(getter));
+    return Impl->Incpp.var(Path, std::move(Getter));
 }
 
-bool ImGuiWS::init(int32_t port, std::string pathHttp, const std::function<void()>& preMainLoop)
+bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
 {
     // start the http/websocket server
-    incppect::Parameters parameters;
-    parameters.PortListen = port;
-    parameters.tLastRequestTimeout_ms = -1;
-    parameters.HttpRoot = TEXT("/");
-    parameters.PathOnDisk = UTF8_TO_TCHAR(pathHttp.c_str());
-    m_impl->incpp.Init(parameters);
-    m_impl->worker = FThread{ TEXT("ImGui_WS"), [this, preMainLoop]
-    {
-        while (true)
-        {
-            preMainLoop();
-            m_impl->incpp.Tick();
-            // FPlatformProcess::SleepNoStats(1 / 120.f);
-        }
-    }, 0, TPri_Lowest };
+    FIncppect::FParameters Parameters;
+    Parameters.PortListen = PortListen;
+    Parameters.tLastRequestTimeout_ms = -1;
+    Parameters.HttpRoot = TEXT("/");
+    Parameters.PathOnDisk = PathOnDisk;
+    Impl->Incpp.Init(Parameters);
 
-    m_impl->incpp.var("my_id[%d]", [](const auto& idxs)
+    Impl->Incpp.var(TEXT("my_id[%d]"), [](const auto& idxs)
     {
-        static int32_t id;
+        static int32 id;
         id = idxs[0];
-        return incppect::view(id);
+        return FIncppect::view(id);
     });
 
     // number of textures available
-    m_impl->incpp.var("imgui.n_textures", [this](const auto& )
+    Impl->Incpp.var(TEXT("imgui.n_textures"), [this](const auto& )
     {
-        return incppect::view(m_impl->dataRead.textures.size());
+        return FIncppect::view(Impl->Textures.Num());
     });
 
     // sync mouse cursor
-    m_impl->incpp.var("imgui.mouse_cursor", [this](const auto& )
+    Impl->Incpp.var(TEXT("imgui.mouse_cursor"), [this](const auto& )
     {
-        return incppect::view(m_impl->drawInfo.mouseCursor);
+        return FIncppect::view(Impl->DrawInfo.mouseCursor);
     });
 
     // current control_id
-    m_impl->incpp.var("control_id", [this](const auto& )
+    Impl->Incpp.var(TEXT("control_id"), [this](const auto& )
    {
-       return incppect::view(m_impl->drawInfo.controlId);
+       return FIncppect::view(Impl->DrawInfo.controlId);
    });
 
     // current control IP
-    m_impl->incpp.var("control_ip", [this](const auto& )
+    Impl->Incpp.var(TEXT("control_ip"), [this](const auto& )
    {
-       return incppect::view(m_impl->drawInfo.controlIp);
+       return FIncppect::view(Impl->DrawInfo.controlIp);
    });
 
     // sync clipboard
-    m_impl->incpp.var("imgui.clipboard", [this](const auto& )
+    Impl->Incpp.var(TEXT("imgui.clipboard"), [this](const auto& )
     {
-        return incppect::view(m_impl->drawInfo.clipboardText);
+        return FIncppect::view(Impl->DrawInfo.clipboardText);
     });
 
-    m_impl->incpp.var("imgui.want_input_text", [this](const auto& )
+    Impl->Incpp.var(TEXT("imgui.want_input_text"), [this](const auto& )
     {
-        return incppect::view(m_impl->drawInfo.bWantTextInput);
+        return FIncppect::view(Impl->DrawInfo.bWantTextInput);
     });
 
     // sync to uncontrol mouse position
-    m_impl->incpp.var("imgui.mouse_pos", [this](const auto& )
+    Impl->Incpp.var(TEXT("imgui.mouse_pos"), [this](const auto& )
     {
-        static std::array<float, 2> mousePos;
-        mousePos = { m_impl->drawInfo.mousePosX, m_impl->drawInfo.mousePosY };
-        return incppect::view(mousePos);
+        static FVector2f MousePos;
+        MousePos = { Impl->DrawInfo.mousePosX, Impl->DrawInfo.mousePosY };
+        return FIncppect::view(MousePos);
     });
-    
-    // sync to uncontrol viewport size
-    m_impl->incpp.var("imgui.viewport_size", [this](const auto& )
-    {
-        static std::array<float, 2> viewportSize;
-        viewportSize = { m_impl->drawInfo.viewportSizeX, m_impl->drawInfo.viewportSizeY };
-        return incppect::view(viewportSize);
-    });
-    
-    // texture ids
-    m_impl->incpp.var("imgui.texture_id[%d]", [this](const auto& idxs)
-    {
-        if (m_impl->dataRead.textureIdMap.find(idxs[0]) == m_impl->dataRead.textureIdMap.end())
-        {
-            return std::string_view { };
-        }
 
-        return incppect::view(m_impl->dataRead.textureIdMap[idxs[0]]);
+    // sync to uncontrol viewport size
+    Impl->Incpp.var(TEXT("imgui.viewport_size"), [this](const auto& )
+    {
+        static FVector2f ViewportSize;
+        ViewportSize = { Impl->DrawInfo.viewportSizeX, Impl->DrawInfo.viewportSizeY };
+        return FIncppect::view(ViewportSize);
+    });
+
+    // texture ids
+    Impl->Incpp.var(TEXT("imgui.texture_id[%d]"), [this](const auto& idxs)
+    {
+        if (const FTextureId* Idx = Impl->TextureIdMap.Find(idxs[0]))
+        {
+            return FIncppect::view(*Idx);
+        }
+        return std::string_view{ };
     });
 
     // texture revision
-    m_impl->incpp.var("imgui.texture_revision[%d]", [this](const auto& idxs)
+    Impl->Incpp.var(TEXT("imgui.texture_revision[%d]"), [this](const auto& idxs)
     {
-        if (m_impl->dataRead.textures.find(idxs[0]) == m_impl->dataRead.textures.end())
+        if (const FTexture* Texture = Impl->Textures.Find(idxs[0]))
         {
-            return std::string_view { };
+            return FIncppect::view(Texture->Revision);
         }
-
-        return incppect::view(m_impl->dataRead.textures[idxs[0]].revision);
+        return std::string_view { };
     });
 
     // get texture by id
-    m_impl->incpp.var("imgui.texture_data[%d]", [this](const auto& idxs)
+    Impl->Incpp.var(TEXT("imgui.texture_data[%d]"), [this](const auto& idxs)
     {
-        static std::vector<char> data;
+        const auto TextureId = idxs[0];
+        if (const FTexture* Texture = Impl->Textures.Find(TextureId))
         {
-            const auto texture_id = idxs[0];
-            if (m_impl->dataRead.textures.find(texture_id) == m_impl->dataRead.textures.end())
-            {
-                return std::string_view { 0, 0 };
-            }
-            data.clear();
-            std::copy(m_impl->dataRead.textures[texture_id].data.data(), m_impl->dataRead.textures[texture_id].data.data() + m_impl->dataRead.textures[texture_id].data.size(),
-                      std::back_inserter(data));
+            static TArray<uint8> Data;
+            Data = Texture->Data;
+            return std::string_view { reinterpret_cast<char*>(Data.GetData()), (uint32)Data.Num() };
         }
-
-        return std::string_view { data.data(), data.size() };
+        return std::string_view { nullptr, 0 };
     });
 
     // get imgui's draw data
-    m_impl->incpp.var("imgui.n_draw_lists", [this](const auto& )
+    Impl->Incpp.var(TEXT("imgui.n_draw_lists"), [this](const auto& )
     {
-        return incppect::view(m_impl->dataRead.drawLists.size());
+        return FIncppect::view(Impl->DrawLists.size());
     });
 
-    m_impl->incpp.var("imgui.draw_list[%d]", [this](const auto& idxs)
+    Impl->Incpp.var(TEXT("imgui.draw_list[%d]"), [this](const auto& idxs)
     {
         static std::vector<char> data;
         {
-            if (idxs[0] >= (int) m_impl->dataRead.drawLists.size())
+            if (idxs[0] >= (int32) Impl->DrawLists.size())
             {
                 return std::string_view { nullptr, 0 };
             }
 
             data.clear();
-            std::copy(m_impl->dataRead.drawLists[idxs[0]].data(),
-                      m_impl->dataRead.drawLists[idxs[0]].data() + m_impl->dataRead.drawLists[idxs[0]].size(),
+            std::copy(Impl->DrawLists[idxs[0]].data(),
+                      Impl->DrawLists[idxs[0]].data() + Impl->DrawLists[idxs[0]].size(),
                       std::back_inserter(data));
         }
 
         return std::string_view { data.data(), data.size() };
     });
 
-    m_impl->incpp.handler([&](int clientId, incppect::EventType etype, std::string_view data)
+    Impl->Incpp.SetHandler([&](int32 ClientId, FIncppect::EventType EventType, TArrayView<const uint8> Data)
     {
-        Event event;
+        FEvent Event;
 
-        event.clientId = clientId;
+        Event.ClientId = ClientId;
 
-        switch (etype)
+        switch (EventType)
         {
-            case incppect::Connect:
+            case FIncppect::Connect:
                 {
-                    ++m_impl->nConnected;
-                    event.type = Event::Connected;
-                    event.ip = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
-                    if (m_impl->handlerConnect)
+                    Impl->NumConnected += 1;
+                    Event.Type = FEvent::Connected;
+                    Event.Ip = Data[0] + (Data[1] << 8) + (Data[2] << 16) + (Data[3] << 24);
+                    if (Impl->HandlerConnect)
                     {
-                        m_impl->handlerConnect();
+                        Impl->HandlerConnect();
                     }
                 }
                 break;
-            case incppect::Disconnect:
+            case FIncppect::Disconnect:
                 {
-                    --m_impl->nConnected;
-                    event.type = Event::Disconnected;
-                    if (m_impl->handlerDisconnect)
+                    Impl->NumConnected -= 1;
+                    Event.Type = FEvent::Disconnected;
+                    if (Impl->HandlerDisconnect)
                     {
-                        m_impl->handlerDisconnect();
+                        Impl->HandlerDisconnect();
                     }
                 }
                 break;
-            case incppect::Custom:
+            case FIncppect::Custom:
                 {
                     std::stringstream ss;
-                    ss << data;
+                    ss << reinterpret_cast<const char*>(Data.GetData());
 
-                    int type = -1;
-                    ss >> type;
+                    int32 Type = -1;
+                    ss >> Type;
 
-                    event.type = Event::Type{ type };
-                    switch (event.type)
+                    Event.Type = FEvent::EType{ Type };
+                    switch (Event.Type)
                     {
-                        case Event::MouseMove:
+                        case FEvent::MouseMove:
                             {
-                                ss >> event.mouse_x >> event.mouse_y;
+                                ss >> Event.MouseX >> Event.MouseY;
                             }
                             break;
-                        case Event::MouseDown:
+                        case FEvent::MouseDown:
                             {
-                                ss >> event.mouse_but >> event.mouse_x >> event.mouse_y;
+                                ss >> Event.MouseBtn >> Event.MouseX >> Event.MouseY;
                             }
                             break;
-                        case Event::MouseUp:
+                        case FEvent::MouseUp:
                             {
-                                ss >> event.mouse_but >> event.mouse_x >> event.mouse_y;
+                                ss >> Event.MouseBtn >> Event.MouseX >> Event.MouseY;
                             }
                             break;
-                        case Event::MouseWheel:
+                        case FEvent::MouseWheel:
                             {
-                                ss >> event.wheel_x >> event.wheel_y;
+                                ss >> Event.WheelX >> Event.WheelY;
                             }
                             break;
-                        case Event::KeyPress:
+                        case FEvent::KeyPress:
                             {
-                                ss >> event.key;
+                                ss >> Event.Key;
                             }
                             break;
-                        case Event::KeyDown:
+                        case FEvent::KeyDown:
                             {
-                                ss >> event.key;
+                                ss >> Event.Key;
                             }
                             break;
-                        case Event::KeyUp:
+                        case FEvent::KeyUp:
                             {
-                                ss >> event.key;
+                                ss >> Event.Key;
                             }
                             break;
-                        case Event::Resize:
+                        case FEvent::Resize:
                             {
-                                ss >> event.client_width >> event.client_height;
+                                ss >> Event.ClientWidth >> Event.ClientHeight;
                             }
                             break;
-                        case Event::TakeControl:
+                        case FEvent::TakeControl:
                             {
                                 // take control
                             }
                             break;
-                        case Event::PasteClipboard:
+                        case FEvent::PasteClipboard:
                             {
-                                ss >> event.clipboard_text;
+                                ss >> Event.ClipboardText;
                             }
                             break;
-                        case Event::InputText:
+                        case FEvent::InputText:
                             {
-                                ss >> event.input_text;
+                                ss >> Event.InputtedText;
                             }
                             break;
                         default:
                             {
-                                event.type = Event::Unknown;
+                                Event.Type = FEvent::Unknown;
                                 ensure(false);
-                                UE_LOG(LogImGui, Warning, TEXT("Unknown input received from client: id = %d, type = %d"), clientId, type);
+                                UE_LOG(LogImGui, Warning, TEXT("Unknown input received from client: id = %d, type = %d"), ClientId, Type);
                             }
                             break;
                     }
@@ -339,98 +299,104 @@ bool ImGuiWS::init(int32_t port, std::string pathHttp, const std::function<void(
                 break;
         }
 
-        m_impl->events.push(std::move(event));
+        Impl->Events.push_back(MoveTemp(Event));
     });
-
-    return m_impl->worker.IsJoinable();
-}
-
-bool ImGuiWS::setTexture(TextureId textureId, Texture::Type textureType, int32_t width, int32_t height, const char * data)
-{
-    int bpp = 1; // bytes per pixel
-    switch (textureType)
-    {
-        case Texture::Type::Alpha8: bpp = 1; break;
-        case Texture::Type::Gray8:  bpp = 1; break;
-        case Texture::Type::RGB24:  bpp = 3; break;
-        case Texture::Type::RGBA32: bpp = 4; break;
-    };
-
-    if (m_impl->dataWrite.textures.find(textureId) == m_impl->dataWrite.textures.end())
-    {
-        m_impl->dataWrite.textures[textureId].revision = 0;
-        m_impl->dataWrite.textures[textureId].data.clear();
-        m_impl->dataWrite.textureIdMap.clear();
-
-        int idx = 0;
-        for (const auto& t : m_impl->dataWrite.textures)
-        {
-            m_impl->dataWrite.textureIdMap[idx++] = t.first;
-        }
-    }
-
-    m_impl->dataWrite.textures[textureId].revision++;
-    m_impl->dataWrite.textures[textureId].data.resize(sizeof(TextureId) + sizeof(Texture::Type) + 3*sizeof(int32_t) + bpp*width*height);
-
-    int revision = m_impl->dataWrite.textures[textureId].revision;
-
-    size_t offset = 0;
-    std::memcpy(m_impl->dataWrite.textures[textureId].data.data() + offset,&textureId, sizeof(textureId)); offset += sizeof(textureId);
-    std::memcpy(m_impl->dataWrite.textures[textureId].data.data() + offset,&textureType, sizeof(textureType)); offset += sizeof(textureType);
-    std::memcpy(m_impl->dataWrite.textures[textureId].data.data() + offset,&width, sizeof(width)); offset += sizeof(width);
-    std::memcpy(m_impl->dataWrite.textures[textureId].data.data() + offset,&height, sizeof(height)); offset += sizeof(height);
-    std::memcpy(m_impl->dataWrite.textures[textureId].data.data() + offset,&revision, sizeof(revision)); offset += sizeof(revision);
-    std::memcpy(m_impl->dataWrite.textures[textureId].data.data() + offset, data, bpp*width*height);
-
-    {
-        std::unique_lock lock(m_impl->mutex);
-        m_impl->dataRead.textures[textureId] = m_impl->dataWrite.textures[textureId];
-        m_impl->dataRead.textureIdMap = m_impl->dataWrite.textureIdMap;
-    }
 
     return true;
 }
 
-bool ImGuiWS::init(int32_t port, std::string pathHttp, THandler&& handlerConnect, THandler&& handlerDisconnect, const std::function<void()>& preMainLoop)
+bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk, THandler&& HandlerConnect, THandler&& HandlerDisconnect)
 {
-    m_impl->handlerConnect = std::move(handlerConnect);
-    m_impl->handlerDisconnect = std::move(handlerDisconnect);
+    Impl->HandlerConnect = MoveTemp(HandlerConnect);
+    Impl->HandlerDisconnect = MoveTemp(HandlerDisconnect);
 
-    return init(port, std::move(pathHttp), preMainLoop);
+    return Init(PortListen, PathOnDisk);
 }
 
-bool ImGuiWS::setDrawData(const ImDrawData* drawData)
+void ImGuiWS::Tick()
+{
+    while (Impl->AsyncTasks.IsEmpty() == false)
+    {
+        FImpl::FAsyncTask Task;
+        Impl->AsyncTasks.Dequeue(Task);
+        Task(*Impl);
+    }
+    Impl->Incpp.Tick();
+}
+
+bool ImGuiWS::SetTexture(FTextureId TextureId, FTexture::Type TextureType, int32 Width, int32 Height, const uint8* Data)
+{
+    int32 bpp = 1; // bytes per pixel
+    switch (TextureType)
+    {
+        case FTexture::Type::Alpha8: bpp = 1; break;
+        case FTexture::Type::Gray8:  bpp = 1; break;
+        case FTexture::Type::RGB24:  bpp = 3; break;
+        case FTexture::Type::RGBA32: bpp = 4; break;
+    }
+    TArray<uint8> TextureData;
+    TextureData.SetNumUninitialized(sizeof(FTextureId) + sizeof(FTexture::Type) + 3*sizeof(int32) + bpp*Width*Height);
+
+    size_t Offset = 0;
+    FMemory::Memcpy(TextureData.GetData() + Offset, &TextureId, sizeof(TextureId)); Offset += sizeof(TextureId);
+    FMemory::Memcpy(TextureData.GetData() + Offset, &TextureType, sizeof(TextureType)); Offset += sizeof(TextureType);
+    FMemory::Memcpy(TextureData.GetData() + Offset, &Width, sizeof(Width)); Offset += sizeof(Width);
+    FMemory::Memcpy(TextureData.GetData() + Offset, &Height, sizeof(Height)); Offset += sizeof(Height);
+    const int32 RevisionOffset = Offset; Offset += sizeof(int32);
+    FMemory::Memcpy(TextureData.GetData() + Offset, Data, bpp*Width*Height);
+
+    Impl->AsyncTasks.Enqueue([TextureId, TextureData = MoveTemp(TextureData), RevisionOffset](FImpl& Impl) mutable
+    {
+        FTexture& Texture = Impl.Textures.FindOrAdd(TextureId);
+        if (Texture.Revision == 0)
+        {
+            Impl.TextureIdMap.Empty();
+            int32 Idx = 0;
+            for (const auto& [Id, _] : Impl.Textures)
+            {
+                Impl.TextureIdMap.Add(Idx, Id);
+                Idx += 1;
+            }
+        }
+        Texture.Revision++;
+        const int32 Revision = Texture.Revision;
+
+        Texture.Data = MoveTemp(TextureData);
+        FMemory::Memcpy(Texture.Data.GetData() + RevisionOffset, &Revision, sizeof(Revision));
+    });
+
+    return true;
+}
+
+bool ImGuiWS::SetDrawData(const ImDrawData* DrawData)
 {
     bool result = true;
 
-    result&= m_impl->compressorDrawData->setDrawData(drawData);
+    result&= Impl->CompressorDrawData->setDrawData(DrawData);
 
-    auto& drawLists = m_impl->compressorDrawData->getDrawLists();
+    auto& drawLists = Impl->CompressorDrawData->getDrawLists();
 
     // make the draw lists available to incppect clients
     {
-        // std::unique_lock lock(m_impl->mutex);
-
-        m_impl->dataRead.drawLists = std::move(drawLists);
+        Impl->DrawLists = std::move(drawLists);
     }
 
     return result;
 }
 
-bool ImGuiWS::setDrawInfo(DrawInfo&& drawInfo)
+bool ImGuiWS::SetDrawInfo(FDrawInfo&& DrawInfo)
 {
-    m_impl->drawInfo = std::move(drawInfo);
+    Impl->DrawInfo = std::move(DrawInfo);
     return true;
 }
 
-int32_t ImGuiWS::nConnected() const
+int32 ImGuiWS::NumConnected() const
 {
-    return m_impl->nConnected;
+    return Impl->NumConnected;
 }
 
-std::deque<ImGuiWS::Event> ImGuiWS::takeEvents()
+std::deque<ImGuiWS::FEvent> ImGuiWS::TakeEvents()
 {
-    std::lock_guard<std::mutex> lock(m_impl->events.mutex);
-    auto res = std::move(m_impl->events.data);
-    return res;
+    std::deque<ImGuiWS::FEvent> Res{ MoveTemp(Impl->Events) };
+    return Res;
 }
