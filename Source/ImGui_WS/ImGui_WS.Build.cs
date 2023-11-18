@@ -11,6 +11,7 @@ public class ImGui_WS : ModuleRules
 		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/zpix.ttf"), StagedFileType.NonUFS);
 		// 打包后也能加载网页
 		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/HTML/index.html"), StagedFileType.NonUFS);
+		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/HTML/incppect.js"), StagedFileType.NonUFS);
 		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/HTML/imgui-ws.js"), StagedFileType.NonUFS);
 		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/HTML/draw-mouse-pos.js"), StagedFileType.NonUFS);
 		

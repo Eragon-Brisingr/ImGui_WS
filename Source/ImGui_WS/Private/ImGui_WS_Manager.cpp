@@ -280,7 +280,7 @@ public:
 		ImPlot::SetCurrentContext(PlotContext);
 
 		// setup imgui-ws
-		const FString HtmlPath = PluginPath / TEXT("Resources/HTML");
+		const FString HtmlPath = FPaths::ConvertRelativePathToFull(PluginPath / TEXT("Resources/HTML"));
 		ImGuiWS.Init(Manager.GetPort(), HtmlPath);
 		WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGui_WS_Settings>()->ServerTickInterval]
 		{

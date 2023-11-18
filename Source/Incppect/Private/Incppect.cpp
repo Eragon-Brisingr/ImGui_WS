@@ -248,7 +248,7 @@ struct FIncppect::FImpl
         if (bSucceed)
         {
             UE_LOG(LogIncppect, Log, TEXT("listening on port %d"), Parameters.PortListen);
-            UE_LOG(LogIncppect, Log, TEXT("https://localhost:%d/"), Parameters.PortListen);
+            UE_LOG(LogIncppect, Log, TEXT("http://localhost:%d/"), Parameters.PortListen);
         }
         else
         {
