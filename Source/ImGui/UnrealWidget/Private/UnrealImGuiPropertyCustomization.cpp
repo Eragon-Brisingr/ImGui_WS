@@ -156,14 +156,14 @@ namespace UnrealImGui
 	{
 		const FNumericProperty* NumericProperty = CastFieldChecked<FNumericProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
-		const auto PropertyLabelName = TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical));
+		const FString PropertyLabelName = GetPropertyDefaultLabel(Property, IsIdentical);
 		if (const UEnum* EnumDef = NumericProperty->GetIntPropertyEnum())
 		{
 			const int64 EnumValue = NumericProperty->GetSignedIntPropertyValue(FirstValuePtr);
 
 			FString EnumName = EnumDef->GetNameByValue(EnumValue).ToString();
 			EnumName.Split(TEXT("::"), nullptr, &EnumName);
-			if (ImGui::BeginCombo(PropertyLabelName, TCHAR_TO_UTF8(*EnumName), ImGuiComboFlags_PopupAlignLeft))
+			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*PropertyLabelName), TCHAR_TO_UTF8(*EnumName), ImGuiComboFlags_PopupAlignLeft))
 			{
 				for (int32 Idx = 0; Idx < EnumDef->NumEnums() - 1; ++Idx)
 				{
@@ -190,7 +190,7 @@ namespace UnrealImGui
 		else if (NumericProperty->IsInteger())
 		{
 			int64 Number = NumericProperty->GetSignedIntPropertyValue(FirstValuePtr);
-			ImGui::InputScalar(PropertyLabelName, ImGuiDataType_S64, &Number);
+			ImGui::InputScalar(TCHAR_TO_UTF8(*PropertyLabelName), ImGuiDataType_S64, &Number);
 			if (ImGui::IsItemDeactivatedAfterEdit())
 			{
 				for (uint8* Container : Containers)
@@ -203,7 +203,7 @@ namespace UnrealImGui
 		else if (NumericProperty->IsFloatingPoint())
 		{
 			double Number = NumericProperty->GetFloatingPointPropertyValue(FirstValuePtr);
-			ImGui::InputScalar(PropertyLabelName, ImGuiDataType_Double, &Number);
+			ImGui::InputScalar(TCHAR_TO_UTF8(*PropertyLabelName), ImGuiDataType_Double, &Number);
 			if (ImGui::IsItemDeactivatedAfterEdit())
 			{
 				for (uint8* Container : Containers)
@@ -967,12 +967,12 @@ namespace UnrealImGui
 	{
 		const FNameProperty* NameProperty = CastFieldChecked<FNameProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
-		const auto PropertyLabelName = TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical));
+		const FString PropertyLabelName = GetPropertyDefaultLabel(Property, IsIdentical);
 		const FName FirstValue = NameProperty->GetPropertyValue(FirstValuePtr);
 		const auto StringPoint = FTCHARToUTF8(*FirstValue.ToString());
 		char Buff[512];
 		FMemory::Memcpy(&Buff, StringPoint.Get(), StringPoint.Length() + 1);
-		ImGui::InputText(PropertyLabelName, Buff, sizeof(Buff));
+		ImGui::InputText(TCHAR_TO_UTF8(*PropertyLabelName), Buff, sizeof(Buff));
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
 			const FName ChangedValue = UTF8_TO_TCHAR(Buff);
@@ -1173,14 +1173,14 @@ namespace UnrealImGui
 			{
 				ImGui::SameLine();
 
-				const auto ArrayPopupID = TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("unreal_array_popup")));
+				const FString ArrayPopupID =CreatePropertyLabel(Property, TEXT("unreal_array_popup"));
 				if (ImGui::ArrowButton(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT(">"))), ImGuiDir_Down))
 				{
-					ImGui::OpenPopup(ArrayPopupID);
+					ImGui::OpenPopup(TCHAR_TO_UTF8(*ArrayPopupID));
 				}
 
 				ImGui::SameLine();
-				if (ImGui::BeginPopup(ArrayPopupID))
+				if (ImGui::BeginPopup(TCHAR_TO_UTF8(*ArrayPopupID)))
 				{
 					if (ImGui::Selectable("Insert"))
 					{
@@ -1341,13 +1341,13 @@ namespace UnrealImGui
 			{
 				ImGui::SameLine();
 
-				const auto SetPopupID = TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("unreal_set_popup")));
+				const FString SetPopupID = CreatePropertyLabel(Property, TEXT("unreal_set_popup"));
 				if (ImGui::ArrowButton(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT(">"))), ImGuiDir_Down))
 				{
-					ImGui::OpenPopup(SetPopupID);
+					ImGui::OpenPopup(TCHAR_TO_UTF8(*SetPopupID));
 				}
 				ImGui::SameLine();
-				if (ImGui::BeginPopup(SetPopupID))
+				if (ImGui::BeginPopup(TCHAR_TO_UTF8(*SetPopupID)))
 				{
 					if (ImGui::MenuItem("Delete"))
 					{
@@ -1572,13 +1572,13 @@ namespace UnrealImGui
 					ValuePropertyCustomization->CreateValueWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 				}
 				ImGui::SameLine();
-				const auto MapPopupID = TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("unreal_map_popup")));
+				const FString MapPopupID = CreatePropertyLabel(Property, TEXT("unreal_map_popup"));
 				if (ImGui::ArrowButton(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT(">"))), ImGuiDir_Down))
 				{
-					ImGui::OpenPopup(MapPopupID);
+					ImGui::OpenPopup(TCHAR_TO_UTF8(*MapPopupID));
 				}
 				ImGui::SameLine();
-				if (ImGui::BeginPopup(MapPopupID))
+				if (ImGui::BeginPopup(TCHAR_TO_UTF8(*MapPopupID)))
 				{
 					if (ImGui::MenuItem("Delete"))
 					{

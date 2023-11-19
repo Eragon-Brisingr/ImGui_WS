@@ -345,16 +345,16 @@ bool ImGuiWS::SetTexture(FTextureId TextureId, FTexture::Type TextureType, int32
     const int32 RevisionOffset = Offset; Offset += sizeof(int32);
     FMemory::Memcpy(TextureData.GetData() + Offset, Data, bpp*Width*Height);
 
-    Impl->AsyncTasks.Enqueue([TextureId, TextureData = MoveTemp(TextureData), RevisionOffset](FImpl& Impl) mutable
+    Impl->AsyncTasks.Enqueue([TextureId, TextureData = MoveTemp(TextureData), RevisionOffset](FImpl& ImplRef) mutable
     {
-        FTexture& Texture = Impl.Textures.FindOrAdd(TextureId);
+        FTexture& Texture = ImplRef.Textures.FindOrAdd(TextureId);
         if (Texture.Revision == 0)
         {
-            Impl.TextureIdMap.Empty();
+            ImplRef.TextureIdMap.Empty();
             int32 Idx = 0;
-            for (const auto& [Id, _] : Impl.Textures)
+            for (const auto& [Id, _] : ImplRef.Textures)
             {
-                Impl.TextureIdMap.Add(Idx, Id);
+                ImplRef.TextureIdMap.Add(Idx, Id);
                 Idx += 1;
             }
         }

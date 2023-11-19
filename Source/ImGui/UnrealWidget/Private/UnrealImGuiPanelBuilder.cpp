@@ -185,7 +185,7 @@ void FUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::BeginTooltip();
-			ImGui::Text(TCHAR_TO_UTF8(*Layout->GetClass()->GetName()));
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*Layout->GetClass()->GetName()));
 			ImGui::EndTooltip();
 		}
 	}
@@ -206,7 +206,7 @@ void FUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::BeginTooltip();
-			ImGui::Text(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
 			ImGui::EndTooltip();
 		}
 	}
