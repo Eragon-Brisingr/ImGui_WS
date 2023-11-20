@@ -22,7 +22,10 @@ public class Incppect : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
-                "WebSocketNetworking",
+                "Sockets",
+                "OpenSSL",
+                "libWebSockets",
+                "zlib"
             }
         );
     }

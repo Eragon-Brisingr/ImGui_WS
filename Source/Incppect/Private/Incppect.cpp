@@ -1,11 +1,8 @@
 #include "Incppect.h"
 
-#include "INetworkingWebSocket.h"
-#include "IWebSocketNetworkingModule.h"
-#include "IWebSocketServer.h"
+#include "LogIncppect.h"
+#include "WebSocketServer.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogIncppect, Log, All);
-DEFINE_LOG_CATEGORY(LogIncppect);
 DECLARE_STATS_GROUP(TEXT("Incppect"), STATGROUP_Incppect, STATCAT_Advanced);
 
 namespace
@@ -47,16 +44,18 @@ struct FIncppect::FImpl
     struct FPerSocketData
     {
         int32 ClientId = 0;
-        INetworkingWebSocket* Socket;
+        Incppect::FWebSocket* Socket;
     };
 
-    TUniquePtr<IWebSocketServer> Server;
+    TUniquePtr<Incppect::FWebSocketServer> Server;
 
     void Init()
     {
         UE_LOG(LogIncppect, Log, TEXT("running instance. serving HTTPS from '%s'"), *Parameters.HttpRoot);
 
-        Server = FModuleManager::Get().LoadModuleChecked<IWebSocketNetworkingModule>(TEXT("WebSocketNetworking")).CreateServer();
+        using namespace Incppect;
+
+        Server = MakeUnique<FWebSocketServer>();
         if (!Server)
         {
             UE_LOG(LogIncppect, Warning, TEXT("failed create websocket server"));
@@ -76,7 +75,7 @@ struct FIncppect::FImpl
             return EWebsocketConnectionFilterResult::ConnectionAccepted;
         }));
 
-        const bool bSucceed = Server->Init(Parameters.PortListen, FWebSocketClientConnectedCallBack::CreateLambda([this](INetworkingWebSocket* Socket)
+        const bool bSucceed = Server->Init(Parameters.PortListen, FWebSocketClientConnectedCallBack::CreateLambda([this](FWebSocket* Socket)
         {
             static int32 UniqueId = 0;
             ++UniqueId;
