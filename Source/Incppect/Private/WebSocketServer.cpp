@@ -3,7 +3,6 @@
 #include "WebSocketServer.h"
 
 #include "LogIncppect.h"
-#include "WebSocket.h"
 
 #if USE_LIBWEBSOCKET
 

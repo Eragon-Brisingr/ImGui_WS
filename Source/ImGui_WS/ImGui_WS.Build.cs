@@ -32,7 +32,6 @@ public class ImGui_WS : ModuleRules
 	        
 	        "ImGui",
 	        "Incppect",
-	        "WebSocketNetworking",
 		});
 	}
 }
