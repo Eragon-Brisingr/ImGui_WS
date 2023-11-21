@@ -40,8 +40,8 @@ void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* 
 	if (ImGui::Begin(TCHAR_TO_UTF8(*WindowName), &IsOpen, ImGuiWindowFlags))
 	{
 		Draw(Owner, DeltaSeconds);
-		ImGui::End();
 	}
+	ImGui::End();
 	if (bIsOpen != IsOpen)
 	{
 		PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);

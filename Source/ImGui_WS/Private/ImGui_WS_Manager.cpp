@@ -2,6 +2,7 @@
 
 
 #include "ImGui_WS_Manager.h"
+
 #include <sstream>
 #include <thread>
 
@@ -15,6 +16,7 @@
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGuiWrapper.h"
+#include "UnrealImGui_Log.h"
 #include "WebKeyCodeToImGui.h"
 #include "Containers/TripleBuffer.h"
 #include "Interfaces/IPluginManager.h"
@@ -40,73 +42,87 @@ FAutoConsoleCommand LaunchImGuiWeb
 };
 
 UnrealImGui::FUTF8String GRecordSaveDirPathString;
-namespace ImGuiConsoleImpl
+TAutoConsoleVariable<int32> CVar_ImGui_WS_Port
 {
-	FAutoConsoleVariable CVar_ImGui_WS_Port
+	TEXT("ImGui.WS.Port"),
+	INDEX_NONE,
+	TEXT("ImGui-WS Web Port, Only Valid When Pre Game Start. Set In\n")
+	TEXT("1. Engine.ini\n [ConsoleVariables] \n ImGui.WS.Port=8890\n")
+	TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
+	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{
-		TEXT("ImGui.WS.Port"),
-		INDEX_NONE,
-		TEXT("ImGui-WS Web Port, Only Valid When Pre Game Start. Set In\n")
-		TEXT("1. Engine.ini\n [ConsoleVariables] \n ImGui.WS.Port=8890\n")
-		TEXT("2. UE4Editor.exe GAMENAME -ExecCmds=\"ImGui.WS.Port 8890\""),
-		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
+		const int32 ImGui_WS_Port = CVar_ImGui_WS_Port.GetValueOnAnyThread();
+		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+		if (GIsEditor)
 		{
-			const int32 ImGui_WS_Port = ConsoleVariable->GetInt();
-			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
-			if (GIsEditor)
+			Settings->EditorPort = ImGui_WS_Port;
+		}
+		else if (GIsServer)
+		{
+			Settings->ServerPort = ImGui_WS_Port;
+		}
+		else
+		{
+			Settings->GamePort = ImGui_WS_Port;
+		}
+	})
+};
+
+TAutoConsoleVariable<int32> CVar_ImGui_WS_Enable
+{
+	TEXT("ImGui.WS.Enable"),
+	INDEX_NONE,
+	TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
+	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
+	{
+		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+		const bool bIsEnable = !!CVar_ImGui_WS_Enable.GetValueOnAnyThread();
+		if (GIsEditor)
+		{
+			Settings->bEditorEnableImGui_WS = bIsEnable;
+		}
+		else if (GIsServer)
+		{
+			Settings->bServerEnableImGui_WS = bIsEnable;
+		}
+		else
+		{
+			Settings->bGameEnableImGui_WS = bIsEnable;
+		}
+		if (UImGui_WS_Manager* Manager = GEngine->GetEngineSubsystem<UImGui_WS_Manager>())
+		{
+			if (bIsEnable)
 			{
-				Settings->EditorPort = ImGui_WS_Port;
-			}
-			else if (GIsServer)
-			{
-				Settings->ServerPort = ImGui_WS_Port;
+				if (Manager->IsEnable() == false)
+				{
+					Manager->Enable();
+				}
 			}
 			else
 			{
-				Settings->GamePort = ImGui_WS_Port;
+				if (Manager->IsEnable())
+				{
+					Manager->Disable();
+				}
 			}
-		})
-	};
+		}
+	})
+};
 
-	FAutoConsoleVariable CVar_ImGui_WS_Enable
+TAutoConsoleVariable<FString> CVar_RecordSaveDirPathString
+{
+	TEXT("ImGui.WS.RecordDirPath"),
+	TEXT("./"),
+	TEXT("Set ImGui-WS Record Saved Path"),
+	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{
-		TEXT("ImGui.WS.Enable"),
-		INDEX_NONE,
-		TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
-		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
+		const FString RecordSaveDirPathString = CVar_RecordSaveDirPathString.GetValueOnAnyThread();
+		if (FPaths::DirectoryExists(RecordSaveDirPathString))
 		{
-			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
-			const int32 ImGui_WS_Enable = ConsoleVariable->GetInt();
-			if (GIsEditor)
-			{
-				Settings->bEditorEnableImGui_WS = !!ImGui_WS_Enable;
-			}
-			else if (GIsServer)
-			{
-				Settings->bServerEnableImGui_WS = !!ImGui_WS_Enable;
-			}
-			else
-			{
-				Settings->bGameEnableImGui_WS = !!ImGui_WS_Enable;
-			}
-		})
-	};
-
-	FAutoConsoleVariable CVar_RecordSaveDirPathString
-	{
-		TEXT("ImGui.WS.RecordDirPath"),
-		TEXT("./"),
-		TEXT("Set ImGui-WS Record Saved Path"),
-		FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* ConsoleVariable)
-		{
-			const FString RecordSaveDirPathString = ConsoleVariable->GetString();
-			if (FPaths::DirectoryExists(RecordSaveDirPathString))
-			{
-				GRecordSaveDirPathString = UnrealImGui::FUTF8String{ *RecordSaveDirPathString };
-			}
-		})
-	};
-}
+			GRecordSaveDirPathString = UnrealImGui::FUTF8String{ *RecordSaveDirPathString };
+		}
+	})
+};
 FAutoConsoleCommand StartImGuiRecord
 {
 	TEXT("ImGui.WS.StartRecord"),
@@ -150,7 +166,12 @@ void UImGui_WS_WorldSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-class UImGui_WS_Manager::FDrawer final : FTickableGameObject
+#if PLATFORM_WINDOWS
+#include <corecrt_io.h>
+#endif
+#include <fcntl.h>
+
+class UImGui_WS_Manager::FImpl final : FTickableGameObject
 {
 	UImGui_WS_Manager& Manager;
 
@@ -170,13 +191,15 @@ public:
 	TSharedPtr<ImGuiWS_Record::Session, ESPMode::ThreadSafe> RecordSession;
 	TUniquePtr<ImGuiWS_Record::FImGuiWS_Replay> RecordReplay;
 
-	explicit FDrawer(UImGui_WS_Manager& Manager)
+	explicit FImpl(UImGui_WS_Manager& Manager)
 		: Manager(Manager)
 	{
-		const FString PluginPath = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir();
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"));
+		const FString PluginResourcesPath = Plugin->GetBaseDir() / TEXT("Resources");
+
 		// fonts
 		{
-			UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+			const UImGui_WS_Settings* Settings = GetDefault<UImGui_WS_Settings>();
 			ImFontConfig FontConfig;
 			FontConfig.FontDataOwnedByAtlas = false;
 			switch (Settings->FontGlyphRanges)
@@ -213,8 +236,13 @@ public:
 				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesDefault();
 			}
 			FPlatformString::Strcpy(FontConfig.Name, sizeof(FontConfig.Name), "zpix, 12px");
-			const FString ChineseFontPath = PluginPath / TEXT("Resources/zpix.ttf");
-			FontAtlas.AddFontFromFileTTF(TCHAR_TO_UTF8(*ChineseFontPath), 12.0f * DPIScale, &FontConfig);
+			const FString ChineseFontPath = PluginResourcesPath / TEXT("zpix.ttf");
+
+			TArray<uint8> Bin;
+			ensure(FFileHelper::LoadFileToArray(Bin, *ChineseFontPath));
+			constexpr char FontName[] = "zpix, 12px";
+			FCStringAnsi::Strcpy(FontConfig.Name, sizeof(FontName), FontName);
+			FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), 12.0f * DPIScale, &FontConfig);
 		}
 		
 		IMGUI_CHECKVERSION();
@@ -251,23 +279,24 @@ public:
 		static auto SetClipboardTextFn_DefaultImpl = [](void* user_data, const char* text)
 		{
 			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
-			Manager->Drawer->ClipboardTextTripleBuffer.WriteAndSwap(text);
+			Manager->Impl->ClipboardTextTripleBuffer.WriteAndSwap(text);
 		};
 		IO.SetClipboardTextFn = SetClipboardTextFn_DefaultImpl;
-		
+
 		// Enable Docking
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		
+
 		ImGui::StyleColorsDark();
 		ImGui::GetStyle().AntiAliasedFill = false;
 		ImGui::GetStyle().AntiAliasedLines = false;
 		ImGui::GetStyle().WindowRounding = 0.0f;
 		ImGui::GetStyle().ScrollbarRounding = 0.0f;
 
+		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 		{
 			const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT("ImGui_WS");
 			// Make sure that directory is created.
-			IPlatformFile::GetPlatformPhysical().CreateDirectory(*IniDirectory);
+			PlatformFile.CreateDirectory(*IniDirectory);
 
 			const auto StringPoint = FTCHARToUTF8(*(IniDirectory / TEXT("Imgui_WS.ini")));
 			IniFileNameArray.SetNumUninitialized(StringPoint.Length() + 1);
@@ -280,7 +309,24 @@ public:
 		ImPlot::SetCurrentContext(PlotContext);
 
 		// setup imgui-ws
-		const FString HtmlPath = FPaths::ConvertRelativePathToFull(PluginPath / TEXT("Resources/HTML"));
+		const FString HtmlRelativePath = PluginResourcesPath / TEXT("HTML");
+		const FString HtmlPath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*FPaths::ConvertRelativePathToFull(HtmlRelativePath));
+		if (FPaths::DirectoryExists(HtmlPath) == false)
+		{
+			// TODO: Android platform pack file to obb, we need copy them to user folder
+			// because fopen can't read this, find batter way to resolve this problem
+			TArray<FString> HtmlFiles{ TEXT("draw-mouse-pos.js"), TEXT("imgui-ws.js"), TEXT("incppect.js"), TEXT("index.html") };
+			for (const FString& File : HtmlFiles)
+			{
+				const FString FileRelativePath = HtmlRelativePath / File;
+				const FString FilePath = HtmlPath / File;
+				UE_LOG(LogImGui, Log, TEXT("Write web file from %s to %s"), *FileRelativePath, *FilePath);
+
+				TArray<uint8> Bin;
+				ensure(FFileHelper::LoadFileToArray(Bin, *FileRelativePath));
+				FFileHelper::SaveArrayToFile(Bin, *FilePath);
+			}
+		}
 		ImGuiWS.Init(Manager.GetPort(), HtmlPath);
 		WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGui_WS_Settings>()->ServerTickInterval]
 		{
@@ -314,7 +360,7 @@ public:
 			ImGuiWS.SetTexture(Handle, ImGuiWS::FTexture::Type{ static_cast<uint8>(TextureFormat) }, Width, Height, Data);
 		};
 	}
-	~FDrawer() override
+	~FImpl() override
 	{
 		ImGui::DestroyContext(Context);
 		ImPlot::DestroyContext(PlotContext);
@@ -371,7 +417,7 @@ private:
 		TArray<ImGuiWS::FEvent, TInlineAllocator<16>> PendingEvents;
 		// recover key down state
 		TArray<ImGuiWS::FEvent, TInlineAllocator<16>> KeyDownEvents;
-		
+
 		void Handle(const ImGuiWS::FEvent& Event)
 		{
 		    switch (Event.Type)
@@ -379,7 +425,7 @@ private:
 	        case ImGuiWS::FEvent::Connected:
 				{
 	                ClientData& Client = Clients.Add(Event.ClientId);
-	        		
+
 	        		std::stringstream ss;
 			        { int32 a = uint8(Event.Ip); if (a < 0) a += 256; ss << a << "."; }
 			        { int32 a = uint8(Event.Ip >> 8); if (a < 0) a += 256; ss << a << "."; }
@@ -548,10 +594,10 @@ private:
 		    }
 		}
 	};
-	
+
 	FVSync VSync;
 	FState State;
-	
+
 	bool IsTickableWhenPaused() const { return true; }
 	bool IsTickableInEditor() const { return true; }
 	UWorld* GetTickableGameObjectWorld() const { return GWorld; }
@@ -701,10 +747,10 @@ private:
 						{
 							ImGui::CloseCurrentPopup();
 						}
-						
+
 						ImGui::EndPopup();
 					}
-					
+
 					if (ImGui::Button("Load Record"))
 					{
 						ImGui::OpenPopup("ReplaySettings");
@@ -743,7 +789,7 @@ private:
 						{
 							ImGui::CloseCurrentPopup();
 						}
-						
+
 						ImGui::EndPopup();
 					}
 				}
@@ -787,7 +833,7 @@ private:
 					DefaultDebugger->Draw(DeltaTime);
 				}
 			}
-			DrawContext.OnDraw.Broadcast(DeltaTime);	
+			DrawContext.OnDraw.Broadcast(DeltaTime);
 		}
 		else
 #endif
@@ -827,7 +873,7 @@ private:
 						ImGui::EndTooltip();
 					}
 				}
-				
+
 				{
 					ImGui::Text("Connections: %d", ImGuiWS.NumConnected());
 					if (ImGui::IsItemHovered())
@@ -869,7 +915,7 @@ private:
 			ImGui::PopStyleColor();
 		}
 	}
-	
+
 	void Tick(float DeltaTime) override
 	{
 		if (ImGuiWS.NumConnected() == 0 && RecordSession.IsValid() == false)
@@ -878,7 +924,7 @@ private:
 	    }
 
 		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Tick"), STAT_ImGuiWS_Tick, STATGROUP_ImGui);
-		
+
 	    ImGuiContext* OldContent = ImGui::GetCurrentContext();
 	    ON_SCOPE_EXIT
 		{
@@ -907,10 +953,10 @@ private:
 		{
 			DefaultDraw(DeltaTime);
 		}
-		
+
 	    // generate ImDrawData
 	    ImGui::Render();
-		
+
 		{
 			// store ImDrawData for asynchronous dispatching to WS clients
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
@@ -1031,6 +1077,20 @@ bool UImGui_WS_Manager::IsSettingsEnable()
 	return false;
 }
 
+void UImGui_WS_Manager::Enable()
+{
+	check(IsEnable() == false);
+	UE_LOG(LogImGui, Log, TEXT("Enable ImGui WS"));
+	Impl = MakeUnique<FImpl>(*this);
+}
+
+void UImGui_WS_Manager::Disable()
+{
+	check(IsEnable());
+	Impl.Reset();
+	UE_LOG(LogImGui, Log, TEXT("Disable ImGui WS"));
+}
+
 int32 UImGui_WS_Manager::GetPort() const
 {
 	const UImGui_WS_Settings* Settings = GetDefault<UImGui_WS_Settings>();
@@ -1050,12 +1110,12 @@ int32 UImGui_WS_Manager::GetPort() const
 
 int32 UImGui_WS_Manager::GetConnectionCount() const
 {
-	return Drawer ? Drawer->ImGuiWS.NumConnected() : 0;
+	return Impl ? Impl->ImGuiWS.NumConnected() : 0;
 }
 
 bool UImGui_WS_Manager::IsRecording() const
 {
-	if (Drawer && Drawer->RecordSession)
+	if (Impl && Impl->RecordSession)
 	{
 		return true;
 	}
@@ -1064,17 +1124,17 @@ bool UImGui_WS_Manager::IsRecording() const
 
 void UImGui_WS_Manager::StartRecord()
 {
-	if (Drawer && Drawer->RecordSession.IsValid() == false)
+	if (Impl && Impl->RecordSession.IsValid() == false)
 	{
-		Drawer->StartRecord();
+		Impl->StartRecord();
 	}
 }
 
 void UImGui_WS_Manager::StopRecord()
 {
-	if (Drawer && Drawer->RecordSession.IsValid())
+	if (Impl && Impl->RecordSession.IsValid())
 	{
-		Drawer->StopRecord();
+		Impl->StopRecord();
 	}
 }
 
@@ -1083,29 +1143,30 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	GRecordSaveDirPathString = *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT("ImGui_WS"));
-	ImGuiConsoleImpl::CVar_RecordSaveDirPathString->Set(*GRecordSaveDirPathString.ToString());
+	CVar_RecordSaveDirPathString->Set(*GRecordSaveDirPathString.ToString());
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this, [this](float)
 	{
-		if (GEngine->DeferredCommands.Num() == 0)
+		if (GEngine->DeferredCommands.Num() > 0)
 		{
-			if (IsSettingsEnable() == false)
-			{
-				return false;
-			}
-			Drawer = new FDrawer{ *this };
-			return false;
+			return true;
 		}
-		return true;
+		if (IsSettingsEnable() && IsEnable() == false)
+		{
+			Enable();
+		}
+		else
+		{
+			UE_LOG(LogImGui, Log, TEXT("ImGui WS disable when engine initialized, you can use console variable ImGui.WS.Enable 1 open it."));
+		}
+		return false;
 	}));
 }
 
 void UImGui_WS_Manager::Deinitialize()
 {
-	if (Drawer)
+	if (IsEnable())
 	{
-		delete Drawer;
-		Drawer = nullptr;
+		Disable();
 	}
-
 	Super::Deinitialize();
 }

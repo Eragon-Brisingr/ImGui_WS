@@ -192,8 +192,10 @@ void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 	if (ImGui::Begin("Background", nullptr, WindowFlags))
 	{
 		PanelBuilder.DrawPanels(this, DeltaSeconds);
-		ImGui::End();
 	}
+	ImGui::End();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
 }
 
 #undef LOCTEXT_NAMESPACE
