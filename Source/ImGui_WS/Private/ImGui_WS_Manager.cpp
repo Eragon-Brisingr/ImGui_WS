@@ -252,28 +252,6 @@ public:
 		// Initialize notify
 		ImGui::MergeIconsWithLatestFont(12.f * DPIScale, false);
 
-		IO.KeyMap[ImGuiKey_Tab]         = 9;
-		IO.KeyMap[ImGuiKey_LeftArrow]   = 37;
-		IO.KeyMap[ImGuiKey_RightArrow]  = 39;
-		IO.KeyMap[ImGuiKey_UpArrow]     = 38;
-		IO.KeyMap[ImGuiKey_DownArrow]   = 40;
-		IO.KeyMap[ImGuiKey_PageUp]      = 33;
-		IO.KeyMap[ImGuiKey_PageDown]    = 34;
-		IO.KeyMap[ImGuiKey_Home]        = 36;
-		IO.KeyMap[ImGuiKey_End]         = 35;
-		IO.KeyMap[ImGuiKey_Insert]      = 45;
-		IO.KeyMap[ImGuiKey_Delete]      = 46;
-		IO.KeyMap[ImGuiKey_Backspace]   = 8;
-		IO.KeyMap[ImGuiKey_Space]       = 32;
-		IO.KeyMap[ImGuiKey_Enter]       = 13;
-		IO.KeyMap[ImGuiKey_Escape]      = 27;
-		IO.KeyMap[ImGuiKey_A]           = 65;
-		IO.KeyMap[ImGuiKey_C]           = 67;
-		IO.KeyMap[ImGuiKey_V]           = 86;
-		IO.KeyMap[ImGuiKey_X]           = 88;
-		IO.KeyMap[ImGuiKey_Y]           = 89;
-		IO.KeyMap[ImGuiKey_Z]           = 90;
-
 		IO.MouseDrawCursor = false;
 
 		static auto SetClipboardTextFn_DefaultImpl = [](void* user_data, const char* text)
@@ -474,8 +452,9 @@ private:
 		    }
 
 			ImGuiIO& IO = ImGui::GetIO();
-			auto SyncKeyMods = [&IO](ImGuiKey Key, bool bDown)
+			auto AddKeyEvent = [&IO](ImGuiKey Key, bool bDown)
 			{
+		    	IO.AddKeyEvent(Key, bDown);
 				switch (Key)
 				{
 				case ImGuiKey_LeftCtrl:
@@ -558,16 +537,14 @@ private:
 		    		case ImGuiWS::FEvent::KeyDown:
 		    			{
 		    				const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.Key));
-		    				IO.AddKeyEvent(Key, true);
-		    				SyncKeyMods(Key, true);
+		    				AddKeyEvent(Key, true);
 		    				KeyDownEvents.Add(Event);
 		    			}
 		            	break;
 		            case ImGuiWS::FEvent::KeyUp:
 			            {
 		            		const ImGuiKey Key = ToImGuiKey(EWebKeyCode(Event.Key));
-		    				IO.AddKeyEvent(Key, false);
-				            SyncKeyMods(Key, false);
+				            AddKeyEvent(Key, false);
 		    				KeyDownEvents.RemoveAll([&Event](const ImGuiWS::FEvent& E) { return E.Type == Event.Type && E.MouseBtn == Event.MouseBtn; } );
 			            }
 		            	break;

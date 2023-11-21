@@ -136,8 +136,8 @@ namespace ImGui
 #define IMGUI_DEFINE_MATH_OPERATORS
 #endif
 
-#define IM_ASSERT(_EXPR) do { ensureAlways(_EXPR); } while (0)
-#define IM_ASSERT_USER_ERROR(_EXP,_MSG) ensureAlwaysMsgf(_EXP, TEXT(_MSG))
+#define IM_ASSERT(_EXPR) do { ensure(_EXPR); } while (0)
+#define IM_ASSERT_USER_ERROR(_EXP,_MSG) ensureMsgf(_EXP, TEXT(_MSG))
 
 #include "Math/Vector2D.h"
 #include "Math/Vector4.h"
