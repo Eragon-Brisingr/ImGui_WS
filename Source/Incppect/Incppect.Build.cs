@@ -1,10 +1,12 @@
 ﻿using UnrealBuildTool;
 
-public class ImGui_WorldDebugger : ModuleRules
+public class Incppect : ModuleRules
 {
-    public ImGui_WorldDebugger(ReadOnlyTargetRules Target) : base(Target)
+    public Incppect(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        OptimizeCode = CodeOptimization.Always;
 
         PublicDependencyModuleNames.AddRange(
             new string[]
@@ -20,9 +22,10 @@ public class ImGui_WorldDebugger : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
-
-                "ImGui",
-                "ImGui_WS",
+                "Sockets",
+                "OpenSSL",
+                "libWebSockets",
+                "zlib"
             }
         );
     }

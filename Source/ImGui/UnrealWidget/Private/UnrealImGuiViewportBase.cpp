@@ -295,7 +295,10 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 		ImGui::EndMenuBar();
 	}
 
-	ImGui::InvisibleButton("Content", ImVec2{ ContentSize }, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+	if (ContentSize.GetMin() > 0.f)
+	{
+		ImGui::InvisibleButton("Content", ImVec2{ ContentSize }, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+	}
 	ImGui::PushClipRect(ImVec2{ ContentMin }, ImVec2{ ContentMax }, true);
 	const bool bIsContentHovered = ImGui::IsItemHovered();
 	const bool bIsContentActive = ImGui::IsItemActive();

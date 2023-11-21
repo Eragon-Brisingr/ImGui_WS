@@ -183,13 +183,8 @@ var imgui_ws = {
         this.canvas.addEventListener('touchend', ontouch);
         this.canvas.addEventListener('touchcancel', ontouch);
 
-        this.virtual_input.addEventListener('keydown', (event)=> {
-            onkeydown(event);
-            if (this.io.want_capture_keyboard) {
-                event.preventDefault();
-            }
-        }, true);
-        this.virtual_input.addEventListener('keyup', onkeyup, true)
+        this.virtual_input.addEventListener('keydown', onkeydown, true);
+        this.virtual_input.addEventListener('keyup', onkeyup, true);
 
         this.virtual_input.addEventListener('compositionstart', () => {
             this.isComposing = true;
@@ -199,7 +194,7 @@ var imgui_ws = {
             incppect.send(EventType.InputText + this.virtual_input.value);
             this.virtual_input.value = '';
         });
-        this.virtual_input.addEventListener('input', () => {
+        this.virtual_input.addEventListener('input', (event) => {
             if (!this.isComposing) {
                 if (this.virtual_input.value === ' ') {
                     incppect.send(EventType.KeyPress + spaceKey);

@@ -168,17 +168,20 @@
                 }
 
                 let want_input_text = this.get_uint8('imgui.want_input_text');
-                if (want_input_text !== 0) {
-                    if (document.activeElement !== virtual_input) {
-                        virtual_input.focus();
+                if (want_input_text)
+                {
+                    if (want_input_text !== 0) {
+                        if (document.activeElement !== virtual_input) {
+                            virtual_input.focus();
+                        }
                     }
-                }
-                else {
-                    if (this.pre_want_input_text !== want_input_text) {
-                        canvas_main.focus();
+                    else {
+                        if (this.pre_want_input_text !== want_input_text) {
+                            canvas_main.focus();
+                        }
                     }
+                    this.pre_want_input_text = want_input_text;
                 }
-                this.pre_want_input_text = want_input_text;
             }
             else {
                 let viewport_size = this.get_float_arr('imgui.viewport_size');

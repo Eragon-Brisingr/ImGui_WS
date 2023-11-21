@@ -85,6 +85,8 @@ void UImGuiEditorDefaultDebugger::Draw(float DeltaSeconds)
 	if (ImGui::Begin("Background", nullptr, WindowFlags))
 	{
 		PanelBuilder.DrawPanels(Owner, DeltaSeconds);
-		ImGui::End();
 	}
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::End();
 }

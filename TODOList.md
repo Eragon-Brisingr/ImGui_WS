@@ -12,7 +12,7 @@
 - [x] Undo/Redo同步（想多了，本来就同步的
 - [x] Log面板自动下拉、内存占用显示
 - [x] 中文输入
-- [ ] Mac、Linux的编译支持(Linux已支持
+- [x] Mac、Linux、Android、IOS的编译支持
 - [ ] 网页支持uft-8编码  
 - [ ] Record功能
   - [ ] 流式储存和读取

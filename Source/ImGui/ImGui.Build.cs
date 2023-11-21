@@ -7,11 +7,6 @@ public class ImGui : ModuleRules
 {
 	public ImGui(ReadOnlyTargetRules Target) : base(Target)
 	{
-		if (Target.Platform != UnrealTargetPlatform.Win64 && Target.Platform != UnrealTargetPlatform.Linux)
-		{
-			Type = ModuleType.External;
-		}
-
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[]

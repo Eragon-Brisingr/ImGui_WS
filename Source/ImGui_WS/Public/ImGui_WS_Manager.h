@@ -98,6 +98,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	EImGuiFontGlyphRanges FontGlyphRanges = EImGuiFontGlyphRanges::ChineseFull;
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	float ServerTickInterval = 1 / 120.f;
 };
 
 UCLASS()
@@ -110,7 +113,9 @@ public:
 	static FImGui_WS_EditorContext* GetImGuiEditorContext();
 
 	static bool IsSettingsEnable();
-	bool IsEnable() const { return Drawer != nullptr; }
+	bool IsEnable() const { return Impl.IsValid(); }
+	void Enable();
+	void Disable();
 	
 	int32 GetPort() const;
 	int32 GetConnectionCount() const;
@@ -134,6 +139,6 @@ private:
 	UPROPERTY(Transient)
 	TArray<UImGui_WS_WorldSubsystem*> WorldSubsystems;
 
-	class FDrawer;
-	FDrawer* Drawer = nullptr;
+	class FImpl;
+	TUniquePtr<FImpl> Impl;
 };
