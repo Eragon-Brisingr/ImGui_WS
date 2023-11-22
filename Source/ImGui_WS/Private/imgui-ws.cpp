@@ -11,7 +11,6 @@
 #include <atomic>
 #include <sstream>
 #include <cstring>
-#include <mutex>
 #include <shared_mutex>
 
 #include "imgui.h"
@@ -62,9 +61,17 @@ ImGuiWS::~ImGuiWS()
     Impl->Incpp.Stop();
 }
 
-bool ImGuiWS::addVar(const TPath& Path, TGetter&& Getter)
+void ImGuiWS::AddVar(const TPath& Path, TGetter&& Getter)
 {
-    return Impl->Incpp.var(Path, std::move(Getter));
+    Impl->Incpp.Var(Path, std::move(Getter));
+}
+
+void ImGuiWS::AddServerEvent(int32 ClientId, int32 EventId, TArray<uint8>&& Payload)
+{
+    Impl->AsyncTasks.Enqueue([ClientId, EventId, Payload = MoveTemp(Payload)](FImpl& ImplRef) mutable
+    {
+        ImplRef.Incpp.ServerEvent(ClientId, EventId, MoveTemp(Payload));
+    });
 }
 
 bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
@@ -77,7 +84,7 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
     Parameters.PathOnDisk = PathOnDisk;
     Impl->Incpp.Init(Parameters);
 
-    Impl->Incpp.var(TEXT("my_id[%d]"), [](const auto& idxs)
+    Impl->Incpp.Var(TEXT("my_id[%d]"), [](const auto& idxs)
     {
         static int32 id;
         id = idxs[0];
@@ -85,58 +92,52 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
     });
 
     // number of textures available
-    Impl->Incpp.var(TEXT("imgui.n_textures"), [this](const auto& )
+    Impl->Incpp.Var(TEXT("imgui.n_textures"), [this](const auto& )
     {
         return FIncppect::view(Impl->Textures.Num());
     });
 
     // sync mouse cursor
-    Impl->Incpp.var(TEXT("imgui.mouse_cursor"), [this](const auto& )
+    Impl->Incpp.Var(TEXT("imgui.mouse_cursor"), [this](const auto& )
     {
-        return FIncppect::view(Impl->DrawInfo.mouseCursor);
+        return FIncppect::view(Impl->DrawInfo.MouseCursor);
     });
 
     // current control_id
-    Impl->Incpp.var(TEXT("control_id"), [this](const auto& )
-   {
-       return FIncppect::view(Impl->DrawInfo.controlId);
-   });
-
-    // current control IP
-    Impl->Incpp.var(TEXT("control_ip"), [this](const auto& )
-   {
-       return FIncppect::view(Impl->DrawInfo.controlIp);
-   });
-
-    // sync clipboard
-    Impl->Incpp.var(TEXT("imgui.clipboard"), [this](const auto& )
+    Impl->Incpp.Var(TEXT("control_id"), [this](const auto& )
     {
-        return FIncppect::view(Impl->DrawInfo.clipboardText);
+       return FIncppect::view(Impl->DrawInfo.ControlId);
     });
 
-    Impl->Incpp.var(TEXT("imgui.want_input_text"), [this](const auto& )
+    // current control IP
+    Impl->Incpp.Var(TEXT("control_ip"), [this](const auto& )
+    {
+       return FIncppect::view(Impl->DrawInfo.ControlIp);
+    });
+
+    Impl->Incpp.Var(TEXT("imgui.want_input_text"), [this](const auto& )
     {
         return FIncppect::view(Impl->DrawInfo.bWantTextInput);
     });
 
     // sync to uncontrol mouse position
-    Impl->Incpp.var(TEXT("imgui.mouse_pos"), [this](const auto& )
+    Impl->Incpp.Var(TEXT("imgui.mouse_pos"), [this](const auto& )
     {
         static FVector2f MousePos;
-        MousePos = { Impl->DrawInfo.mousePosX, Impl->DrawInfo.mousePosY };
+        MousePos = { Impl->DrawInfo.MousePosX, Impl->DrawInfo.MousePosY };
         return FIncppect::view(MousePos);
     });
 
     // sync to uncontrol viewport size
-    Impl->Incpp.var(TEXT("imgui.viewport_size"), [this](const auto& )
+    Impl->Incpp.Var(TEXT("imgui.viewport_size"), [this](const auto& )
     {
         static FVector2f ViewportSize;
-        ViewportSize = { Impl->DrawInfo.viewportSizeX, Impl->DrawInfo.viewportSizeY };
+        ViewportSize = { Impl->DrawInfo.ViewportSizeX, Impl->DrawInfo.ViewportSizeY };
         return FIncppect::view(ViewportSize);
     });
 
     // texture ids
-    Impl->Incpp.var(TEXT("imgui.texture_id[%d]"), [this](const auto& idxs)
+    Impl->Incpp.Var(TEXT("imgui.texture_id[%d]"), [this](const auto& idxs)
     {
         if (const FTextureId* Idx = Impl->TextureIdMap.Find(idxs[0]))
         {
@@ -146,7 +147,7 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
     });
 
     // texture revision
-    Impl->Incpp.var(TEXT("imgui.texture_revision[%d]"), [this](const auto& idxs)
+    Impl->Incpp.Var(TEXT("imgui.texture_revision[%d]"), [this](const auto& idxs)
     {
         if (const FTexture* Texture = Impl->Textures.Find(idxs[0]))
         {
@@ -156,7 +157,7 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
     });
 
     // get texture by id
-    Impl->Incpp.var(TEXT("imgui.texture_data[%d]"), [this](const auto& idxs)
+    Impl->Incpp.Var(TEXT("imgui.texture_data[%d]"), [this](const auto& idxs)
     {
         const auto TextureId = idxs[0];
         if (const FTexture* Texture = Impl->Textures.Find(TextureId))
@@ -169,12 +170,12 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
     });
 
     // get imgui's draw data
-    Impl->Incpp.var(TEXT("imgui.n_draw_lists"), [this](const auto& )
+    Impl->Incpp.Var(TEXT("imgui.n_draw_lists"), [this](const auto& )
     {
         return FIncppect::view(Impl->DrawLists.size());
     });
 
-    Impl->Incpp.var(TEXT("imgui.draw_list[%d]"), [this](const auto& idxs)
+    Impl->Incpp.Var(TEXT("imgui.draw_list[%d]"), [this](const auto& idxs)
     {
         static std::vector<char> data;
         {
@@ -370,23 +371,21 @@ bool ImGuiWS::SetTexture(FTextureId TextureId, FTexture::Type TextureType, int32
 
 bool ImGuiWS::SetDrawData(const ImDrawData* DrawData)
 {
-    bool result = true;
+    bool Result = true;
 
-    result&= Impl->CompressorDrawData->setDrawData(DrawData);
+    Result &= Impl->CompressorDrawData->setDrawData(DrawData);
 
-    auto& drawLists = Impl->CompressorDrawData->getDrawLists();
+    auto& DrawLists = Impl->CompressorDrawData->getDrawLists();
 
     // make the draw lists available to incppect clients
-    {
-        Impl->DrawLists = std::move(drawLists);
-    }
+    Impl->DrawLists = MoveTemp(DrawLists);
 
-    return result;
+    return Result;
 }
 
 bool ImGuiWS::SetDrawInfo(FDrawInfo&& DrawInfo)
 {
-    Impl->DrawInfo = std::move(DrawInfo);
+    Impl->DrawInfo = MoveTemp(DrawInfo);
     return true;
 }
 

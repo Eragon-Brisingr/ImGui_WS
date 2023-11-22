@@ -55,11 +55,13 @@ public:
     //
     // examples:
     //
-    //   var("path0", [](auto ) { ... });
-    //   var("path1[%d]", [](auto idxs) { ... idxs[0] ... });
-    //   var("path2[%d].foo[%d]", [](auto idxs) { ... idxs[0], idxs[1] ... });
+    //   Var("path0", [](auto ) { ... });
+    //   Var("path1[%d]", [](auto idxs) { ... idxs[0] ... });
+    //   Var("path2[%d].foo[%d]", [](auto idxs) { ... idxs[0], idxs[1] ... });
     //
-    bool var(const TPath& path, TGetter && getter);
+    void Var(const TPath& Path, TGetter&& Getter);
+    // direct send event to server
+    void ServerEvent(int32 ClientId, int32 EventId, TArray<uint8>&& Payload);
 
     // handle input from the clients
     void SetHandler(THandler && handler);

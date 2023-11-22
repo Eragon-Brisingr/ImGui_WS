@@ -12,6 +12,10 @@ const EventType = {
     InputText : '13 ',
 };
 
+const ServerEventType = {
+    SetClipboardText : 0,
+};
+
 var imgui_ws = {
     canvas: null,
     gl: null,
@@ -59,6 +63,18 @@ var imgui_ws = {
         const vKey = 86;
         const cKey = 67;
         const xKey = 88;
+
+        incppect.event_handle = function(event_id, payload){
+            switch (event_id)
+            {
+                case ServerEventType.SetClipboardText:
+                    let clipboard_text = incppect.abut_to_str(payload);
+                    navigator.clipboard.writeText(clipboard_text);
+                    break;
+                default:
+                    console.error("to server event %s not handle", event_id);
+            }
+        };
 
         let onkeyup = (event) => {
             if (event.keyCode === ctrlKey || event.keyCode === cmdKey) {

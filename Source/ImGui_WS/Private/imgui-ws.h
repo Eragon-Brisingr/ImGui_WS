@@ -85,18 +85,18 @@ public:
     bool SetDrawData(const struct ImDrawData* DrawData);
     struct FDrawInfo
     {
-        int32 mouseCursor = 0;
-        std::string clipboardText;
-        int32 controlId;
-        uint32 controlIp;
-        float mousePosX;
-        float mousePosY;
-        float viewportSizeX;
-        float viewportSizeY;
+        int32 MouseCursor = 0;
+        int32 ControlId;
+        uint32 ControlIp;
+        float MousePosX;
+        float MousePosY;
+        float ViewportSizeX;
+        float ViewportSizeY;
         uint8 bWantTextInput;
     };
     bool SetDrawInfo(FDrawInfo&& DrawInfo);
-    bool addVar(const TPath& Path, TGetter&& Getter);
+    void AddVar(const TPath& Path, TGetter&& Getter);
+    void AddServerEvent(int32 ClientId, int32 EventId, TArray<uint8>&& Payload);
 
     int32 NumConnected() const;
 

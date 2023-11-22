@@ -185,11 +185,18 @@ public:
 	TArray<ANSICHAR> IniFileNameArray;
 	ImFontAtlas FontAtlas;
 	float DPIScale = 1.f;
-	TTripleBuffer<std::string> ClipboardTextTripleBuffer;
 
 	FCriticalSection RecordCriticalSection;
 	TSharedPtr<ImGuiWS_Record::Session, ESPMode::ThreadSafe> RecordSession;
 	TUniquePtr<ImGuiWS_Record::FImGuiWS_Replay> RecordReplay;
+
+	struct EServerEventType
+	{
+		enum Type : int32
+		{
+			SetClipboardText
+		};
+	};
 
 	explicit FImpl(UImGui_WS_Manager& Manager)
 		: Manager(Manager)
@@ -253,13 +260,15 @@ public:
 		ImGui::MergeIconsWithLatestFont(12.f * DPIScale, false);
 
 		IO.MouseDrawCursor = false;
-
-		static auto SetClipboardTextFn_DefaultImpl = [](void* user_data, const char* text)
+		IO.SetClipboardTextFn = [](void* user_data, const char* text)
 		{
 			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
-			Manager->Impl->ClipboardTextTripleBuffer.WriteAndSwap(text);
+			const int32 Len = FCStringAnsi::Strlen(text);
+			TArray<uint8> Payload;
+			Payload.SetNumUninitialized(Len + 1);
+			FMemory::Memcpy(Payload.GetData(), text, Len + 1);
+			Manager->Impl->ImGuiWS.AddServerEvent(Manager->Impl->State.CurControlId, EServerEventType::SetClipboardText, MoveTemp(Payload));
 		};
-		IO.SetClipboardTextFn = SetClipboardTextFn_DefaultImpl;
 
 		// Enable Docking
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -323,7 +332,7 @@ public:
 		// prepare font texture
 		{
 			unsigned char* pixels;
-			int width, height;
+			int32 width, height;
 			ImGui::GetIO().Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
 			ImGuiWS.SetTexture(0, ImGuiWS::FTexture::Type::Alpha8, width, height, pixels);
 		}
@@ -387,7 +396,7 @@ private:
 			uint32 Ip;
 		};
 
-		int CurControlId = -1;
+		int32 CurControlId = -1;
 		bool bIsIdControlChanged = false;
 		TMap<int32, ClientData> Clients;
 
@@ -959,13 +968,11 @@ private:
 			const TSharedPtr<FImGuiData> ImGuiData = ImGuiDataTripleBuffer.SwapAndRead();
 			{
 				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
-				const std::string ClipboardText = ClipboardTextTripleBuffer.IsDirty() ? ClipboardTextTripleBuffer.SwapAndRead() : "";
 				const ImVec2 MousePos = ImGuiData->MousePos;
 				const ImVec2 ViewportSize = ImGuiData->ViewportSize;
 				ImGuiWS.SetDrawData(&ImGuiData->CopiedDrawData);
 				ImGuiWS.SetDrawInfo({
 					ImGuiData->MouseCursor,
-					ClipboardText,
 					ImGuiData->ControlId,
 					ImGuiData->ControlIp,
 					MousePos.x,

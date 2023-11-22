@@ -162,11 +162,6 @@
                     ];
                 canvas_main.style.cursor = mouse_cursor_type[mouse_cursor + 1];
 
-                let clipboard_text = this.get_str('imgui.clipboard');
-                if (clipboard_text.length > 0) {
-                    navigator.clipboard.writeText(clipboard_text);
-                }
-
                 let want_input_text = this.get_uint8('imgui.want_input_text');
                 if (want_input_text)
                 {

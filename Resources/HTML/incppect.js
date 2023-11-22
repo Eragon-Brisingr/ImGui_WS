@@ -37,6 +37,11 @@
         rx_bytes: 0,
     },
 
+    // event handle
+    event_handle : function(event_id, payload) {
+        console.assert(false);
+    },
+
     timestamp: function() {
         return window.performance && window.performance.now && window.performance.timing &&
         window.performance.timing.navigationStart ? window.performance.now() + window.performance.timing.navigationStart : Date.now();
@@ -197,18 +202,14 @@
         return new Float64Array(abuf);
     },
 
+    abut_to_str: function (abuf) {
+        let enc = new TextDecoder("utf-8");
+        return enc.decode(new Uint8Array(abuf));
+    },
+
     get_str: function(path, ...args) {
         var abuf = this.get(path, ...args);
-        var enc = new TextDecoder("utf-8");
-        var res = enc.decode(new Uint8Array(abuf));
-        var output = "";
-        for (var i = 0; i < res.length; i++) {
-            if (res.charCodeAt(i) == 0) break;
-            if (res.charCodeAt(i) <= 127) {
-                output += res.charAt(i);
-            }
-        }
-        return output;
+        return this.abut_to_str(abuf);
     },
 
     set_data_num: function (data, num) {
@@ -342,7 +343,8 @@
             offset_new = offset + len/4;
             if (type === 0) {
                 this.vars_map[this.id_to_var[id]] = this.last_data.slice(4*offset, 4*offset_new);
-            } else {
+            }
+            else if (type === 1) {
                 const src_view = new Uint32Array(this.last_data, 4 * offset);
                 const dst_view = new Uint32Array(this.vars_map[this.id_to_var[id]]);
 
@@ -355,6 +357,12 @@
                         ++k;
                     }
                 }
+            }
+            else if (type === 2) {
+                this.event_handle(id, this.last_data.slice(4*offset, 4*offset_new));
+            }
+            else {
+                console.assert(false);
             }
             offset = offset_new;
         }

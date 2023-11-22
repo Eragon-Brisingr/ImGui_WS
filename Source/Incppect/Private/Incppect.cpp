@@ -39,6 +39,13 @@ struct FIncppect::FImpl
         TMap<int32, FRequest> Requests;
 
         TArray<uint8> PrevBuffer;
+
+        struct FToServerEvent
+        {
+            int32 EventId;
+            TArray<uint8> Payload;
+        };
+        TArray<FToServerEvent> ToServerEvents;
     };
 
     struct FPerSocketData
@@ -267,6 +274,23 @@ struct FIncppect::FImpl
                 CurBuffer.Append(reinterpret_cast<uint8*>(&TypeAll), sizeof(TypeAll));
             }
 
+            static auto GetPaddingBytes = [](int32& DataSizeBytes)
+            {
+                constexpr int32 kPadding = 4;
+
+                int32 PaddingBytes = 0;
+                {
+                    int32 r = DataSizeBytes%kPadding;
+                    while (r > 0 && r < kPadding)
+                    {
+                        ++DataSizeBytes;
+                        ++PaddingBytes;
+                        ++r;
+                    }
+                }
+                return PaddingBytes;
+            };
+
             for (auto& [RequestId, Req] : ClientData.Requests)
             {
                 DECLARE_SCOPE_CYCLE_COUNTER(TEXT("Incppect_Getter"), STAT_Incppect_Getter, STATGROUP_Incppect);
@@ -285,19 +309,8 @@ struct FIncppect::FImpl
                     TArrayView<uint8> CurData{ (uint8*)GetterData.data(), (int32)GetterData.size() };
                     Req.LastUpdatedMs = CurMS;
 
-                    constexpr int32 kPadding = 4;
-
                     int32 DataSizeBytes = CurData.Num();
-                    int32 PaddingBytes = 0;
-                    {
-                        int32 r = DataSizeBytes%kPadding;
-                        while (r > 0 && r < kPadding)
-                        {
-                            ++DataSizeBytes;
-                            ++PaddingBytes;
-                            ++r;
-                        }
-                    }
+                    int32 PaddingBytes = GetPaddingBytes(DataSizeBytes);
 
                     int32 Type = 0; // full update
                     if (Req.PrevData.Num() == CurData.Num() + PaddingBytes && CurData.Num() > 256)
@@ -379,6 +392,27 @@ struct FIncppect::FImpl
 
                     Req.PrevData = CurData;
                 }
+            }
+
+            if (ClientData.ToServerEvents.Num() > 0)
+            {
+                for (const auto& Event : ClientData.ToServerEvents)
+                {
+                    CurBuffer.Append(reinterpret_cast<const uint8*>(&Event.EventId), sizeof(Event.EventId));
+                    int32 Type = 2; // to server event
+                    CurBuffer.Append(reinterpret_cast<const uint8*>(&Type), sizeof(Type));
+                    int32 DataSizeBytes = Event.Payload.Num();
+                    const int32 PaddingBytes = GetPaddingBytes(DataSizeBytes);
+                    CurBuffer.Append(reinterpret_cast<uint8*>(&DataSizeBytes), sizeof(DataSizeBytes));
+                    CurBuffer.Append(Event.Payload);
+                    {
+                        for (int32 i = 0; i < PaddingBytes; ++i)
+                        {
+                            CurBuffer.Add(0);
+                        }
+                    }
+                }
+                ClientData.ToServerEvents.Empty();
             }
 
             if (CurBuffer.Num() > 4)
@@ -467,10 +501,10 @@ FIncppect::~FIncppect()
 void FIncppect::Init(const FParameters& Parameters)
 {
     Impl = MakeUnique<FImpl>();
-    var(TEXT("incppect.nclients"), [this](const TIdxs& ) { return view(Impl->SocketDataMap.Num()); });
-    var(TEXT("incppect.tx_total"), [this](const TIdxs& ) { return view(Impl->TxTotalBytes); });
-    var(TEXT("incppect.rx_total"), [this](const TIdxs& ) { return view(Impl->RxTotalBytes); });
-    var(TEXT("incppect.ip_address[%d]"), [this](const TIdxs& idxs)
+    Var(TEXT("incppect.nclients"), [this](const TIdxs& ) { return view(Impl->SocketDataMap.Num()); });
+    Var(TEXT("incppect.tx_total"), [this](const TIdxs& ) { return view(Impl->TxTotalBytes); });
+    Var(TEXT("incppect.rx_total"), [this](const TIdxs& ) { return view(Impl->RxTotalBytes); });
+    Var(TEXT("incppect.ip_address[%d]"), [this](const TIdxs& idxs)
     {
         const auto& ClientData = Impl->ClientDataMap[idxs[0]];
         return view(ClientData.IpAddress);
@@ -495,12 +529,18 @@ int32 FIncppect::NumConnected() const
     return Impl->SocketDataMap.Num();
 }
 
-bool FIncppect::var(const TPath& path, TGetter && getter)
+void FIncppect::Var(const TPath& Path, TGetter&& Getter)
 {
-    Impl->PathToGetter.Add(path, Impl->Getters.Num());
-    Impl->Getters.Emplace(getter);
+    Impl->PathToGetter.Add(Path, Impl->Getters.Num());
+    Impl->Getters.Emplace(Getter);
+}
 
-    return true;
+void FIncppect::ServerEvent(int32 ClientId, int32 EventId, TArray<uint8>&& Payload)
+{
+    if (const auto ClientData = Impl->ClientDataMap.Find(ClientId))
+    {
+        ClientData->ToServerEvents.Add({ EventId, MoveTemp(Payload) });
+    }
 }
 
 void FIncppect::SetHandler(THandler && handler)
