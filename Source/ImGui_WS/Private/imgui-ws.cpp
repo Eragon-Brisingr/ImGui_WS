@@ -40,7 +40,7 @@ struct ImGuiWS::FImpl
     ImDrawDataCompressor::Interface::DrawLists DrawLists;
     FDrawInfo DrawInfo;
 
-    std::deque<FEvent> Events;
+    TQueue<FEvent> Events;
 
     FIncppect Incpp;
 
@@ -299,7 +299,7 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
                 break;
         }
 
-        Impl->Events.push_back(MoveTemp(Event));
+        Impl->Events.Enqueue(MoveTemp(Event));
     });
 
     return true;
@@ -395,8 +395,7 @@ int32 ImGuiWS::NumConnected() const
     return Impl->NumConnected;
 }
 
-std::deque<ImGuiWS::FEvent> ImGuiWS::TakeEvents()
+TQueue<ImGuiWS::FEvent>& ImGuiWS::TakeEvents()
 {
-    std::deque<ImGuiWS::FEvent> Res{ MoveTemp(Impl->Events) };
-    return Res;
+    return Impl->Events;
 }

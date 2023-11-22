@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <vector>
-#include <queue>
 #include <string>
 #include <memory>
 
@@ -102,7 +100,7 @@ public:
 
     int32 NumConnected() const;
 
-    std::deque<FEvent> TakeEvents();
+    TQueue<FEvent>& TakeEvents();
 private:
     struct FImpl;
     TUniquePtr<FImpl> Impl;

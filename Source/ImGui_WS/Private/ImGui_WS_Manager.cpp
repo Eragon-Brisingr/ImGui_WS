@@ -911,11 +911,13 @@ private:
 	    ImGui::NewFrame();
 
 	    // websocket event handling
-	    const auto Events = ImGuiWS.TakeEvents();
-	    for (const ImGuiWS::FEvent& Event : Events)
+		auto& Events = ImGuiWS.TakeEvents();
+		while (Events.IsEmpty() == false)
 		{
+			ImGuiWS::FEvent Event;
+			Events.Dequeue(Event);
 	        State.Handle(Event);
-	    }
+		}
 	    State.Update();
 
 	    ImGuiIO& IO = ImGui::GetIO();
