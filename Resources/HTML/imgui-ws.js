@@ -173,7 +173,7 @@ var imgui_ws = {
                 return;
             }
 
-            var touches = event.changedTouches,
+            let touches = event.changedTouches,
                 first = touches[0],
                 type = "";
 
@@ -188,7 +188,7 @@ var imgui_ws = {
             //                screenX, screenY, clientX, clientY, ctrlKey,
             //                altKey, shiftKey, metaKey, button, relatedTarget);
 
-            var simulatedEvent = document.createEvent("MouseEvent");
+            const simulatedEvent = document.createEvent("MouseEvent");
             simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0/*left*/, null);
 
             first.target.dispatchEvent(simulatedEvent);
@@ -227,7 +227,7 @@ var imgui_ws = {
         this.vertex_buffer = this.gl.createBuffer();
         this.index_buffer = this.gl.createBuffer();
 
-        var vertex_shader_source = [
+        const vertex_shader_source = [
             'precision mediump float;' +
             'uniform mat4 ProjMtx;' +
             'attribute vec2 Position;' +
@@ -242,11 +242,11 @@ var imgui_ws = {
             '}'
         ];
 
-        var vertex_shader = this.gl.createShader(this.gl.VERTEX_SHADER);
+        const vertex_shader = this.gl.createShader(this.gl.VERTEX_SHADER);
         this.gl.shaderSource(vertex_shader, vertex_shader_source);
         this.gl.compileShader(vertex_shader);
 
-        var fragment_shader_source = [
+        const fragment_shader_source = [
             'precision mediump float;' +
             'uniform sampler2D Texture;' +
             'varying vec2 Frag_UV;' +
@@ -256,7 +256,7 @@ var imgui_ws = {
             '}'
         ];
 
-        var fragment_shader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+        const fragment_shader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
         this.gl.shaderSource(fragment_shader, fragment_shader_source);
         this.gl.compileShader(fragment_shader);
 
@@ -273,13 +273,13 @@ var imgui_ws = {
     },
 
     incppect_textures: function(incppect) {
-        var n_textures = incppect.get_int32('imgui.n_textures');
+        const n_textures = incppect.get_int32('imgui.n_textures');
 
-        for (var i = 0; i < n_textures; ++i) {
-            var tex_id = incppect.get_int32('imgui.texture_id[%d]', i);
+        for (let i = 0; i < n_textures; ++i) {
+            const tex_id = incppect.get_int32('imgui.texture_id[%d]', i);
             if (tex_id !== undefined)
             {
-                var tex_rev = incppect.get_int32('imgui.texture_revision[%d]', tex_id);
+                const tex_rev = incppect.get_int32('imgui.texture_revision[%d]', tex_id);
 
                 if (this.tex_map_abuf[tex_id] == null || this.tex_map_abuf[tex_id].byteLength < 1) {
                     this.tex_map_abuf[tex_id] = incppect.get_abuf('imgui.texture_data[%d]', tex_id);
@@ -292,43 +292,43 @@ var imgui_ws = {
     },
 
     init_tex: function(tex_id, tex_rev, tex_abuf) {
-        var tex_abuf_uint8 = new Uint8Array(tex_abuf);
-        var tex_abuf_int32 = new Int32Array(tex_abuf);
+        const tex_abuf_uint8 = new Uint8Array(tex_abuf);
+        const tex_abuf_int32 = new Int32Array(tex_abuf);
 
         const type = tex_abuf_int32[1];
         const width = tex_abuf_int32[2];
         const height = tex_abuf_int32[3];
         const revision = tex_abuf_int32[4];
 
-        if (this.tex_map_rev[tex_id] && revision == this.tex_map_rev[tex_id]) {
+        if (this.tex_map_rev[tex_id] && revision === this.tex_map_rev[tex_id]) {
             return;
         }
 
-        var pixels = new Uint8Array(4*width*height);
+        const pixels = new Uint8Array(4 * width * height);
 
-        if (type == 0) { // Alpha8
-            for (var i = 0; i < width*height; ++i) {
+        if (type === 0) { // Alpha8
+            for (let i = 0; i < width*height; ++i) {
                 pixels[4*i + 0] = 0xFF;
                 pixels[4*i + 1] = 0xFF;
                 pixels[4*i + 2] = 0xFF;
                 pixels[4*i + 3] = tex_abuf_uint8[20 + i];
             }
-        } else if (type == 1) { // Gray8
-            for (var i = 0; i < width*height; ++i) {
+        } else if (type === 1) { // Gray8
+            for (let i = 0; i < width*height; ++i) {
                 pixels[4*i + 0] = tex_abuf_uint8[20 + i];
                 pixels[4*i + 1] = tex_abuf_uint8[20 + i];
                 pixels[4*i + 2] = tex_abuf_uint8[20 + i];
                 pixels[4*i + 3] = 0xFF;
             }
-        } else if (type == 2) { // RGB24
-            for (var i = 0; i < width*height; ++i) {
+        } else if (type === 2) { // RGB24
+            for (let i = 0; i < width*height; ++i) {
                 pixels[4*i + 0] = tex_abuf_uint8[20 + 3*i + 0];
                 pixels[4*i + 1] = tex_abuf_uint8[20 + 3*i + 1];
                 pixels[4*i + 2] = tex_abuf_uint8[20 + 3*i + 2];
                 pixels[4*i + 3] = 0xFF;
             }
-        } else if (type == 3) { // RGBA32
-            for (var i = 0; i < width*height; ++i) {
+        } else if (type === 3) { // RGBA32
+            for (let i = 0; i < width*height; ++i) {
                 pixels[4*i + 0] = tex_abuf_uint8[20 + 4*i + 0];
                 pixels[4*i + 1] = tex_abuf_uint8[20 + 4*i + 1];
                 pixels[4*i + 2] = tex_abuf_uint8[20 + 4*i + 2];
@@ -355,7 +355,7 @@ var imgui_ws = {
         this.n_draw_lists = incppect.get_int32('imgui.n_draw_lists');
         if (this.n_draw_lists < 1) return;
 
-        for (var i = 0; i < this.n_draw_lists; ++i) {
+        for (let i = 0; i < this.n_draw_lists; ++i) {
             this.draw_lists_abuf[i] = incppect.get_abuf('imgui.draw_list[%d]', i);
         }
     },
@@ -396,8 +396,8 @@ var imgui_ws = {
 
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
-        var clip_off_x = 0.0;
-        var clip_off_y = 0.0;
+        const clip_off_x = 0.0;
+        const clip_off_y = 0.0;
 
         const L = clip_off_x;
         const R = clip_off_x + this.canvas.width;
@@ -414,21 +414,24 @@ var imgui_ws = {
 
         this.gl.enable(this.gl.SCISSOR_TEST);
 
-        for (var i_list = 0; i_list < n_draw_lists; ++i_list) {
+        for (let i_list = 0; i_list < n_draw_lists; ++i_list) {
             if (draw_lists_abuf[i_list].byteLength < 1) continue;
 
-            var draw_data_offset = 0;
+            let draw_data_offset = 0;
 
-            var p = new Float32Array(draw_lists_abuf[i_list], draw_data_offset, 2);
-            var offset_x = p[0]; draw_data_offset += 4;
-            var offset_y = p[1]; draw_data_offset += 4;
+            let p = new Float32Array(draw_lists_abuf[i_list], draw_data_offset, 2);
+            const offset_x = p[0];
+            draw_data_offset += 4;
+            const offset_y = p[1];
+            draw_data_offset += 4;
 
             p = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, 1);
-            var n_vertices = p[0]; draw_data_offset += 4;
+            const n_vertices = p[0];
+            draw_data_offset += 4;
 
-            var av = new Float32Array(draw_lists_abuf[i_list], draw_data_offset, 5*n_vertices);
+            const av = new Float32Array(draw_lists_abuf[i_list], draw_data_offset, 5 * n_vertices);
 
-            for (var k = 0; k < n_vertices; ++k) {
+            for (let k = 0; k < n_vertices; ++k) {
                 av[5*k + 0] += offset_x;
                 av[5*k + 1] += offset_y;
             }
@@ -436,7 +439,7 @@ var imgui_ws = {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
             this.gl.bufferData(this.gl.ARRAY_BUFFER, av, this.gl.STREAM_DRAW);
 
-            for (var k = 0; k < n_vertices; ++k) {
+            for (let k = 0; k < n_vertices; ++k) {
                 av[5*k + 0] -= offset_x;
                 av[5*k + 1] -= offset_y;
             }
@@ -444,29 +447,29 @@ var imgui_ws = {
             draw_data_offset += 5*4*n_vertices;
 
             p = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, 1);
-            var n_indices = p[0]; draw_data_offset += 4;
+            const n_indices = p[0]; draw_data_offset += 4;
 
-            var ai = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, n_indices);
+            const ai = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, n_indices);
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
             this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, ai, this.gl.STREAM_DRAW);
             draw_data_offset += 4*n_indices;
 
             p = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, 1);
-            var n_cmd = p[0]; draw_data_offset += 4;
+            const n_cmd = p[0]; draw_data_offset += 4;
 
-            for (var i_cmd = 0; i_cmd < n_cmd; ++i_cmd) {
-                var pi = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, 4);
-                var n_elements = pi[0]; draw_data_offset += 4;
+            for (let i_cmd = 0; i_cmd < n_cmd; ++i_cmd) {
+                const pi = new Uint32Array(draw_lists_abuf[i_list], draw_data_offset, 4);
+                const n_elements = pi[0]; draw_data_offset += 4;
                 // uint32 -> int32
-                var texture_id = (pi[1] << 0); draw_data_offset += 4;
-                var offset_vtx = pi[2]; draw_data_offset += 4;
-                var offset_idx = pi[3]; draw_data_offset += 4;
+                const texture_id = (pi[1] << 0); draw_data_offset += 4;
+                const offset_vtx = pi[2]; draw_data_offset += 4;
+                const offset_idx = pi[3]; draw_data_offset += 4;
 
-                var pf = new Float32Array(draw_lists_abuf[i_list], draw_data_offset, 4);
-                var clip_x = pf[0] - clip_off_x; draw_data_offset += 4;
-                var clip_y = pf[1] - clip_off_y; draw_data_offset += 4;
-                var clip_z = pf[2] - clip_off_x; draw_data_offset += 4;
-                var clip_w = pf[3] - clip_off_y; draw_data_offset += 4;
+                const pf = new Float32Array(draw_lists_abuf[i_list], draw_data_offset, 4);
+                const clip_x = pf[0] - clip_off_x; draw_data_offset += 4;
+                const clip_y = pf[1] - clip_off_y; draw_data_offset += 4;
+                const clip_z = pf[2] - clip_off_x; draw_data_offset += 4;
+                const clip_w = pf[3] - clip_off_y; draw_data_offset += 4;
 
                 if (clip_x < this.canvas.width && clip_y < this.canvas.height && clip_z >= 0.0 && clip_w >= 0.0) {
                     this.gl.scissor(clip_x, this.canvas.height - clip_w, clip_z - clip_x, clip_w - clip_y);

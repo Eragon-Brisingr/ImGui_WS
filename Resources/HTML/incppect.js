@@ -48,10 +48,10 @@
     },
 
     init: function() {
-        var onopen = this.onopen.bind(this);
-        var onclose = this.onclose.bind(this);
-        var onmessage = this.onmessage.bind(this);
-        var onerror = this.onerror.bind(this);
+        const onopen = this.onopen.bind(this);
+        const onclose = this.onclose.bind(this);
+        const onmessage = this.onmessage.bind(this);
+        const onerror = this.onerror.bind(this);
 
         this.ws = new WebSocket(this.ws_uri);
         this.ws.binaryType = 'arraybuffer';
@@ -106,7 +106,7 @@
     },
 
     get: function(path, ...args) {
-        for (var i = 1; i < arguments.length; i++) {
+        for (let i = 1; i < arguments.length; i++) {
             path = path.replace('%d', arguments[i]);
         }
 
@@ -135,7 +135,7 @@
     },
 
     get_int8_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Int8Array(abuf);
     },
 
@@ -144,7 +144,7 @@
     },
 
     get_uint8_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Uint8Array(abuf);
     },
 
@@ -153,7 +153,7 @@
     },
 
     get_int16_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Int16Array(abuf);
     },
 
@@ -162,7 +162,7 @@
     },
 
     get_uint16_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Uint16Array(abuf);
     },
 
@@ -171,7 +171,7 @@
     },
 
     get_int32_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Int32Array(abuf);
     },
 
@@ -180,7 +180,7 @@
     },
 
     get_uint32_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Uint32Array(abuf);
     },
 
@@ -189,7 +189,7 @@
     },
 
     get_float_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Float32Array(abuf);
     },
 
@@ -198,17 +198,17 @@
     },
 
     get_double_arr: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return new Float64Array(abuf);
     },
 
-    abut_to_str: function (abuf) {
+    abut_to_str: function(abuf) {
         let enc = new TextDecoder("utf-8");
         return enc.decode(new Uint8Array(abuf));
     },
 
     get_str: function(path, ...args) {
-        var abuf = this.get(path, ...args);
+        const abuf = this.get(path, ...args);
         return this.abut_to_str(abuf);
     },
 
@@ -220,8 +220,8 @@
     },
 
     send: function(msg) {
-        var enc_msg = new TextEncoder().encode(msg);
-        var data = new Int8Array(8 + enc_msg.length + 1);
+        const enc_msg = new TextEncoder().encode(msg);
+        const data = new Int8Array(8 + enc_msg.length + 1);
         this.set_data_num(data, data.length - 4);
         data[4] = 4;
         data.set(enc_msg, 8);
@@ -233,16 +233,20 @@
     },
 
     send_var_to_id_map: function() {
-        var msg = '';
-        var delim = this.k_var_delim;
-        for (var key in this.var_to_id) {
-            var nidxs = 0;
-            var idxs = delim;
-            var keyp = key.replace(/\[-?\d*\]/g, function(m) { ++nidxs; idxs += m.replace(/[\[\]]/g, '') + delim; return '[%d]'; });
+        let msg = '';
+        const delim = this.k_var_delim;
+        for (const key in this.var_to_id) {
+            let nidxs = 0;
+            let idxs = delim;
+            const keyp = key.replace(/\[-?\d*\]/g, function (m) {
+                ++nidxs;
+                idxs += m.replace(/[\[\]]/g, '') + delim;
+                return '[%d]';
+            });
             msg += keyp + delim + this.var_to_id[key].toString() + delim + nidxs + idxs;
         }
-        var data = new Int8Array(8 + msg.length + 1);
-        var enc = new TextEncoder();
+        const data = new Int8Array(8 + msg.length + 1);
+        const enc = new TextEncoder();
         this.set_data_num(data, data.length - 4);
         data[4] = 1;
         data.set(enc.encode(msg), 8);
@@ -254,11 +258,11 @@
     },
 
     send_requests: function() {
-        var same = true;
+        let same = true;
         if (this.requests_old === null || this.requests.length !== this.requests_old.length){
             same = false;
         } else {
-            for (var i = 0; i < this.requests.length; ++i) {
+            for (let i = 0; i < this.requests.length; ++i) {
                 if (this.requests[i] !== this.requests_old[i]) {
                     same = false;
                     break;
@@ -332,8 +336,8 @@
         let type = 0;
         let len = 0;
         while (4*offset < total_size) {
-            id = int_view[offset + 0];
-            type = int_view[offset + 1];
+            type = int_view[offset];
+            id = int_view[offset + 1];
             len = int_view[offset + 2];
             if ((len / 4) % 1 !== 0)
             {
@@ -350,7 +354,7 @@
 
                 let k = 0;
                 for (let i = 0; i < len/8; ++i) {
-                    const n = src_view[2 * i + 0];
+                    const n = src_view[2 * i];
                     const c = src_view[2 * i + 1];
                     for (let j = 0; j < n; ++j) {
                         dst_view[k] = dst_view[k] ^ c;

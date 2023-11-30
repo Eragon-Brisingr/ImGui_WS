@@ -318,8 +318,8 @@ struct FIncppect::FImpl
                         Type = 1; // run-length encoding of diff
                     }
 
-                    CurBuffer.Append(reinterpret_cast<uint8*>(&RequestId), sizeof(RequestId));
                     CurBuffer.Append(reinterpret_cast<uint8*>(&Type), sizeof(Type));
+                    CurBuffer.Append(reinterpret_cast<uint8*>(&RequestId), sizeof(RequestId));
 
                     if (Type == 0)
                     {
@@ -398,9 +398,9 @@ struct FIncppect::FImpl
             {
                 for (const auto& Event : ClientData.ToServerEvents)
                 {
-                    CurBuffer.Append(reinterpret_cast<const uint8*>(&Event.EventId), sizeof(Event.EventId));
                     int32 Type = 2; // to server event
                     CurBuffer.Append(reinterpret_cast<const uint8*>(&Type), sizeof(Type));
+                    CurBuffer.Append(reinterpret_cast<const uint8*>(&Event.EventId), sizeof(Event.EventId));
                     int32 DataSizeBytes = Event.Payload.Num();
                     const int32 PaddingBytes = GetPaddingBytes(DataSizeBytes);
                     CurBuffer.Append(reinterpret_cast<uint8*>(&DataSizeBytes), sizeof(DataSizeBytes));
