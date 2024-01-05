@@ -8,6 +8,9 @@
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
+#include "UObject/EnumProperty.h"
+#include "UObject/Package.h"
+#include "UObject/TextProperty.h"
 
 namespace UnrealImGui
 {

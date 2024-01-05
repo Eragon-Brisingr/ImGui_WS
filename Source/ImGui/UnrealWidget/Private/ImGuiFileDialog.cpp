@@ -12,6 +12,7 @@
 #include "imgui_notify.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
+#include "Framework/Application/SlateApplication.h"
 
 namespace UnrealImGui
 {

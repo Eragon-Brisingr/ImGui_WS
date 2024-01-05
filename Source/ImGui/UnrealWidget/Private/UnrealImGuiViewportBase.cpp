@@ -5,6 +5,9 @@
 
 #include "imgui.h"
 #include "UnrealImGuiViewportExtent.h"
+#include "Engine/GameViewportClient.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 
 namespace UnrealImGui::Viewport::EFilterType

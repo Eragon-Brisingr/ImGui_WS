@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Math/TransformCalculus2D.h"
 
 namespace UnrealImGui
 {

@@ -5,8 +5,10 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include <string>
-#include <memory>
+
+#include "Containers/Queue.h"
 
 class ImGuiWS
 {

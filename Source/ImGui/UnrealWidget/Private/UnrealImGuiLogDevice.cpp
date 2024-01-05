@@ -5,6 +5,8 @@
 
 #include "imgui.h"
 #include "UnrealImGuiStat.h"
+#include "Async/Async.h"
+#include "HAL/IConsoleManager.h"
 
 DECLARE_MEMORY_STAT(TEXT("UnrealImGuiOutputDevice_Logs"), Stat_UnrealImGuiOutputDevice_Logs, STATGROUP_ImGui);
 

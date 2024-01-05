@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DeveloperSettings.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Subsystems/EngineSubsystem.h"
 #include "ImGui_WS_Manager.generated.h"

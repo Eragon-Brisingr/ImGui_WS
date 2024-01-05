@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "UnrealImGuiPropertyDetails.h"
 
+class AActor;
+struct FAssetData;
 /**
  * 
  */

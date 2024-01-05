@@ -4,6 +4,7 @@
 #include "UnrealImGuiTexture.h"
 
 #include "ImageUtils.h"
+#include "TextureResource.h"
 #include "Engine/TextureRenderTarget2D.h"
 
 namespace UnrealImGui

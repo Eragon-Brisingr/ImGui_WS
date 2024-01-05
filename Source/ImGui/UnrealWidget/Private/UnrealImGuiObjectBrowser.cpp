@@ -9,6 +9,7 @@
 #include "UnrealImGuiPropertyDetails.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
+#include "UObject/Package.h"
 
 #define LOCTEXT_NAMESPACE "UnrealImGui"
 

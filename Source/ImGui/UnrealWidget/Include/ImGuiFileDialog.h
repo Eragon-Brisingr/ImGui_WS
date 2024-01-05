@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+
 namespace UnrealImGui
 {
 	enum class FileDialogType : uint8

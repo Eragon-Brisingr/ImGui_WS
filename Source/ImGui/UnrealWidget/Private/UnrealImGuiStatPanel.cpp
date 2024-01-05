@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "UnrealImGuiStat.h"
+#include "Engine/Engine.h"
 #include "Stats/StatsData.h"
 
 #define LOCTEXT_NAMESPACE "UnrealImGui"

@@ -7,8 +7,10 @@
 #include "imgui.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiWrapper.h"
+#include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
+#include "UObject/TextProperty.h"
 
 namespace UnrealImGui
 {

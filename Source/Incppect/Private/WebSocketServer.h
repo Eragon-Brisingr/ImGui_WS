@@ -11,6 +11,7 @@
 #else
 #include <netinet/in.h>
 #endif
+#include <string>
 
 typedef struct lws_context WebSocketInternalContext;
 typedef struct lws WebSocketInternal;

@@ -3,6 +3,8 @@
 
 #include "ImGuiWorldDebuggerDrawer.h"
 
+#include "GameFramework/Actor.h"
+
 
 UImGuiWorldDebuggerDrawer_Default::UImGuiWorldDebuggerDrawer_Default()
 {

@@ -11,6 +11,7 @@
 #include "ImGuiWorldDebuggerPanel.h"
 #include "UnrealImGuiStat.h"
 #include "GameFramework/PlayerController.h"
+#include "UObject/UObjectIterator.h"
 
 #define LOCTEXT_NAMESPACE "ImGuiWorldDebugger"
 

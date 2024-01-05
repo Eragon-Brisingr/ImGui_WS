@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "Engine/World.h"
 
 bool UImGuiEditorDefaultLayoutBase::ShouldCreateLayout(UObject* Owner) const
 {

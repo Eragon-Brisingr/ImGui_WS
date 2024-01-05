@@ -1,9 +1,13 @@
 #include "Incppect.h"
 
+#include <sstream>
+
 #include "LogIncppect.h"
 #include "WebSocketServer.h"
+#include "Stats/Stats.h"
+#include "Stats/Stats2.h"
 
-DECLARE_STATS_GROUP(TEXT("Incppect"), STATGROUP_Incppect, STATCAT_Advanced);
+DECLARE_STATS_GROUP (TEXT("Incppect"), STATGROUP_Incppect, STATCAT_Advanced);
 
 namespace
 {

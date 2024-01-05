@@ -19,9 +19,16 @@
 #include "UnrealImGui_Log.h"
 #include "WebKeyCodeToImGui.h"
 #include "Containers/TripleBuffer.h"
+#include "Engine/Engine.h"
+#include "HAL/IConsoleManager.h"
+#include "HAL/PlatformFileManager.h"
+#include "HAL/Thread.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/ScopeExit.h"
 #include "Record/imgui-ws-record.h"
 #include "Record/ImGuiWS_Replay.h"
+#include "UObject/Package.h"
 
 FAutoConsoleCommand LaunchImGuiWeb
 {
@@ -1136,9 +1143,12 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 		{
 			return true;
 		}
-		if (IsSettingsEnable() && IsEnable() == false)
+		if (IsSettingsEnable())
 		{
-			Enable();
+			if (IsEnable() == false)
+			{
+				Enable();
+			}
 		}
 		else
 		{

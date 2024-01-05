@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UnrealImGuiString.h"
+#include "Containers/Queue.h"
 #include "UnrealImGuiLogDevice.generated.h"
 
 struct FUnrealImGuiLogDevice;

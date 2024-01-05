@@ -6,13 +6,20 @@
 #include "ConsoleSettings.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "ShowFlags.h"
 #include "UnrealImGuiScope.h"
 #include "UnrealImGuiStat.h"
+#include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
 #include "Engine/LevelScriptActor.h"
+#include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Misc/DefaultValueHelper.h"
+#include "Misc/PackageName.h"
 #include "Stats/StatsData.h"
+#include "UObject/UObjectIterator.h"
 
 void FUnrealImGuiCmdDevice::SetCmdString(const FString InCmdString)
 {

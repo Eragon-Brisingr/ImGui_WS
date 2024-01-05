@@ -2,6 +2,7 @@
 
 #include "ImGui_Editor.h"
 
+#include "Editor.h"
 #include "ImGuiWorldDebuggerBase.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
 #include "ImGui_WS_Manager.h"
@@ -9,6 +10,7 @@
 #include "ToolMenus.h"
 #include "Editor/EditorPerformanceSettings.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Notifications/SNotificationList.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_EditorModule"

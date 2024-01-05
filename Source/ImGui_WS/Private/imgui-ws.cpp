@@ -16,6 +16,7 @@
 #include "imgui.h"
 #include "Incppect.h"
 #include "UnrealImGui_Log.h"
+#include "Containers/Queue.h"
 
 struct ImGuiWS::FImpl
 {
@@ -230,7 +231,7 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
                     int32 Type = -1;
                     ss >> Type;
 
-                    Event.Type = FEvent::EType{ Type };
+                    Event.Type = FEvent::EType{ static_cast<FEvent::EType>(Type) };
                     switch (Event.Type)
                     {
                         case FEvent::MouseMove:

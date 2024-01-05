@@ -9,6 +9,7 @@
 #include "ImGuiWorldDebuggerPanel.h"
 #include "ImGui_WS_Manager.h"
 #include "UnrealImGuiStat.h"
+#include "Engine/Engine.h"
 
 #define LOCTEXT_NAMESPACE "ImGuiWorldDebugger"
 

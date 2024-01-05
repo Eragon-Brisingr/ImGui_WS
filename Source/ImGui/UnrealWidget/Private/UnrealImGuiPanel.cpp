@@ -7,9 +7,9 @@
 #include "UnrealImGuiLayout.h"
 
 UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
-	: bIsOpen(false)
+	: ImGuiWindowFlags(ImGuiWindowFlags_None)
+	, bIsOpen(false)
 {
-	
 }
 
 void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)

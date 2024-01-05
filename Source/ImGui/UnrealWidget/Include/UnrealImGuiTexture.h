@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 
+class UTexture2D;
+class UTextureRenderTarget2D;
+class UTexture;
+
 namespace UnrealImGui
 {
 	struct IMGUI_API FImGuiTextureHandle
