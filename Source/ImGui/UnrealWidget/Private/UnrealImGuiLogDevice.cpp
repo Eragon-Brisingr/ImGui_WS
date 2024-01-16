@@ -148,22 +148,39 @@ namespace UnrealImGui
 
 FUnrealImGuiLogDevice::FUnrealImGuiLogDevice()
 	: VerbosityVisibility{ true, true, true, true, true, true, false }
+	, bRegister(false)
 	, bDisplayTime(false)
 	, bDisplayFrame(false)
 	, bIsFirstDraw(2)
 {}
 
+FUnrealImGuiLogDevice::~FUnrealImGuiLogDevice()
+{
+	if (bRegister)
+	{
+		Unregister();
+	}
+}
+
 void FUnrealImGuiLogDevice::Register()
 {
-	using namespace UnrealImGui;
-	GUnrealImGuiOutputDevice.Register(this);
+	if (!ensure(bRegister == false))
+	{
+		return;
+	}
+	bRegister = true;
+	UnrealImGui::GUnrealImGuiOutputDevice.Register(this);
 	RefreshDisplayLines();
 }
 
 void FUnrealImGuiLogDevice::Unregister()
 {
-	using namespace UnrealImGui;
-	GUnrealImGuiOutputDevice.Unregister(this);
+	if (!ensure(bRegister))
+	{
+		return;
+	}
+	bRegister = false;
+	UnrealImGui::GUnrealImGuiOutputDevice.Unregister(this);
 }
 
 void FUnrealImGuiLogDevice::Draw(UObject* Owner)

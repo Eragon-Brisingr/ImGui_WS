@@ -65,6 +65,7 @@ struct IMGUI_API FUnrealImGuiLogDevice
 	GENERATED_BODY()
 public:
 	FUnrealImGuiLogDevice();
+	~FUnrealImGuiLogDevice();
 
 	void Register();
 	void Unregister();
@@ -77,6 +78,7 @@ private:
 	UPROPERTY()
 	FString FilterString;
 
+	uint8 bRegister : 1;
 	UPROPERTY()
 	uint8 bDisplayTime : 1;
 	UPROPERTY()
