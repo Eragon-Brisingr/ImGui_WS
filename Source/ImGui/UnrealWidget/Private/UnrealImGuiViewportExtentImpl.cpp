@@ -159,66 +159,42 @@ void UUnrealImGuiViewportNavMeshExtent::DrawViewportContent(UObject* Owner, cons
 					{
 						dtMeshHeader const* const Header = Tile->header;
 
-						// 绘制NavMesh
+						// NavMesh
 						if (ViewportContext.ViewBounds.Intersect(FBox2D(FVector2D(TileBounds.Min), FVector2D(TileBounds.Max))))
 						{
 							constexpr ImU32 LayerColor = IM_COL32(0, 120, 0, 127);
-							TArray<ImVec2> Verts;
-							Verts.SetNumUninitialized(Header->vertCount);
-							for (int32 VertIdx = 0; VertIdx < Header->vertCount; ++VertIdx)
-							{
-								FVector const VertPos = Recast2UnrealPoint(&Tile->verts[VertIdx * 3]);
-								Verts[VertIdx] = ImVec2{ ViewportContext.WorldToScreenLocation(FVector2D(VertPos)) };
-							}
-
-							int32 const DetailVertIndexBase = Header->vertCount;
 							for (int32 PolyIdx = 0; PolyIdx < Header->polyCount; ++PolyIdx)
 							{
 								dtPoly const* const Poly = &Tile->polys[PolyIdx];
-
 								if (Poly->getType() == DT_POLYTYPE_GROUND)
 								{
 									dtPolyDetail const* const DetailPoly = &Tile->detailMeshes[PolyIdx];
 									for (int32 TriIdx = 0; TriIdx < DetailPoly->triCount; ++TriIdx)
 									{
-										int32 DetailTriIdx = (DetailPoly->triBase + TriIdx) * 4;
+										const int32 DetailTriIdx = (DetailPoly->triBase + TriIdx) * 4;
 										const unsigned char* DetailTri = &Tile->detailTris[DetailTriIdx];
 
-										// TODO：处理索引越界问题
-										bool HasErrorTris = false;
-
-										ImVec2 ImGuiPloyVerts[3];
-										// calc indices into the vert buffer we just populated
-										for (int32 TriVertIdx = 0; TriVertIdx < 3; ++TriVertIdx)
+										ImVec2 TriVertexes[3];
+										for (int32 TriVertIdx = 0; TriVertIdx < UE_ARRAY_COUNT(TriVertexes); ++TriVertIdx)
 										{
 											if (DetailTri[TriVertIdx] < Poly->vertCount)
 											{
-												ImGuiPloyVerts[TriVertIdx] = Verts[Poly->verts[DetailTri[TriVertIdx]]];
+												const int32 Idx = Poly->verts[DetailTri[TriVertIdx]];
+												TriVertexes[TriVertIdx] = ImVec2{ ViewportContext.WorldToScreenLocation(FVector2D{ Recast2UnrealPoint(&Tile->verts[Idx * 3]) }) };
 											}
 											else
 											{
-												const int32 Offset = DetailVertIndexBase + (DetailPoly->vertBase + DetailTri[TriVertIdx] - Poly->vertCount);
-												if (Verts.IsValidIndex(Offset))
-												{
-													ImGuiPloyVerts[TriVertIdx] = Verts[Offset];
-												}
-												else
-												{
-													HasErrorTris = true;
-													break;
-												}
+												const int32 Idx = DetailPoly->vertBase + DetailTri[TriVertIdx] - Poly->vertCount;
+												TriVertexes[TriVertIdx] = ImVec2{ ViewportContext.WorldToScreenLocation(FVector2D{ Recast2UnrealPoint(&Tile->detailVerts[Idx * 3]) }) };
 											}
 										}
-										if (HasErrorTris == false)
-										{
-											ViewportContext.DrawList->AddTriangleFilled(ImGuiPloyVerts[0], ImGuiPloyVerts[1], ImGuiPloyVerts[2], LayerColor);
-										}
+										ViewportContext.DrawList->AddTriangleFilled(TriVertexes[0], TriVertexes[1], TriVertexes[2], LayerColor);
 									}
 								}
 							}
 						}
 
-						// 绘制NavLink
+						// NavLink
 						for (int32 i = 0; i < Header->offMeshConCount; ++i)
 						{
 							constexpr FColor LinkColor{ 0, 255, 127, 127 };
