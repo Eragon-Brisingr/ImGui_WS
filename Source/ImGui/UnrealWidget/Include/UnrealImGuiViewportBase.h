@@ -32,6 +32,7 @@ public:
 	void Draw(UObject* Owner, float DeltaSeconds) override;
 
 	virtual bool ShouldCreateExtent(UObject* Owner, const TSubclassOf<UUnrealImGuiViewportExtentBase>& ExtentType) const { return true; }
+	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) {}
 	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) {}
 	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) {}
 

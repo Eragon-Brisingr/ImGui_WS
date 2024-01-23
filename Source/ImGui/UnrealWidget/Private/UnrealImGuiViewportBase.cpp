@@ -149,6 +149,20 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 		if (ImGui::BeginMenu("Viewport"))
 		{
 			DrawViewportMenu(Owner, bIsConfigDirty);
+			for (int32 Idx = Extents.Num() - 1; Idx >= 0; --Idx)
+			{
+				UUnrealImGuiViewportExtentBase* Extent = Extents[Idx];
+				if (Extent->bEnable == false)
+				{
+					continue;
+				}
+				bool bIsExtentConfigDirty = false;
+				Extent->DrawViewportMenu(Owner, bIsExtentConfigDirty);
+				if (bIsExtentConfigDirty)
+				{
+					Extent->SaveConfig();
+				}
+			}
 			ImGui::Separator();
 			if (ImGui::Button("To View Location"))
 			{
@@ -164,6 +178,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 			}
 			ImGui::EndMenu();
 		}
+		DrawMenu(Owner, bIsConfigDirty);
 		for (int32 Idx = Extents.Num() - 1; Idx >= 0; --Idx)
 		{
 			UUnrealImGuiViewportExtentBase* Extent = Extents[Idx];
@@ -172,7 +187,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 				continue;
 			}
 			bool bIsExtentConfigDirty = false;
-			Extent->DrawViewportMenu(Owner, bIsExtentConfigDirty);
+			Extent->DrawMenu(Owner, bIsExtentConfigDirty);
 			if (bIsExtentConfigDirty)
 			{
 				Extent->SaveConfig();
