@@ -249,7 +249,8 @@ namespace UnrealImGui
 	IMGUI_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 	IMGUI_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 
-	IMGUI_API UClass* GetTopClass(const FObjectArray& Instances, const UClass* StopClass = UObject::StaticClass());
+	IMGUI_API UClass* GetTopClass(const FObjectArray& Objects, const UClass* StopClass = UObject::StaticClass());
+	IMGUI_API const UStruct* GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct = nullptr);
 	
 	IMGUI_API bool IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
 	IMGUI_API FString GetPropertyDefaultLabel(const FProperty* Property, bool IsIdentical);

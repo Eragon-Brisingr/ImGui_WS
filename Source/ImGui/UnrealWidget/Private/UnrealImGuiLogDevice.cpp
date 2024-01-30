@@ -133,15 +133,11 @@ namespace UnrealImGui
 
 	void FUnrealImGuiOutputDevice::Register(FUnrealImGuiLogDevice* LogDevice)
 	{
-		check(LogDevices.Contains(LogDevice) == false);
-
 		LogDevices.Add(LogDevice);
 	}
 
 	void FUnrealImGuiOutputDevice::Unregister(FUnrealImGuiLogDevice* LogDevice)
 	{
-		check(LogDevices.Contains(LogDevice));
-
 		LogDevices.Remove(LogDevice);
 	}
 }

@@ -622,22 +622,20 @@ void UnrealImGui::DrawDetailTable(const char* str_id, const UClass* TopClass, co
 	}
 }
 
-UClass* UnrealImGui::GetTopClass(const FObjectArray& Instances, const UClass* StopClass)
+UClass* UnrealImGui::GetTopClass(const FObjectArray& Objects, const UClass* StopClass)
 {
-	check(Instances.Num() > 0);
-	UClass* TopClass = Instances[0]->GetClass();
-	for (const UObject* Entity : Instances)
+	check(Objects.Num() > 0);
+	UClass* TopClass = Objects[0]->GetClass();
+	for (int32 Idx = 1; Idx < Objects.Num(); ++Idx)
 	{
-		if (Entity == nullptr)
+		const UObject* Obj = Objects[Idx];
+		if (Obj == nullptr)
 		{
 			return nullptr;
 		}
-		for (; TopClass; TopClass = TopClass->GetSuperClass())
+		while (TopClass && !Obj->GetClass()->IsChildOf(TopClass))
 		{
-			if (Entity->GetClass()->IsChildOf(TopClass))
-			{
-				break;
-			}
+			TopClass = TopClass->GetSuperClass();
 		}
 		if (TopClass == StopClass)
 		{
@@ -645,6 +643,26 @@ UClass* UnrealImGui::GetTopClass(const FObjectArray& Instances, const UClass* St
 		}
 	}
 	return TopClass;
+}
+
+const UStruct* UnrealImGui::GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct)
+{
+	check(Structs.Num() > 0);
+	const UStruct* TopStruct = Structs[0];
+	for (int32 Idx = 1; Idx < Structs.Num(); ++Idx)
+	{
+		const UStruct* Struct = Structs[Idx];
+		check(Struct);
+		while (TopStruct && !Struct->IsChildOf(TopStruct))
+		{
+			TopStruct = TopStruct->GetSuperStruct();
+		}
+		if (TopStruct == StopStruct)
+		{
+			break;
+		}
+	}
+	return TopStruct;
 }
 
 bool UnrealImGui::IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset)

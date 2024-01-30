@@ -33,6 +33,7 @@ public:
 	void Unregister(UObject* Owner, UUnrealImGuiViewportBase* Viewport) override;
 	void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) override;
 	void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) override;
+	void DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel) override;
 
 	UPROPERTY(Transient)
 	TSet<TWeakObjectPtr<AActor>> SelectedActors;

@@ -9,6 +9,7 @@
 #include "ImGuiWorldDebuggerDrawer.h"
 #include "ImGuiWorldDebuggerLayout.h"
 #include "ImGuiWorldDebuggerPanel.h"
+#include "UnrealImGuiPropertyDetails.h"
 #include "UnrealImGuiStat.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/UObjectIterator.h"
@@ -494,6 +495,44 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner,
 		}
 	}
 #endif
+}
+
+void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel)
+{
+	UnrealImGui::TObjectArray<AActor> FilteredSelectedActors;
+	{
+		FilteredSelectedActors.Reset(SelectedActors.Num());
+		for (const TWeakObjectPtr<AActor>& ActorPtr : SelectedActors)
+		{
+			if (AActor* Actor = ActorPtr.Get())
+			{
+				FilteredSelectedActors.Add(Actor);
+			}
+		}
+	}
+
+	const AActor* FirstActor = FilteredSelectedActors.Num() >= 1 ? FilteredSelectedActors[0] : nullptr;
+	if (FilteredSelectedActors.Num() == 1)
+	{
+		ImGui::Text("Actor Name: %s", TCHAR_TO_UTF8(*FirstActor->GetName()));
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::BeginTooltip();
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstActor->GetName()));
+			ImGui::EndTooltip();
+		}
+	}
+	else
+	{
+		ImGui::Text("%d Actors", FilteredSelectedActors.Num());
+	}
+
+	static UnrealImGui::FDetailsFilter DetailsFilter;
+	DetailsFilter.Draw();
+	if (FirstActor)
+	{
+		DrawDetailTable("Actor", GetTopClass(FilteredSelectedActors), FilteredSelectedActors, &DetailsFilter);
+	}
 }
 
 AActor* UImGuiWorldDebuggerViewportActorExtent::GetFirstSelectActor() const

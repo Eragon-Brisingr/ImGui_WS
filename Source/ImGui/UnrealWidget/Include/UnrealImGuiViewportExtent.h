@@ -9,6 +9,7 @@
 
 class UUnrealImGuiViewportBase;
 struct FUnrealImGuiViewportContext;
+class UImGuiWorldDebuggerDetailsPanel;
 
 UCLASS(Abstract, config = ImGuiPanelConfig, PerObjectConfig)
 class IMGUI_API UUnrealImGuiViewportExtentBase : public UObject
@@ -32,6 +33,7 @@ public:
 	virtual void WhenDisable(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
 	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) {}
 	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) {}
+	virtual void DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel) {}
 
 	struct FPassDrawer
 	{

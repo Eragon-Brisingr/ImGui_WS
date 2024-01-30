@@ -28,12 +28,7 @@ void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugge
 	{
 		return;
 	}
-	const UImGuiWorldDebuggerViewportActorExtent* ViewportExtent = Viewport->FindExtent<UImGuiWorldDebuggerViewportActorExtent>();
-	if (ViewportExtent == nullptr)
-	{
-		return;
-	}
-	
+
 	bool IsConfigDirty = false;
 	if (ImGui::BeginMenuBar())
 	{
@@ -63,46 +58,19 @@ void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugge
 		}
 		ImGui::EndMenuBar();
 	}
-	TGuardValue<bool> GDisplayAllPropertiesGuard(UnrealImGui::GlobalValue::GDisplayAllProperties, bDisplayAllProperties);
-	TGuardValue<bool> GEnableEditVisiblePropertyGuard(UnrealImGui::GlobalValue::GEnableEditVisibleProperty, bEnableEditVisibleProperty);
-
-	UnrealImGui::TObjectArray<AActor> FilteredSelectedActors;
-	{
-		FilteredSelectedActors.Reset(ViewportExtent->SelectedActors.Num());
-		for (const TWeakObjectPtr<AActor>& ActorPtr : ViewportExtent->SelectedActors)
-		{
-			if (AActor* Actor = ActorPtr.Get())
-			{
-				FilteredSelectedActors.Add(Actor);
-			}
-		}
-	}
-
-	AActor* FirstActor = FilteredSelectedActors.Num() >= 1 ? FilteredSelectedActors[0] : nullptr;
-	if (FilteredSelectedActors.Num() == 1)
-	{
-		ImGui::Text("Actor Name: %s", TCHAR_TO_UTF8(*FirstActor->GetName()));
-		if (ImGui::IsItemHovered())
-		{
-			ImGui::BeginTooltip();
-			ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstActor->GetName()));
-			ImGui::EndTooltip();
-		}
-	}
-	else
-	{
-		ImGui::Text("%d Actors", FilteredSelectedActors.Num());
-	}
-
-	static UnrealImGui::FDetailsFilter DetailsFilter;
-	DetailsFilter.Draw();
-	if (FirstActor)
-	{
-		UnrealImGui::DrawDetailTable("Actor", UnrealImGui::GetTopClass(FilteredSelectedActors), FilteredSelectedActors, &DetailsFilter);
-	}
-
 	if (IsConfigDirty)
 	{
 		SaveConfig();
+	}
+
+	TGuardValue<bool> GDisplayAllPropertiesGuard(UnrealImGui::GlobalValue::GDisplayAllProperties, bDisplayAllProperties);
+	TGuardValue<bool> GEnableEditVisiblePropertyGuard(UnrealImGui::GlobalValue::GEnableEditVisibleProperty, bEnableEditVisibleProperty);
+
+	for (UUnrealImGuiViewportExtentBase* Extent : Viewport->Extents)
+	{
+		if (Extent->bEnable)
+		{
+			Extent->DrawDetailsPanel(WorldDebugger, this);
+		}
 	}
 }
