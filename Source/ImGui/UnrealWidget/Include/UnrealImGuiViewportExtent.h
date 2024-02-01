@@ -31,6 +31,7 @@ public:
 	virtual void Unregister(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
 	virtual void WhenEnable(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
 	virtual void WhenDisable(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
+	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) {}
 	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) {}
 	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) {}
 	virtual void DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel) {}
