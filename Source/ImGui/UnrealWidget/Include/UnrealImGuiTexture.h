@@ -12,9 +12,16 @@ namespace UnrealImGui
 {
 	struct IMGUI_API FImGuiTextureHandle
 	{
+		FImGuiTextureHandle()
+			: ImTextureId(0)
+		{}
 		FImGuiTextureHandle(const UTexture* Texture);
 		static FImGuiTextureHandle MakeUnique();
 
+		explicit operator bool() const
+		{
+			return ImTextureId != 0;
+		}
 		operator uint32() const
 		{
 			return ImTextureId;
