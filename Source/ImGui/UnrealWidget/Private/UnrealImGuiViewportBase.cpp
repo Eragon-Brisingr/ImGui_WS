@@ -138,8 +138,8 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 
-	const FVector2D ContentMin{ ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin() };
-	const FVector2D ContentSize{ ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin() };
+	const FVector2D ContentMin{ FVector2f{ ImGui::GetWindowPos() } + ImGui::GetWindowContentRegionMin() };
+	const FVector2D ContentSize{ FVector2f{ ImGui::GetWindowContentRegionMax() } - ImGui::GetWindowContentRegionMin() };
 	const FVector2D ContentMax{ ContentMin + ContentSize };
 
 	bool bIsConfigDirty = false;
@@ -295,7 +295,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 				ImGui::OpenPopup("##FilterBar");
 				if (ImGui::BeginPopup("##FilterBar", ImGuiWindowFlags_ChildWindow))
 				{
-					ImGui::PushAllowKeyboardFocus(false);
+					ImGui::PushTabStop(false);
 					for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 					{
 						if (Extent->bEnable == false)
@@ -304,7 +304,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 						}
 						Extent->DrawFilterPopup(this);
 					}
-					ImGui::PopAllowKeyboardFocus();
+					ImGui::PopTabStop();
 					ImGui::EndPopup();
 				}
 			}

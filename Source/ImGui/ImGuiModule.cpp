@@ -1,9 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "ImGui.h"
+#include "ImGuiModule.h"
 
 #include "UnrealImGuiLogDevice.h"
 #include "UnrealImGuiPropertyDetails.h"
+#include "Misc/CoreDelegates.h"
 
 #define LOCTEXT_NAMESPACE "ImGui"
 

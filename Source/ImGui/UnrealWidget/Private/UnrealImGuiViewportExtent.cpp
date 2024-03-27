@@ -81,7 +81,7 @@ namespace ImGuiExpand
 {
 	void AddTaperedCapsule(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius_a, float radius_b, ImU32 color, int num_segments = 0, float thickness = 1.0f)
 	{
-		const ImVec2 diff{ (b - a) };
+		const ImVec2 diff{ b.x - a.x, b.y - a.y };
 		const float angle = atan2(diff.y, diff.x) + IM_PI * 0.5f;
 		draw_list->PathArcTo(a, radius_a, angle, angle + IM_PI, num_segments);
 		draw_list->PathArcTo(b, radius_b, angle + IM_PI, angle + IM_PI * 2.f, num_segments);
@@ -95,7 +95,7 @@ namespace ImGuiExpand
 
 	void AddTaperedCapsuleFilled(ImDrawList* draw_list, ImVec2 a, ImVec2 b, float radius_a, float radius_b, ImU32 color, int num_segments = 0)
 	{
-		const ImVec2 diff{ (b - a) };
+		const ImVec2 diff{ b.x - a.x, b.y - a.y };
 		const float angle = atan2(diff.y, diff.x) + IM_PI * 0.5f;
 		draw_list->PathArcTo(a, radius_a, angle, angle + IM_PI, num_segments);
 		draw_list->PathArcTo(b, radius_b, angle + IM_PI, angle + IM_PI * 2.f, num_segments);

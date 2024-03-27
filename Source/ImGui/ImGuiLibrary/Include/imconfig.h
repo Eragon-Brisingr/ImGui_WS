@@ -50,12 +50,14 @@
 //#define IMGUI_DISABLE_SSE                                 // Disable use of SSE intrinsics even if available
 
 //---- Include imgui_user.h at the end of imgui.h as a convenience
+// May be convenient for some users to only explicitly include vanilla imgui.h and have extra stuff included.
 //#define IMGUI_INCLUDE_IMGUI_USER_H
+//#define IMGUI_USER_H_FILENAME         "my_folder/my_imgui_user.h"
 
 //---- Pack colors to BGRA8 instead of RGBA8 (to avoid converting from one to another)
 //#define IMGUI_USE_BGRA_PACKED_COLOR
 
-//---- Use 32-bit for ImWchar (default is 16-bit) to support unicode planes 1-16. (e.g. point beyond 0xFFFF like emoticons, dingbats, symbols, shapes, ancient languages, etc...)
+//---- Use 32-bit for ImWchar (default is 16-bit) to support Unicode planes 1-16. (e.g. point beyond 0xFFFF like emoticons, dingbats, symbols, shapes, ancient languages, etc...)
 //#define IMGUI_USE_WCHAR32
 
 //---- Avoid multiple STB libraries implementations, or redefine path/filenames to prioritize another version
@@ -127,24 +129,3 @@ namespace ImGui
     void MyFunction(const char* name, MyMatrix44* mtx);
 }
 */
-
-#define ImDrawIdx unsigned int
-
-#define ImTextureID uint32_t
-
-#ifndef IMGUI_DEFINE_MATH_OPERATORS
-#define IMGUI_DEFINE_MATH_OPERATORS
-#endif
-
-#define IM_ASSERT(_EXPR) do { ensure(_EXPR); } while (0)
-#define IM_ASSERT_USER_ERROR(_EXP,_MSG) ensureMsgf(_EXP, TEXT(_MSG))
-
-#include "Math/Vector2D.h"
-#include "Math/Vector4.h"
-
-#define IM_VEC2_CLASS_EXTRA \
-    explicit constexpr ImVec2(const FVector2D& V) : x((float)V.X), y((float)V.Y) {} \
-    explicit operator FVector2D() const { return FVector2D(x, y); }
-#define IM_VEC4_CLASS_EXTRA \
-    explicit constexpr ImVec4(const FVector4& V) : x((float)V.X), y((float)V.Y), z((float)V.Z), w((float)V.W) {} \
-    explicit operator FVector4() const { return FVector4(x,y,z,w); }

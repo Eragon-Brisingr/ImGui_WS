@@ -32,5 +32,11 @@ public class ImGui : ModuleRules
 			Path.Combine(ModuleDirectory, "UnrealWidget/Include"),
 			Path.Combine(ModuleDirectory, "WidgetsLibrary/Include"),
 		});
+
+		PublicDefinitions.AddRange(new[]
+		{
+			"IMGUI_USER_CONFIG=\"ImGuiConfig.h\"",
+			"IMPLOT_API=IMGUI_API",
+		});
 	}
 }
