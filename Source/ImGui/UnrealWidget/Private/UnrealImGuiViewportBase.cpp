@@ -138,8 +138,8 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 
-	const FVector2D ContentMin{ FVector2f{ ImGui::GetWindowPos() } + ImGui::GetWindowContentRegionMin() };
-	const FVector2D ContentSize{ FVector2f{ ImGui::GetWindowContentRegionMax() } - ImGui::GetWindowContentRegionMin() };
+	const FVector2D ContentMin{ ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin() };
+	const FVector2D ContentSize{ ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin() };
 	const FVector2D ContentMax{ ContentMin + ContentSize };
 
 	bool bIsConfigDirty = false;

@@ -26,17 +26,21 @@ uint64 ImFileWrite(const void* Data, uint64 Size, uint64 Count, ImFileHandle Fil
 #define ImTextureID uint32_t
 
 #define IM_VEC2_CLASS_EXTRA \
-operator FVector2f() const { return FVector2f(x, y); } \
-constexpr ImVec2(const FVector2f& V) : x(V.X), y(V.Y) {} \
-operator FVector2d() const { return FVector2d(x, y); } \
-constexpr ImVec2(const FVector2d& V) : x(V.X), y(V.Y) {} \
-operator FIntPoint() const { return FIntPoint(x, y); } \
-constexpr ImVec2(const FIntPoint& V) : x(V.X), y(V.Y) {}
+explicit operator FVector2f() const { return FVector2f(x, y); } \
+explicit constexpr ImVec2(const FVector2f& V) : x(V.X), y(V.Y) {} \
+explicit operator FVector2d() const { return FVector2d(x, y); } \
+explicit constexpr ImVec2(const FVector2d& V) : x(V.X), y(V.Y) {} \
+explicit operator FIntPoint() const { return FIntPoint(x, y); } \
+explicit constexpr ImVec2(const FIntPoint& V) : x(V.X), y(V.Y) {}
 
 #define IM_VEC4_CLASS_EXTRA \
-operator FVector4() const { return FVector4(x, y, z, w); } \
-constexpr ImVec4(const FVector4& V) : x(V.X), y(V.Y), z(V.Z), w(V.W) {} \
-operator FIntVector4() const { return FIntVector4(x, y, z, w); } \
-constexpr ImVec4(const FIntVector4& V) : x(V.X), y(V.Y), z(V.Z), w(V.W) {} \
-operator FLinearColor() const { return FLinearColor(x, y, z, w); } \
-constexpr ImVec4(const FLinearColor& C) : x(C.R), y(C.G), z(C.B), w(C.A) {}
+explicit operator FVector4() const { return FVector4(x, y, z, w); } \
+explicit constexpr ImVec4(const FVector4& V) : x(V.X), y(V.Y), z(V.Z), w(V.W) {} \
+explicit operator FIntVector4() const { return FIntVector4(x, y, z, w); } \
+explicit constexpr ImVec4(const FIntVector4& V) : x(V.X), y(V.Y), z(V.Z), w(V.W) {} \
+explicit operator FLinearColor() const { return FLinearColor(x, y, z, w); } \
+explicit constexpr ImVec4(const FLinearColor& C) : x(C.R), y(C.G), z(C.B), w(C.A) {}
+
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS
+#endif

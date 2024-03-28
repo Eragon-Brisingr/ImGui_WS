@@ -221,8 +221,8 @@ SImGuiPanel::FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 	DrawLists.SetNumUninitialized(Source->CmdListsCount);
 	ConstructItems<FImGuiDrawList>(DrawLists.GetData(), Source->CmdLists.Data, Source->CmdListsCount);
 
-	DisplayPos = Source->DisplayPos;
-	DisplaySize = Source->DisplaySize;
+	DisplayPos = FVector2f{ Source->DisplayPos };
+	DisplaySize = FVector2f{ Source->DisplaySize };
 	FrameBufferScale = FVector2f{ Source->FramebufferScale };
 }
 
@@ -246,7 +246,7 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 	ImGui::FScopedContext ScopedContext{ Context };
 
 	ImGuiIO& IO = ImGui::GetIO();
-	IO.DisplaySize = { AllottedGeometry.GetAbsoluteSize() };
+	IO.DisplaySize = ImVec2{ AllottedGeometry.GetAbsoluteSize() };
 	IO.DeltaTime = InDeltaTime;
 
 	FSlateApplication& SlateApp = FSlateApplication::Get();
@@ -261,7 +261,7 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 	{
 		if (IO.WantSetMousePos)
 		{
-			SlateApp.SetCursorPos(IO.MousePos);
+			SlateApp.SetCursorPos(FVector2D{ IO.MousePos });
 		}
 
 		if (IO.WantCaptureKeyboard && !HasKeyboardFocus())
@@ -319,7 +319,7 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 		for (int32 BufferIdx = 0; BufferIdx < Vertices.Num(); ++BufferIdx)
 		{
 			const ImDrawVert& Vtx = DrawList.VtxBuffer.Data[BufferIdx];
-			Vertices[BufferIdx] = FSlateVertex::Make<ESlateVertexRounding::Disabled>(Transform, Vtx.pos, Vtx.uv, FVector2f::UnitVector, ImGui::ConvertColor(Vtx.col));
+			Vertices[BufferIdx] = FSlateVertex::Make<ESlateVertexRounding::Disabled>(Transform, FVector2f{ Vtx.pos }, FVector2f{ Vtx.uv }, FVector2f::UnitVector, ImGui::ConvertColor(Vtx.col));
 		}
 
 		TArray<SlateIndex> Indices;
