@@ -6,9 +6,6 @@
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiObjectBrowser.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class IMGUI_API UUnrealImGuiObjectBrowserPanel : public UUnrealImGuiPanelBase
 {

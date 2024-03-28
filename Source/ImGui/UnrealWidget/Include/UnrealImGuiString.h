@@ -12,18 +12,15 @@ namespace UnrealImGui
 		FUTF8String()
 			: Super{ '\0' }
 		{}
-		FUTF8String(const TCHAR* Message)
+		FUTF8String(const TCHAR* Text)
 		{
-			FTCHARToUTF8 TCHARToUTF8{ Message };
+			FTCHARToUTF8 TCHARToUTF8{ Text };
 			SetNumUninitialized(TCHARToUTF8.Length() + 1);
 			FMemory::Memcpy(GetData(), TCHARToUTF8.Get(), TCHARToUTF8.Length() + 1);
 		}
-
-		FUTF8String& operator=(const TCHAR* Message)
-		{
-			*this = FUTF8String{ Message };
-			return *this;
-		}
+		FUTF8String(const FString& Text)
+			: FUTF8String(*Text)
+		{}
 
 		const ANSICHAR* operator*() const { return GetData(); }
 		FString ToString() const { return UTF8_TO_TCHAR(GetData()); }

@@ -15,7 +15,8 @@ namespace UnrealImGui
 	{
 		// note: font texture use id 0
 		uint32 HandleIdCounter = 0;
-		TMap<const void*, uint32> HandleIdMap;
+		TMap<const UTexture*, uint32> HandleIdMap;
+		TMap<uint32, TWeakObjectPtr<const UTexture>> IdTextureMap;
 	}
 
 	FImGuiTextureHandle::FImGuiTextureHandle(const UTexture* Texture)
@@ -26,6 +27,7 @@ namespace UnrealImGui
 		{
 			HandleIdCounter += 1;
 			Id = HandleIdCounter;
+			IdTextureMap.Add(Id, Texture);
 		}
 		ImTextureId = Id;
 	}
@@ -373,5 +375,11 @@ namespace UnrealImGui
 		default:
 			ensure(false);
 		}
+	}
+
+	const UTexture* FindTexture(uint32 ImTextureId)
+	{
+		using namespace ImGuiTextureId;
+		return IdTextureMap.FindRef(ImTextureId).Get();
 	}
 }

@@ -21,6 +21,7 @@ UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 
 void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
 {
+	const uint32 DockSpaceId = DockSpaceIdMap[ImGui::GetCurrentContext()];
 	const ImGuiID DockId = ImGui::DockBuilderAddNode(DockSpaceId, ImGuiDockNodeFlags_None);
 
 	ImGuiID RemainAreaId;

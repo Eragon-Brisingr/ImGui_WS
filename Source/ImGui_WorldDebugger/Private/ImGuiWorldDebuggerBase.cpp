@@ -115,8 +115,7 @@ void AImGuiWorldDebuggerBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	const UWorld* World = GetWorld();
-	FImGui_WS_Context* Context = UImGui_WS_Manager::GetImGuiContext(World);
+	FImGui_WS_Context* Context = UImGui_WS_Manager::GetImGuiContext(GetWorld());
 	if (ensure(Context))
 	{
 		Context->OnDraw.AddUObject(this, &AImGuiWorldDebuggerBase::DrawDebugPanel);
@@ -127,14 +126,11 @@ void AImGuiWorldDebuggerBase::BeginPlay()
 void AImGuiWorldDebuggerBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	PanelBuilder.Unregister(this);
-	if (const UWorld* World = GetWorld())
+	if (FImGui_WS_Context* Context = UImGui_WS_Manager::GetImGuiContext(GetWorld()))
 	{
-		if (FImGui_WS_Context* Context = UImGui_WS_Manager::GetImGuiContext(World))
-		{
-			Context->OnDraw.RemoveAll(this);
-		}
+		Context->OnDraw.RemoveAll(this);
 	}
-	
+
 	Super::EndPlay(EndPlayReason);
 }
 

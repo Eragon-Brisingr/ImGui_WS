@@ -16,6 +16,7 @@ void UImGuiEditorDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealI
 {
 	Super::LoadDefaultLayout(Owner, LayoutBuilder);
 
+	const uint32 DockSpaceId = DockSpaceIdMap[ImGui::GetCurrentContext()];
 	const ImGuiID DockId = ImGui::DockBuilderAddNode(DockSpaceId, ImGuiDockNodeFlags_AutoHideTabBar);
 
 	ImGuiID RemainAreaId;

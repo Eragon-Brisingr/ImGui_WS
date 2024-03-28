@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "UnrealImGuiViewportExtent.h"
-#include "UObject/Object.h"
 #include "UnrealImGuiViewportExtentImpl.generated.h"
 
 UCLASS()

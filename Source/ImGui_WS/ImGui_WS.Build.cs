@@ -21,8 +21,11 @@ public class ImGui_WS : ModuleRules
         {
 	        "Projects",
 	        "DeveloperSettings",
+	        "Slate",
+	        "SlateCore",
 	        
 	        "ImGui",
+	        "ImGui_Slate",
 	        "Incppect",
 		});
 

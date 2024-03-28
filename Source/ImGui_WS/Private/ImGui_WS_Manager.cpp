@@ -8,10 +8,14 @@
 
 #include "imgui-ws.h"
 #include "imgui.h"
+#include "ImGuiDelegates.h"
 #include "ImGuiEditorDefaultLayout.h"
 #include "ImGuiFileDialog.h"
+#include "ImGuiFontAtlas.h"
+#include "ImGuiSettings.h"
 #include "imgui_notify.h"
 #include "implot.h"
+#include "SImGuiPanel.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiTexture.h"
@@ -20,6 +24,8 @@
 #include "WebKeyCodeToImGui.h"
 #include "Containers/TripleBuffer.h"
 #include "Engine/Engine.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Framework/Docking/TabManager.h"
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformFileManager.h"
 #include "HAL/Thread.h"
@@ -29,6 +35,10 @@
 #include "Record/imgui-ws-record.h"
 #include "Record/ImGuiWS_Replay.h"
 #include "UObject/Package.h"
+#include "Widgets/SWindow.h"
+#include "Widgets/Docking/SDockTab.h"
+
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 FAutoConsoleCommand LaunchImGuiWeb
 {
@@ -59,7 +69,7 @@ TAutoConsoleVariable<int32> CVar_ImGui_WS_Port
 	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{
 		const int32 ImGui_WS_Port = CVar_ImGui_WS_Port.GetValueOnAnyThread();
-		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+		UImGuiSettings* Settings = GetMutableDefault<UImGuiSettings>();
 		if (GIsEditor)
 		{
 			Settings->EditorPort = ImGui_WS_Port;
@@ -82,7 +92,7 @@ TAutoConsoleVariable<int32> CVar_ImGui_WS_Enable
 	TEXT("Set ImGui-WS Enable 0: Disable 1: Enable"),
 	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
 	{
-		UImGui_WS_Settings* Settings = GetMutableDefault<UImGui_WS_Settings>();
+		UImGuiSettings* Settings = GetMutableDefault<UImGuiSettings>();
 		const bool bIsEnable = !!CVar_ImGui_WS_Enable.GetValueOnAnyThread();
 		if (GIsEditor)
 		{
@@ -189,13 +199,11 @@ public:
 
 	ImGuiContext* Context;
 	ImPlotContext* PlotContext;
-	TArray<ANSICHAR> IniFileNameArray;
-	ImFontAtlas FontAtlas;
-	float DPIScale = 1.f;
 
 	FCriticalSection RecordCriticalSection;
 	TSharedPtr<ImGuiWS_Record::Session, ESPMode::ThreadSafe> RecordSession;
 	TUniquePtr<ImGuiWS_Record::FImGuiWS_Replay> RecordReplay;
+	bool bEnableLoadRecord = false;
 
 	struct EServerEventType
 	{
@@ -208,63 +216,12 @@ public:
 	explicit FImpl(UImGui_WS_Manager& Manager)
 		: Manager(Manager)
 	{
-		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"));
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT(UE_PLUGIN_NAME));
 		const FString PluginResourcesPath = Plugin->GetBaseDir() / TEXT("Resources");
 
-		// fonts
-		{
-			const UImGui_WS_Settings* Settings = GetDefault<UImGui_WS_Settings>();
-			ImFontConfig FontConfig;
-			FontConfig.FontDataOwnedByAtlas = false;
-			switch (Settings->FontGlyphRanges)
-			{
-			case EImGuiFontGlyphRanges::Default:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesDefault();
-				break;
-			case EImGuiFontGlyphRanges::Greek:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesGreek();
-				break;
-			case EImGuiFontGlyphRanges::Korean:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesKorean();
-				break;
-			case EImGuiFontGlyphRanges::Japanese:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesJapanese();
-				break;
-			case EImGuiFontGlyphRanges::ChineseFull:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseFull();
-				break;
-			case EImGuiFontGlyphRanges::ChineseSimplifiedCommon:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesChineseSimplifiedCommon();
-				break;
-			case EImGuiFontGlyphRanges::Cyrillic:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesCyrillic();
-				break;
-			case EImGuiFontGlyphRanges::Thai:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesThai();
-				break;
-			case EImGuiFontGlyphRanges::Vietnamese:
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesVietnamese();
-				break;
-			default:
-				ensure(false);
-				FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesDefault();
-			}
-			FPlatformString::Strcpy(FontConfig.Name, sizeof(FontConfig.Name), "zpix, 12px");
-			const FString ChineseFontPath = PluginResourcesPath / TEXT("zpix.ttf");
-
-			TArray<uint8> Bin;
-			ensure(FFileHelper::LoadFileToArray(Bin, *ChineseFontPath));
-			constexpr char FontName[] = "zpix, 12px";
-			FCStringAnsi::Strcpy(FontConfig.Name, sizeof(FontName), FontName);
-			FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), 12.0f * DPIScale, &FontConfig);
-		}
-		
 		IMGUI_CHECKVERSION();
-		Context = ImGui::CreateContext(&FontAtlas);
+		Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
 		ImGuiIO& IO = ImGui::GetIO();
-
-		// Initialize notify
-		ImGui::MergeIconsWithLatestFont(12.f * DPIScale, false);
 
 		IO.MouseDrawCursor = false;
 		IO.SetClipboardTextFn = [](void* user_data, const char* text)
@@ -287,20 +244,14 @@ public:
 		ImGui::GetStyle().ScrollbarRounding = 0.0f;
 
 		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-		{
-			const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT("ImGui_WS");
-			// Make sure that directory is created.
-			PlatformFile.CreateDirectory(*IniDirectory);
-
-			const auto StringPoint = FTCHARToUTF8(*(IniDirectory / TEXT("Imgui_WS.ini")));
-			IniFileNameArray.SetNumUninitialized(StringPoint.Length() + 1);
-			FMemory::Memcpy(IniFileNameArray.GetData(), StringPoint.Get(), StringPoint.Length() + 1);
-		}
-		IO.IniFilename = IniFileNameArray.GetData();
+		const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
+		// Make sure that directory is created.
+		PlatformFile.CreateDirectory(*IniDirectory);
+		static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("Imgui_WS.ini");
+		IO.IniFilename = IniFilePath.GetData();
 	    IO.DisplaySize = ImVec2(0, 0);
 
 		PlotContext = ImPlot::CreateContext();
-		ImPlot::SetCurrentContext(PlotContext);
 
 		// setup imgui-ws
 		const FString HtmlRelativePath = PluginResourcesPath / TEXT("HTML");
@@ -322,7 +273,7 @@ public:
 			}
 		}
 		ImGuiWS.Init(Manager.GetPort(), HtmlPath);
-		WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGui_WS_Settings>()->ServerTickInterval]
+		WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGuiSettings>()->ServerTickInterval]
 		{
 			while (bRequestedExit == false)
 			{
@@ -356,6 +307,7 @@ public:
 	}
 	~FImpl() override
 	{
+		UnrealImGui::OnImGuiContextDestroyed.Broadcast(Context);
 		ImGui::DestroyContext(Context);
 		ImPlot::DestroyContext(PlotContext);
 		UnrealImGui::Private::UpdateTextureData_WS.Reset();
@@ -365,7 +317,7 @@ public:
 			WS_Thread.Join();
 		}
 	}
-private:
+
 	struct FVSync
 	{
 		FVSync(double RateFps = 60.0) : tStep_us(1000000.0/RateFps) {}
@@ -648,7 +600,7 @@ private:
 	};
 	TTripleBuffer<TSharedPtr<FImGuiData>> ImGuiDataTripleBuffer;
 
-	void DefaultDraw(float DeltaTime)
+	void DefaultDraw(float DeltaSeconds)
 	{
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -744,7 +696,7 @@ private:
 						ImGui::EndPopup();
 					}
 
-					if (ImGui::Button("Load Record"))
+					if (bEnableLoadRecord && ImGui::Button("Load Record"))
 					{
 						ImGui::OpenPopup("ReplaySettings");
 					}
@@ -823,17 +775,17 @@ private:
 						Debugger->Register();
 						return Debugger;
 					}();
-					DefaultDebugger->Draw(DeltaTime);
+					DefaultDebugger->Draw(DeltaSeconds);
 				}
 			}
-			DrawContext.OnDraw.Broadcast(DeltaTime);
+			DrawContext.OnDraw.Broadcast(DeltaSeconds);
 		}
 		else
 #endif
 		if (Manager.DrawContextIndex < Manager.WorldSubsystems.Num())
 		{
 			const UImGui_WS_WorldSubsystem* WorldSubsystem = Manager.WorldSubsystems[Manager.DrawContextIndex];
-			WorldSubsystem->Context.OnDraw.Broadcast(DeltaTime);
+			WorldSubsystem->Context.OnDraw.Broadcast(DeltaSeconds);
 		}
 
 		// imgui-ws info
@@ -919,11 +871,15 @@ private:
 		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Tick"), STAT_ImGuiWS_Tick, STATGROUP_ImGui);
 
 	    ImGuiContext* OldContent = ImGui::GetCurrentContext();
+		ImPlotContext* OldPlotContent = ImPlot::GetCurrentContext();
 	    ON_SCOPE_EXIT
 		{
 	        ImGui::SetCurrentContext(OldContent);
+	        ImPlot::SetCurrentContext(OldPlotContent);
 	    };
 	    ImGui::SetCurrentContext(Context);
+		ImPlot::SetCurrentContext(PlotContext);
+
 	    ImGui::NewFrame();
 
 	    // websocket event handling
@@ -946,6 +902,7 @@ private:
 		}
 		else
 		{
+			TGuardValue EnableLoadRecordGuard{ bEnableLoadRecord, true };
 			DefaultDraw(DeltaTime);
 		}
 
@@ -1000,10 +957,9 @@ private:
 		ImGuiWS.Tick();
 	}
 
-public:
 	void StartRecord()
 	{
-		// TODO：改为流式写入内存
+		// TODO：stream save
 		RecordSession = MakeShared<ImGuiWS_Record::Session>();
 	}
 	void StopRecord()
@@ -1031,6 +987,10 @@ UImGui_WS_Manager* UImGui_WS_Manager::GetChecked()
 
 FImGui_WS_Context* UImGui_WS_Manager::GetImGuiContext(const UWorld* World)
 {
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
 	if (World->IsGameWorld())
 	{
 		UImGui_WS_WorldSubsystem* WorldSubsystem = World->GetSubsystem<UImGui_WS_WorldSubsystem>();
@@ -1051,7 +1011,7 @@ FImGui_WS_EditorContext* UImGui_WS_Manager::GetImGuiEditorContext()
 
 bool UImGui_WS_Manager::IsSettingsEnable()
 {
-	const UImGui_WS_Settings* Settings = GetDefault<UImGui_WS_Settings>();
+	const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
 	if (GIsEditor)
 	{
 		return Settings->bEditorEnableImGui_WS;
@@ -1086,7 +1046,7 @@ void UImGui_WS_Manager::Disable()
 
 int32 UImGui_WS_Manager::GetPort() const
 {
-	const UImGui_WS_Settings* Settings = GetDefault<UImGui_WS_Settings>();
+	const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
 	if (GIsEditor)
 	{
 		// Editor
@@ -1131,11 +1091,19 @@ void UImGui_WS_Manager::StopRecord()
 	}
 }
 
+void UImGui_WS_Manager::ImGuiDrawViewport(float DeltaSeconds)
+{
+	if (Impl)
+	{
+		Impl->DefaultDraw(DeltaSeconds);
+	}
+}
+
 void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	GRecordSaveDirPathString = *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT("ImGui_WS"));
+	GRecordSaveDirPathString = *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT(UE_PLUGIN_NAME));
 	CVar_RecordSaveDirPathString->Set(*GRecordSaveDirPathString.ToString());
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this, [this](float)
 	{
@@ -1166,3 +1134,134 @@ void UImGui_WS_Manager::Deinitialize()
 	}
 	Super::Deinitialize();
 }
+
+namespace ImGui_WS::Window
+{
+TWeakPtr<SWindow> WindowPtr;
+TSharedPtr<SImGuiPanel> CreatePanel()
+{
+	UImGui_WS_Manager* Manager = GEngine->GetEngineSubsystem<UImGui_WS_Manager>();
+	if (Manager == nullptr)
+	{
+		return nullptr;
+	}
+
+	if (Manager->IsEnable() == false)
+	{
+		Manager->Enable();
+	}
+
+	const TSharedRef<SImGuiPanel> Panel = SNew(SImGuiPanel)
+		.OnImGuiTick_Lambda([ManagerPtr = TWeakObjectPtr<UImGui_WS_Manager>(Manager)](float DeltaSeconds)
+		{
+			if (UImGui_WS_Manager* Manager = ManagerPtr.Get())
+			{
+				Manager->ImGuiDrawViewport(DeltaSeconds);
+			}
+		});
+
+	ImGuiContext* OldContent = ImGui::GetCurrentContext();
+	ON_SCOPE_EXIT
+	{
+		ImGui::SetCurrentContext(OldContent);
+	};
+	ImGui::SetCurrentContext(Panel->GetContext());
+
+	ImGuiIO& IO = ImGui::GetIO();
+
+	// Enable Docking
+	IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+	ImGui::StyleColorsDark();
+
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
+	// Make sure that directory is created.
+	PlatformFile.CreateDirectory(*IniDirectory);
+	static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("Imgui_WS_Window.ini");
+	IO.IniFilename = IniFilePath.GetData();
+	return Panel;
+}
+FName GetWindowTabId()
+{
+	static FName TabId = []
+	{
+		const FName Id = TEXT("ImGui_WS_Window");
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(Id, FOnSpawnTab::CreateLambda([](const FSpawnTabArgs& Args)
+		{
+			TSharedPtr<SWidget> Panel = CreatePanel();
+			if (Panel == nullptr)
+			{
+				Panel = SNullWidget::NullWidget;
+			}
+			TSharedRef<SDockTab> NewTab = SNew(SDockTab)
+			.TabRole(NomadTab)
+			.Label(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
+			[
+				Panel.ToSharedRef()
+			];
+			NewTab->SetTabIcon(FAppStyle::Get().GetBrush("LevelEditor.Tab"));
+			return NewTab;
+		}));
+		return Id;
+	}();
+	return TabId;
+}
+FAutoConsoleCommand OpenImGuiWindowCommand
+{
+	TEXT("ImGui.WS.OpenWindow"),
+	TEXT("Open ImGui WS local window"),
+	FConsoleCommandDelegate::CreateLambda([]
+	{
+		if (GIsEditor)
+		{
+			FGlobalTabmanager::Get()->TryInvokeTab(GetWindowTabId());
+		}
+		else
+		{
+			if (WindowPtr.IsValid())
+			{
+				return;
+			}
+			const TSharedPtr<SImGuiPanel> Panel = CreatePanel();
+			if (Panel == nullptr)
+			{
+				return;
+			}
+			const TSharedRef<SWindow> Window =
+				SNew(SWindow)
+				.Title(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
+				.ClientSize(FVector2f(1000.f, 800.f))
+				[
+					Panel.ToSharedRef()
+				];
+			WindowPtr = Window;
+			FSlateApplication::Get().AddWindow(Window);
+		}
+	})
+};
+FAutoConsoleCommand CloseImGuiWindowCommand
+{
+	TEXT("ImGui.WS.CloseWindow"),
+	TEXT("Close ImGui WS local window"),
+	FConsoleCommandDelegate::CreateLambda([]
+	{
+		if (GIsEditor)
+		{
+			if (const TSharedPtr<SDockTab> Tab = FGlobalTabmanager::Get()->FindExistingLiveTab(GetWindowTabId()))
+			{
+				Tab->RequestCloseTab();
+			}
+		}
+		else
+		{
+			if (WindowPtr.IsValid())
+			{
+				WindowPtr.Pin()->RequestDestroyWindow();
+			}
+		}
+	})
+};
+}
+
+#undef LOCTEXT_NAMESPACE

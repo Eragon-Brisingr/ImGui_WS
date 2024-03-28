@@ -8,9 +8,6 @@
 
 class UUnrealImGuiLayoutBase;
 
-/**
- * 
- */
 UCLASS(Abstract, config = ImGuiPanelConfig, PerObjectConfig)
 class IMGUI_API UUnrealImGuiPanelBase : public UObject
 {

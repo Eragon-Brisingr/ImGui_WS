@@ -7,9 +7,7 @@
 
 class AActor;
 struct FAssetData;
-/**
- * 
- */
+
 namespace UnrealImGui
 {
 	struct IMGUI_API FPropertyDisableScope

@@ -5,8 +5,19 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "ImGuiDelegates.h"
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiPanel.h"
+
+void UUnrealImGuiLayoutBase::Register(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+{
+	UnrealImGui::OnImGuiContextDestroyed.AddUObject(this, &ThisClass::WhenImGuiContextDestroyed);
+}
+
+void UUnrealImGuiLayoutBase::Unregister(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+{
+	UnrealImGui::OnImGuiContextDestroyed.RemoveAll(this);
+}
 
 void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuilder& LayoutBuilder, const TMap<int32, uint32>& DockIdMap, const int32 DefaultDockId)
 {
@@ -34,8 +45,8 @@ void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuild
 
 void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
 {
-	const bool IsNew = DockSpaceId == INDEX_NONE;
-	if (IsNew)
+	uint32& DockSpaceId = DockSpaceIdMap.FindOrAdd(ImGui::GetCurrentContext(), INDEX_NONE);
+	if (DockSpaceId == INDEX_NONE)
 	{
 		const_cast<uint32&>(DockSpaceId) = ImGui::GetID(TCHAR_TO_UTF8(*GetName()));
 
@@ -53,4 +64,9 @@ void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const FUnrealImGuiP
 	}
 
 	ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+}
+
+void UUnrealImGuiLayoutBase::WhenImGuiContextDestroyed(ImGuiContext* Context)
+{
+	DockSpaceIdMap.Remove(Context);
 }

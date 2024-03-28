@@ -1,6 +1,7 @@
 
 #pragma once
 
+struct ImFontAtlas;
 typedef int ImGuiToastType;
 
 enum ImGuiToastType_
@@ -15,7 +16,7 @@ enum ImGuiToastType_
 
 namespace ImGui
 {
-	IMGUI_API void MergeIconsWithLatestFont(float font_size, bool FontDataOwnedByAtlas = false);
+	IMGUI_API void MergeIconsWithLatestFont(ImFontAtlas& FontAtlas, float font_size, bool FontDataOwnedByAtlas = false);
 	IMGUI_API void RenderNotifications();
 
 	IMGUI_API void InsertNotification(ImGuiToastType type, const char* format, ...);

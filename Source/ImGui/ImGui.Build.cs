@@ -19,11 +19,13 @@ public class ImGui : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
         {
+	        "Projects",
 			"EngineSettings",
 			"Slate",
 			"DesktopPlatform",
 			"Navmesh",
 			"NavigationSystem",
+			"DeveloperSettings",
 		});
 		
 		PublicIncludePaths.AddRange(new string[] {

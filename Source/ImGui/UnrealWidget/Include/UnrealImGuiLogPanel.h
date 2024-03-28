@@ -8,9 +8,6 @@
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiLogPanel.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class IMGUI_API UUnrealImGuiLogPanel : public UUnrealImGuiPanelBase
 {

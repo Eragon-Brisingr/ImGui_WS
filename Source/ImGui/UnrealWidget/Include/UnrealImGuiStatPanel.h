@@ -6,9 +6,7 @@
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiStatPanel.generated.h"
 
-/**
- * 
-*/
+
 UCLASS()
 class IMGUI_API UUnrealImGuiStatPanel : public UUnrealImGuiPanelBase
 {

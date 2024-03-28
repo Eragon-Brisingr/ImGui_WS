@@ -8,9 +8,6 @@
 class UUnrealImGuiPanelBase;
 class UUnrealImGuiLayoutBase;
 
-/**
- * 
- */
 USTRUCT()
 struct IMGUI_API FUnrealImGuiPanelBuilder
 {
@@ -18,7 +15,7 @@ struct IMGUI_API FUnrealImGuiPanelBuilder
 public:
 	FUnrealImGuiPanelBuilder();
 	
-	// 该布局系统的名称
+	// Layout name
 	FName DockSpaceName = NAME_None;
 
 	void Register(UObject* Owner);

@@ -39,6 +39,11 @@
 			"Name": "Incppect",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_Slate",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	]
 }

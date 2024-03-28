@@ -9,9 +9,6 @@
 
 struct FUnrealImGuiLogDevice;
 
-/**
- * 
- */
 namespace UnrealImGui
 {
 	IMGUI_API const FUTF8String& ToString(ELogVerbosity::Type Verbosity);
