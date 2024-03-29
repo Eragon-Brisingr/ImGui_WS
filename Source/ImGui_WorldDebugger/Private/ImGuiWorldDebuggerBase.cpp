@@ -5,13 +5,11 @@
 
 #include "EngineUtils.h"
 #include "imgui.h"
-#include "ImGuiWorldDebuggerLayout.h"
-#include "ImGuiWorldDebuggerPanel.h"
-#include "ImGui_WS_Manager.h"
+#include "ImGuiUnrealContextManager.h"
 #include "UnrealImGuiStat.h"
 #include "Engine/Engine.h"
 
-#define LOCTEXT_NAMESPACE "ImGuiWorldDebugger"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 namespace ImGuiWorldDebuggerBootstrap
 {
@@ -115,7 +113,7 @@ void AImGuiWorldDebuggerBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FImGui_WS_Context* Context = UImGui_WS_Manager::GetImGuiContext(GetWorld());
+	FImGuiUnrealContext* Context = UImGuiUnrealContextManager::GetImGuiContext(GetWorld());
 	if (ensure(Context))
 	{
 		Context->OnDraw.AddUObject(this, &AImGuiWorldDebuggerBase::DrawDebugPanel);
@@ -126,7 +124,7 @@ void AImGuiWorldDebuggerBase::BeginPlay()
 void AImGuiWorldDebuggerBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	PanelBuilder.Unregister(this);
-	if (FImGui_WS_Context* Context = UImGui_WS_Manager::GetImGuiContext(GetWorld()))
+	if (FImGuiUnrealContext* Context = UImGuiUnrealContextManager::GetImGuiContext(GetWorld()))
 	{
 		Context->OnDraw.RemoveAll(this);
 	}

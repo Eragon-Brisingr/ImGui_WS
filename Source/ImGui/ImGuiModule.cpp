@@ -6,7 +6,7 @@
 #include "UnrealImGuiPropertyDetails.h"
 #include "Misc/CoreDelegates.h"
 
-#define LOCTEXT_NAMESPACE "ImGui"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGuiModule::StartupModule()
 {

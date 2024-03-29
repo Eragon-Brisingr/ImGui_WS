@@ -7,7 +7,7 @@
 #include "ImGuiWorldDebuggerBase.h"
 #include "imgui_internal.h"
 
-#define LOCTEXT_NAMESPACE "ImGuiWorldDebugger"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 bool UImGuiWorldDebuggerLayoutBase::ShouldCreateLayout(UObject* Owner) const
 {

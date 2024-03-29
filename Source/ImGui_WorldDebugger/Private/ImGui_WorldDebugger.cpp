@@ -2,7 +2,7 @@
 
 #include "ImGuiWorldDebuggerBase.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WorldDebugger"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGui_WorldDebuggerModule::StartupModule()
 {

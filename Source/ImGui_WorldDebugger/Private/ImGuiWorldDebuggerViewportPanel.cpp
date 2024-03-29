@@ -14,7 +14,7 @@
 #include "GameFramework/PlayerController.h"
 #include "UObject/UObjectIterator.h"
 
-#define LOCTEXT_NAMESPACE "ImGuiWorldDebugger"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 {

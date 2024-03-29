@@ -1,11 +1,11 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ImGui_WS_Slate.h"
+#include "..\Public\ImGuiUnrealLocalPanel.h"
 
 #include "imgui.h"
+#include "ImGuiUnrealContextManager.h"
 #include "SImGuiPanel.h"
-#include "ImGui_WS_Manager.h"
 #include "UnrealImGuiString.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
@@ -17,7 +17,7 @@
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
-namespace ImGui_WS::Slate
+namespace ImGui_WS::LocalPanel
 {
 TWeakPtr<SWindow> WindowPtr;
 struct FViewportPanel
@@ -42,23 +42,18 @@ TAutoConsoleVariable<int32> CVarLocalPanelMode
 };
 TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 {
-	UImGui_WS_Manager* Manager = GEngine->GetEngineSubsystem<UImGui_WS_Manager>();
+	UImGuiUnrealContextManager* Manager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
 	if (Manager == nullptr)
 	{
 		return nullptr;
 	}
 
-	if (Manager->IsEnable() == false)
-	{
-		Manager->Enable();
-	}
-
 	const TSharedRef<SImGuiPanel> Panel = SNew(SImGuiPanel)
-		.OnImGuiTick_Lambda([ManagerPtr = TWeakObjectPtr<UImGui_WS_Manager>(Manager), &ContextIndex](float DeltaSeconds)
+		.OnImGuiTick_Lambda([ManagerPtr = TWeakObjectPtr<UImGuiUnrealContextManager>(Manager), &ContextIndex](float DeltaSeconds)
 		{
-			if (UImGui_WS_Manager* Manager = ManagerPtr.Get())
+			if (UImGuiUnrealContextManager* Manager = ManagerPtr.Get())
 			{
-				Manager->ImGuiDrawViewport(ContextIndex, DeltaSeconds);
+				Manager->DrawViewport(ContextIndex, DeltaSeconds);
 			}
 		});
 
@@ -163,12 +158,12 @@ FAutoConsoleCommand OpenImGuiWindowCommand
 			{
 				return;
 			}
-			const UImGui_WS_Manager* Manager = GEngine->GetEngineSubsystem<UImGui_WS_Manager>();
+			const UImGuiUnrealContextManager* Manager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
 			if (Manager == nullptr)
 			{
 				return;
 			}
-			ViewportPanel.ContextIndex = Manager->GetWorldSubsystems().IndexOfByPredicate([World](const UImGui_WS_WorldSubsystem* E)
+			ViewportPanel.ContextIndex = Manager->GetWorldSubsystems().IndexOfByPredicate([World](const UImGuiUnrealContextWorldSubsystem* E)
 			{
 				return E && E->GetWorld() == World;
 			});

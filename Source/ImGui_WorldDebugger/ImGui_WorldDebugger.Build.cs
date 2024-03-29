@@ -22,7 +22,6 @@ public class ImGui_WorldDebugger : ModuleRules
                 "SlateCore",
 
                 "ImGui",
-                "ImGui_WS",
             }
         );
     }

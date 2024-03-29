@@ -8,7 +8,7 @@
 #include "Engine/Engine.h"
 #include "Stats/StatsData.h"
 
-#define LOCTEXT_NAMESPACE "UnrealImGui"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UUnrealImGuiStatPanel::UUnrealImGuiStatPanel()
 {

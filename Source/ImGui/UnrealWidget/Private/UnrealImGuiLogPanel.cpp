@@ -5,7 +5,7 @@
 
 #include "imgui.h"
 
-#define LOCTEXT_NAMESPACE "UnrealImGui"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UUnrealImGuiLogPanel::UUnrealImGuiLogPanel()
 {

@@ -1,6 +1,6 @@
 #include "ImGui_SlateModule.h"
 
-#define LOCTEXT_NAMESPACE "FImGui_SlateModule"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGui_SlateModule::StartupModule()
 {

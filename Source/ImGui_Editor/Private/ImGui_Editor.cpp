@@ -13,7 +13,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Notifications/SNotificationList.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_EditorModule"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGui_EditorModule::StartupModule()
 {

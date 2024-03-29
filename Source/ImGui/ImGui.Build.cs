@@ -29,10 +29,11 @@ public class ImGui : ModuleRules
 		});
 		
 		PublicIncludePaths.AddRange(new string[] {
-			Path.Combine(ModuleDirectory, "ImGuiLibrary/Include"),
-			Path.Combine(ModuleDirectory, "ImPlotLibrary/Include"),
-			Path.Combine(ModuleDirectory, "UnrealWidget/Include"),
-			Path.Combine(ModuleDirectory, "WidgetsLibrary/Include"),
+			Path.Combine(ModuleDirectory, "ImGuiLibrary/Public"),
+			Path.Combine(ModuleDirectory, "ImPlotLibrary/Public"),
+			Path.Combine(ModuleDirectory, "UnrealContext/Public"),
+			Path.Combine(ModuleDirectory, "UnrealWidget/Public"),
+			Path.Combine(ModuleDirectory, "WidgetsLibrary/Public"),
 		});
 
 		PublicDefinitions.AddRange(new[]

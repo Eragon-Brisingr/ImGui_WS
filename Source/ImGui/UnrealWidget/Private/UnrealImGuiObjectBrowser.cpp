@@ -11,7 +11,7 @@
 #include "UnrealImGuiWrapper.h"
 #include "UObject/Package.h"
 
-#define LOCTEXT_NAMESPACE "UnrealImGui"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
 	: bDisplayAllProperties(true)

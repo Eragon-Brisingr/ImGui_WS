@@ -11,7 +11,7 @@
 #include "NavMesh/RecastNavMesh.h"
 #include "WorldPartition/WorldPartitionRuntimeSpatialHash.h"
 
-#define LOCTEXT_NAMESPACE "UnrealImGui"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UUnrealImGuiViewportWorldPartitionExtent::UUnrealImGuiViewportWorldPartitionExtent()
 {
