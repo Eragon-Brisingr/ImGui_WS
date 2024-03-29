@@ -382,17 +382,17 @@ FReply SImGuiPanel::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent
 {
 	ImGui::FScopedContext ScopedContext{ Context };
 	ImGuiIO& IO = ImGui::GetIO();
-	const FVector2f Position = MyGeometry.AbsoluteToLocal(MouseEvent.GetScreenSpacePosition());
+	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
 	IO.AddMousePosEvent(Position.X, Position.Y);
 	return IO.WantCaptureMouse ? FReply::Handled() : FReply::Unhandled();
 }
 
 FReply SImGuiPanel::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	UE_LOG(LogTemp, Log, TEXT("SImGuiPanel::OnMouseButtonDown"));
-
 	ImGui::FScopedContext ScopedContext{ Context };
 	ImGuiIO& IO = ImGui::GetIO();
+	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
+	IO.AddMousePosEvent(Position.X, Position.Y);
 	const FKey Button = MouseEvent.GetEffectingButton();
 	if (Button == EKeys::LeftMouseButton)
 	{
@@ -413,6 +413,8 @@ FReply SImGuiPanel::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerE
 {
 	ImGui::FScopedContext ScopedContext(Context);
 	ImGuiIO& IO = ImGui::GetIO();
+	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
+	IO.AddMousePosEvent(Position.X, Position.Y);
 	const FKey Button = MouseEvent.GetEffectingButton();
 	if (Button == EKeys::LeftMouseButton)
 	{
@@ -563,19 +565,9 @@ FCursorReply SImGuiPanel::OnCursorQuery(const FGeometry& MyGeometry, const FPoin
 void SImGuiPanel::SetTextFromVirtualKeyboard(const FText& InNewText, ETextEntryType TextEntryType)
 {
 	ImGuiIO& IO = Context->IO;
-	switch (TextEntryType)
-	{
-	case ETextEntryType::TextEntryCanceled:
-		IO.AddInputCharactersUTF8(TCHAR_TO_UTF8(*InNewText.ToString()));
-		break;
-	case ETextEntryType::TextEntryAccepted:
-		IO.AddInputCharactersUTF8(TCHAR_TO_UTF8(*InNewText.ToString()));
-		IO.AddKeyEvent(ImGuiKey_Enter, true);
-		IO.AddKeyEvent(ImGuiKey_Enter, false);
-		break;
-	case ETextEntryType::TextEntryUpdated:
-		break;
-	}
+	ImGuiInputTextState& InputTextState = Context->InputTextState;
+	InputTextState.ClearText();
+	IO.AddInputCharactersUTF8(TCHAR_TO_UTF8(*InNewText.ToString()));
 }
 
 void SImGuiPanel::SetSelectionFromVirtualKeyboard(int InSelStart, int SelEnd)
@@ -590,7 +582,10 @@ void SImGuiPanel::SetSelectionFromVirtualKeyboard(int InSelStart, int SelEnd)
 FText SImGuiPanel::GetText() const
 {
 	const ImGuiInputTextState& InputTextState = Context->InputTextState;
-	return FText::FromString(WCHAR_TO_TCHAR(InputTextState.TextW.Data));
+	TArray<ImWchar> WCharArray{ InputTextState.TextW.Data, InputTextState.TextW.size() };
+	WCharArray.Add(0);
+	const FString InputText{ WCharArray.GetData() };
+	return FText::FromString(InputText);
 }
 
 bool SImGuiPanel::GetSelection(int& OutSelStart, int& OutSelEnd)
@@ -765,10 +760,11 @@ void SImGuiPanel::DisableVirtualInput()
 	{
 		return;
 	}
+
 	VirtualInput.bEnable = false;
 	if (FPlatformApplicationMisc::RequiresVirtualKeyboard())
 	{
-		FSlateApplication::Get().ShowVirtualKeyboard(false, 0);
+		FSlateApplication::Get().ShowVirtualKeyboard(false, 0, SharedThis(this));
 	}
 	else
 	{

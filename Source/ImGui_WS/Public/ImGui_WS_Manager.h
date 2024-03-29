@@ -60,7 +60,8 @@ public:
 	void StartRecord();
 	void StopRecord();
 
-	void ImGuiDrawViewport(float DeltaSeconds);
+	const TArray<UImGui_WS_WorldSubsystem*>& GetWorldSubsystems() const { return WorldSubsystems; }
+	void ImGuiDrawViewport(int32& ContextIndex, float DeltaSeconds);
 protected:
 	static constexpr int32 EditorIndex = INDEX_NONE;
 	int32 DrawContextIndex = 0;

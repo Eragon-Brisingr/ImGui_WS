@@ -15,7 +15,6 @@
 #include "ImGuiSettings.h"
 #include "imgui_notify.h"
 #include "implot.h"
-#include "SImGuiPanel.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiTexture.h"
@@ -35,8 +34,6 @@
 #include "Record/imgui-ws-record.h"
 #include "Record/ImGuiWS_Replay.h"
 #include "UObject/Package.h"
-#include "Widgets/SWindow.h"
-#include "Widgets/Docking/SDockTab.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
@@ -600,16 +597,16 @@ public:
 	};
 	TTripleBuffer<TSharedPtr<FImGuiData>> ImGuiDataTripleBuffer;
 
-	void DefaultDraw(float DeltaSeconds)
+	void DefaultDraw(int32& ContextIndex, float DeltaSeconds)
 	{
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("ImGui_WS"))
 			{
 #if WITH_EDITOR
-				if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("Editor"))), Manager.DrawContextIndex == EditorIndex || Manager.DrawContextIndex >= Manager.WorldSubsystems.Num()))
+				if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("Editor"))), ContextIndex == EditorIndex || ContextIndex >= Manager.WorldSubsystems.Num()))
 				{
-					Manager.DrawContextIndex = EditorIndex;
+					ContextIndex = EditorIndex;
 				}
 				if (Manager.WorldSubsystems.Num() > 0)
 				{
@@ -626,7 +623,7 @@ public:
 #if WITH_EDITOR
 						WorldDesc = FString::Printf(TEXT("Client %d"), World->GetOutermost()->GetPIEInstanceID() - 1);
 #else
-						WorldDesc = TEXT("Client");
+						WorldDesc = FString::Printf(TEXT("Client %d"), Idx);
 #endif
 						break;
 					case NM_DedicatedServer:
@@ -640,9 +637,9 @@ public:
 					default:
 						break;
 					}
-					if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("%d. %s"), Idx, *WorldDesc)), Idx == Manager.DrawContextIndex))
+					if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("%d. %s"), Idx, *WorldDesc)), Idx == ContextIndex))
 					{
-						Manager.DrawContextIndex = Idx;
+						ContextIndex = Idx;
 					}
 				}
 
@@ -761,7 +758,7 @@ public:
 		}
 
 #if WITH_EDITOR
-		if (Manager.DrawContextIndex == EditorIndex || Manager.DrawContextIndex >= Manager.WorldSubsystems.Num())
+		if (ContextIndex == EditorIndex || ContextIndex >= Manager.WorldSubsystems.Num())
 		{
 			const FImGui_WS_EditorContext& DrawContext = Manager.EditorContext;
 			if (DrawContext.bAlwaysDrawDefaultLayout || DrawContext.OnDraw.IsBound() == false)
@@ -782,9 +779,9 @@ public:
 		}
 		else
 #endif
-		if (Manager.DrawContextIndex < Manager.WorldSubsystems.Num())
+		if (ContextIndex < Manager.WorldSubsystems.Num())
 		{
-			const UImGui_WS_WorldSubsystem* WorldSubsystem = Manager.WorldSubsystems[Manager.DrawContextIndex];
+			const UImGui_WS_WorldSubsystem* WorldSubsystem = Manager.WorldSubsystems[ContextIndex];
 			WorldSubsystem->Context.OnDraw.Broadcast(DeltaSeconds);
 		}
 
@@ -903,7 +900,7 @@ public:
 		else
 		{
 			TGuardValue EnableLoadRecordGuard{ bEnableLoadRecord, true };
-			DefaultDraw(DeltaTime);
+			DefaultDraw(Manager.DrawContextIndex, DeltaTime);
 		}
 
 	    // generate ImDrawData
@@ -1091,11 +1088,11 @@ void UImGui_WS_Manager::StopRecord()
 	}
 }
 
-void UImGui_WS_Manager::ImGuiDrawViewport(float DeltaSeconds)
+void UImGui_WS_Manager::ImGuiDrawViewport(int32& ContextIndex, float DeltaSeconds)
 {
 	if (Impl)
 	{
-		Impl->DefaultDraw(DeltaSeconds);
+		Impl->DefaultDraw(ContextIndex, DeltaSeconds);
 	}
 }
 
@@ -1133,135 +1130,6 @@ void UImGui_WS_Manager::Deinitialize()
 		Disable();
 	}
 	Super::Deinitialize();
-}
-
-namespace ImGui_WS::Window
-{
-TWeakPtr<SWindow> WindowPtr;
-TSharedPtr<SImGuiPanel> CreatePanel()
-{
-	UImGui_WS_Manager* Manager = GEngine->GetEngineSubsystem<UImGui_WS_Manager>();
-	if (Manager == nullptr)
-	{
-		return nullptr;
-	}
-
-	if (Manager->IsEnable() == false)
-	{
-		Manager->Enable();
-	}
-
-	const TSharedRef<SImGuiPanel> Panel = SNew(SImGuiPanel)
-		.OnImGuiTick_Lambda([ManagerPtr = TWeakObjectPtr<UImGui_WS_Manager>(Manager)](float DeltaSeconds)
-		{
-			if (UImGui_WS_Manager* Manager = ManagerPtr.Get())
-			{
-				Manager->ImGuiDrawViewport(DeltaSeconds);
-			}
-		});
-
-	ImGuiContext* OldContent = ImGui::GetCurrentContext();
-	ON_SCOPE_EXIT
-	{
-		ImGui::SetCurrentContext(OldContent);
-	};
-	ImGui::SetCurrentContext(Panel->GetContext());
-
-	ImGuiIO& IO = ImGui::GetIO();
-
-	// Enable Docking
-	IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-	ImGui::StyleColorsDark();
-
-	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
-	// Make sure that directory is created.
-	PlatformFile.CreateDirectory(*IniDirectory);
-	static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("Imgui_WS_Window.ini");
-	IO.IniFilename = IniFilePath.GetData();
-	return Panel;
-}
-FName GetWindowTabId()
-{
-	static FName TabId = []
-	{
-		const FName Id = TEXT("ImGui_WS_Window");
-		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(Id, FOnSpawnTab::CreateLambda([](const FSpawnTabArgs& Args)
-		{
-			TSharedPtr<SWidget> Panel = CreatePanel();
-			if (Panel == nullptr)
-			{
-				Panel = SNullWidget::NullWidget;
-			}
-			TSharedRef<SDockTab> NewTab = SNew(SDockTab)
-			.TabRole(NomadTab)
-			.Label(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
-			[
-				Panel.ToSharedRef()
-			];
-			NewTab->SetTabIcon(FAppStyle::Get().GetBrush("LevelEditor.Tab"));
-			return NewTab;
-		}));
-		return Id;
-	}();
-	return TabId;
-}
-FAutoConsoleCommand OpenImGuiWindowCommand
-{
-	TEXT("ImGui.WS.OpenWindow"),
-	TEXT("Open ImGui WS local window"),
-	FConsoleCommandDelegate::CreateLambda([]
-	{
-		if (GIsEditor)
-		{
-			FGlobalTabmanager::Get()->TryInvokeTab(GetWindowTabId());
-		}
-		else
-		{
-			if (WindowPtr.IsValid())
-			{
-				return;
-			}
-			const TSharedPtr<SImGuiPanel> Panel = CreatePanel();
-			if (Panel == nullptr)
-			{
-				return;
-			}
-			const TSharedRef<SWindow> Window =
-				SNew(SWindow)
-				.Title(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
-				.ClientSize(FVector2f(1000.f, 800.f))
-				[
-					Panel.ToSharedRef()
-				];
-			WindowPtr = Window;
-			FSlateApplication::Get().AddWindow(Window);
-		}
-	})
-};
-FAutoConsoleCommand CloseImGuiWindowCommand
-{
-	TEXT("ImGui.WS.CloseWindow"),
-	TEXT("Close ImGui WS local window"),
-	FConsoleCommandDelegate::CreateLambda([]
-	{
-		if (GIsEditor)
-		{
-			if (const TSharedPtr<SDockTab> Tab = FGlobalTabmanager::Get()->FindExistingLiveTab(GetWindowTabId()))
-			{
-				Tab->RequestCloseTab();
-			}
-		}
-		else
-		{
-			if (WindowPtr.IsValid())
-			{
-				WindowPtr.Pin()->RequestDestroyWindow();
-			}
-		}
-	})
-};
 }
 
 #undef LOCTEXT_NAMESPACE
