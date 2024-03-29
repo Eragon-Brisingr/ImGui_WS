@@ -21,6 +21,7 @@ public:
 	SLATE_BEGIN_ARGS(SImGuiPanel)
 	{}
 	SLATE_EVENT(FOnImGuiTick, OnImGuiTick)
+	SLATE_ATTRIBUTE(FVector2D, DesiredSize)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& Args);
@@ -30,7 +31,7 @@ public:
 
 	void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
-	FVector2D ComputeDesiredSize(float LayoutScaleMultiplier) const override { return FVector2D::ZeroVector; }
+	FVector2D ComputeDesiredSize(float LayoutScaleMultiplier) const override;
 	bool SupportsKeyboardFocus() const override { return true; }
 	FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
@@ -73,6 +74,9 @@ public:
 	void EndComposition() override;
 	// ITextInputMethodContext end
 private:
+	FOnImGuiTick OnImGuiTick;
+	TAttribute<FVector2D> DesiredSize;
+
 	struct IMGUI_SLATE_API FImGuiDrawData
 	{
 		FImGuiDrawData();
@@ -93,7 +97,6 @@ private:
 	FImGuiDrawData DrawData;
 	ImGuiContext* Context = nullptr;
 	ImPlotContext* PlotContext = nullptr;
-	FOnImGuiTick OnImGuiTick;
 	struct
 	{
 		uint8 bEnable : 1 { false };

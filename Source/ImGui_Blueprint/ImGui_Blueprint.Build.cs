@@ -1,8 +1,8 @@
-using UnrealBuildTool;
+﻿using UnrealBuildTool;
 
-public class ImGui_Slate : ModuleRules
+public class ImGui_Blueprint : ModuleRules
 {
-    public ImGui_Slate(ReadOnlyTargetRules Target) : base(Target)
+    public ImGui_Blueprint(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -20,9 +20,9 @@ public class ImGui_Slate : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
-                "InputCore",
-                "ApplicationCore",
-                "UMG",
+                "BlueprintGraph",
+                "UnrealEd",
+                "KismetCompiler",
 
                 "ImGui",
             }

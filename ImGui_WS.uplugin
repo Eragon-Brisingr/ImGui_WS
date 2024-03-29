@@ -44,6 +44,11 @@
 			"Name": "ImGui_Slate",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_Blueprint",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "Default"
 		}
 	]
 }

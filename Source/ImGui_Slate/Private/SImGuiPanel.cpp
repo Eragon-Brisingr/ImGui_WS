@@ -231,6 +231,7 @@ void SImGuiPanel::Construct(const FArguments& Args)
 	Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
 	PlotContext = ImPlot::CreateContext();
 	OnImGuiTick = Args._OnImGuiTick;
+	DesiredSize = Args._DesiredSize;
 }
 
 SImGuiPanel::~SImGuiPanel()
@@ -376,6 +377,11 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 	}
 
 	return LayerId;
+}
+
+FVector2D SImGuiPanel::ComputeDesiredSize(float LayoutScaleMultiplier) const
+{
+	return DesiredSize.Get();
 }
 
 FReply SImGuiPanel::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
