@@ -5,6 +5,7 @@
 
 #include "ImageUtils.h"
 #include "TextureResource.h"
+#include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 
 namespace UnrealImGui
@@ -22,14 +23,8 @@ namespace UnrealImGui
 	FImGuiTextureHandle::FImGuiTextureHandle(const UTexture* Texture)
 	{
 		using namespace ImGuiTextureId;
-		uint32& Id = HandleIdMap.FindOrAdd(Texture);
-		if (Id == 0)
-		{
-			HandleIdCounter += 1;
-			Id = HandleIdCounter;
-			IdTextureMap.Add(Id, Texture);
-		}
-		ImTextureId = Id;
+		bool bCreated;
+		ImTextureId = FindOrCreateHandle(Texture, bCreated).ImTextureId;
 	}
 
 	FImGuiTextureHandle FImGuiTextureHandle::MakeUnique()
@@ -37,6 +32,20 @@ namespace UnrealImGui
 		using namespace ImGuiTextureId;
 		HandleIdCounter += 1;
 		return { HandleIdCounter };
+	}
+
+	FImGuiTextureHandle FImGuiTextureHandle::FindOrCreateHandle(const UTexture* Texture, bool& bCreated)
+	{
+		using namespace ImGuiTextureId;
+		uint32& Id = HandleIdMap.FindOrAdd(Texture);
+		bCreated = Id == 0;
+		if (bCreated)
+		{
+			HandleIdCounter += 1;
+			Id = HandleIdCounter;
+			IdTextureMap.Add(Id, Texture);
+		}
+		return FImGuiTextureHandle{ Id };
 	}
 
 	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data)
@@ -375,6 +384,33 @@ namespace UnrealImGui
 		default:
 			ensure(false);
 		}
+	}
+
+	FImGuiTextureHandle FindOrAddTexture(ETextureFormat TextureFormat, UTexture* Texture)
+	{
+		if (Texture == nullptr)
+		{
+			return {};
+		}
+
+		bool bCreated;
+		const FImGuiTextureHandle Handle = FImGuiTextureHandle::FindOrCreateHandle(Texture, bCreated);
+		if (bCreated)
+		{
+			if (UTexture2D* Texture2D = Cast<UTexture2D>(Texture))
+			{
+				UpdateTextureData(Handle, TextureFormat, Texture2D);
+			}
+			else if (UTextureRenderTarget2D* RT = Cast<UTextureRenderTarget2D>(Texture))
+			{
+				UpdateTextureData(Handle, TextureFormat, RT);
+			}
+			else
+			{
+				ensure(false);
+			}
+		}
+		return Handle;
 	}
 
 	const UTexture* FindTexture(uint32 ImTextureId)

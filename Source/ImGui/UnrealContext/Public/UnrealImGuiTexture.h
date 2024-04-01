@@ -17,6 +17,7 @@ namespace UnrealImGui
 		{}
 		FImGuiTextureHandle(const UTexture* Texture);
 		static FImGuiTextureHandle MakeUnique();
+		static FImGuiTextureHandle FindOrCreateHandle(const UTexture* Texture, bool& bCreated);
 
 		explicit operator bool() const
 		{
@@ -44,6 +45,8 @@ namespace UnrealImGui
 	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data);
 	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, UTexture2D* Texture2D);
 	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, UTextureRenderTarget2D* RenderTarget2D);
+
+	IMGUI_API FImGuiTextureHandle FindOrAddTexture(ETextureFormat TextureFormat, UTexture* Texture);
 	IMGUI_API const UTexture* FindTexture(uint32 ImTextureId);
 
 	namespace Private

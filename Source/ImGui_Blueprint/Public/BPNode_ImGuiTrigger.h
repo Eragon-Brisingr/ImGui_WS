@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "K2Node_CallFunction.h"
-#include "BPNode_ImGuiBoolTrigger.generated.h"
+#include "BPNode_ImGuiTrigger.generated.h"
 
 UCLASS()
-class IMGUI_BLUEPRINT_API UBPNode_ImGuiBoolTrigger : public UK2Node_CallFunction
+class IMGUI_BLUEPRINT_API UBPNode_ImGuiTrigger : public UK2Node_CallFunction
 {
 	GENERATED_BODY()
 

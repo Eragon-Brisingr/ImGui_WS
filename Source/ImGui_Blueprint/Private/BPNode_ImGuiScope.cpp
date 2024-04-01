@@ -13,6 +13,11 @@
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
+FText UBPNode_ImGuiScope::GetNodeTitle(ENodeTitleType::Type TitleType) const
+{
+	return FText::Format(LOCTEXT("ImGuiFunctionPrefix", "ImGui {0}"), Super::GetNodeTitle(TitleType));
+}
+
 void UBPNode_ImGuiScope::AllocateDefaultPins()
 {
 	Super::AllocateDefaultPins();
@@ -24,7 +29,10 @@ void UBPNode_ImGuiScope::AllocateDefaultPins()
 		OnScopePin->PinToolTip = ReturnPin->PinToolTip;
 		RemovePin(ReturnPin);
 	}
-	Pins.Swap(Pins.IndexOfByKey(OnScopePin), Pins.IndexOfByKey(GetThenPin()));
+	if (UEdGraphPin* ThenPin = GetThenPin())
+	{
+		Pins.Swap(Pins.IndexOfByKey(OnScopePin), Pins.IndexOfByKey(ThenPin));
+	}
 }
 
 void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
@@ -36,8 +44,7 @@ void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& Actio
 	}
 
 	const static FName MD_ImGuiScopeExit = TEXT("ImGuiScopeExit");
-	const static FName MD_ImGuiAlwaysExit = TEXT("ImGuiAlwaysExit");
-	for (TFieldIterator<UFunction> It{ UUnrealImGuiLibrary::StaticClass() }; It; ++It)
+	for (TFieldIterator<UFunction> It{ UImGui::StaticClass() }; It; ++It)
 	{
 		const UFunction* Function = *It;
 		const FString ScopeExitFuncName = Function->GetMetaData(MD_ImGuiScopeExit);
@@ -45,13 +52,9 @@ void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& Actio
 		{
 			continue;
 		}
-		if (!ensure(CastField<FBoolProperty>(Function->GetReturnProperty())))
-		{
-			continue;
-		}
 		ensure(Function->HasMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
 
-		const UFunction* ExitFunction = UUnrealImGuiLibrary::StaticClass()->FindFunctionByName(*ScopeExitFuncName);
+		const UFunction* ExitFunction = UImGui::StaticClass()->FindFunctionByName(*ScopeExitFuncName);
 		if (!ensure(ExitFunction))
 		{
 			continue;
@@ -60,11 +63,10 @@ void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& Actio
 
 		UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
 		NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda(
-			[Function, ExitFunction, AlwaysExit = Function->HasMetaData(MD_ImGuiAlwaysExit)](UEdGraphNode* NewNode, bool bIsTemplateNode)
+			[Function, ExitFunction](UEdGraphNode* NewNode, bool bIsTemplateNode)
 		{
 			UBPNode_ImGuiScope* ImGuiScope = CastChecked<UBPNode_ImGuiScope>(NewNode);
 			ImGuiScope->SetFromFunction(Function);
-			ImGuiScope->bAlwaysExit = AlwaysExit;
 			ImGuiScope->ExitFunctionReference.SetFromField<UFunction>(ExitFunction, ImGuiScope->GetBlueprintClassFromNode());
 		});
 		ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
@@ -74,6 +76,13 @@ void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& Actio
 void UBPNode_ImGuiScope::ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
 {
 	Super::Super::ExpandNode(CompilerContext, SourceGraph);
+
+	const UFunction* Function = GetTargetFunction();
+	if (Function == nullptr)
+	{
+		BreakAllNodeLinks();
+		return;
+	}
 
 	UK2Node_CallFunction* FunctionNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 	FunctionNode->FunctionReference = FunctionReference;
@@ -99,6 +108,10 @@ void UBPNode_ImGuiScope::ExpandNode(FKismetCompilerContext& CompilerContext, UEd
 	UK2Node_ExecutionSequence* SequenceNode = CompilerContext.SpawnIntermediateNode<UK2Node_ExecutionSequence>(this, SourceGraph);
 	SequenceNode->AllocateDefaultPins();
 	FunctionNode->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(SequenceNode->GetExecPin());
+
+	const bool bBoolReturn = CastField<FBoolProperty>(Function->GetReturnProperty()) != nullptr;
+	const static FName MD_ImGuiAlwaysExit = TEXT("ImGuiAlwaysExit");
+	const bool bAlwaysExit = bBoolReturn == false || Function->HasMetaData(MD_ImGuiAlwaysExit);
 	if (bAlwaysExit)
 	{
 		SequenceNode->GetThenPinGivenIndex(1)->MakeLinkTo(ExitFunctionNode->GetExecPin());
@@ -109,22 +122,29 @@ void UBPNode_ImGuiScope::ExpandNode(FKismetCompilerContext& CompilerContext, UEd
 		CompilerContext.MovePinLinksToIntermediate(*GetThenPin(), *SequenceNode->GetThenPinGivenIndex(1));
 	}
 
-	UK2Node_IfThenElse* BranchNode = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
-	BranchNode->AllocateDefaultPins();
-	SequenceNode->GetThenPinGivenIndex(0)->MakeLinkTo(BranchNode->GetExecPin());
-	FunctionNode->GetReturnValuePin()->MakeLinkTo(BranchNode->GetConditionPin());
-	if (bAlwaysExit)
+	if (bBoolReturn)
 	{
-		CompilerContext.MovePinLinksToIntermediate(*FindPinChecked(TEXT("OnScope"), EGPD_Output), *BranchNode->GetThenPin());
+		UK2Node_IfThenElse* BranchNode = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
+		BranchNode->AllocateDefaultPins();
+		SequenceNode->GetThenPinGivenIndex(0)->MakeLinkTo(BranchNode->GetExecPin());
+		FunctionNode->GetReturnValuePin()->MakeLinkTo(BranchNode->GetConditionPin());
+		if (bAlwaysExit)
+		{
+			CompilerContext.MovePinLinksToIntermediate(*FindPinChecked(TEXT("OnScope"), EGPD_Output), *BranchNode->GetThenPin());
+		}
+		else
+		{
+			UK2Node_ExecutionSequence* SequenceNodeExit = CompilerContext.SpawnIntermediateNode<UK2Node_ExecutionSequence>(this, SourceGraph);
+			SequenceNodeExit->AllocateDefaultPins();
+
+			BranchNode->GetThenPin()->MakeLinkTo(SequenceNodeExit->GetExecPin());
+			CompilerContext.MovePinLinksToIntermediate(*FindPinChecked(TEXT("OnScope"), EGPD_Output), *SequenceNodeExit->GetThenPinGivenIndex(0));
+			SequenceNodeExit->GetThenPinGivenIndex(1)->MakeLinkTo(ExitFunctionNode->GetExecPin());
+		}
 	}
 	else
 	{
-		UK2Node_ExecutionSequence* SequenceNodeExit = CompilerContext.SpawnIntermediateNode<UK2Node_ExecutionSequence>(this, SourceGraph);
-		SequenceNodeExit->AllocateDefaultPins();
-
-		BranchNode->GetThenPin()->MakeLinkTo(SequenceNodeExit->GetExecPin());
-		CompilerContext.MovePinLinksToIntermediate(*FindPinChecked(TEXT("OnScope"), EGPD_Output), *SequenceNodeExit->GetThenPinGivenIndex(0));
-		SequenceNodeExit->GetThenPinGivenIndex(1)->MakeLinkTo(ExitFunctionNode->GetExecPin());
+		CompilerContext.MovePinLinksToIntermediate(*FindPinChecked(TEXT("OnScope"), EGPD_Output), *SequenceNode->GetThenPinGivenIndex(0));
 	}
 }
 

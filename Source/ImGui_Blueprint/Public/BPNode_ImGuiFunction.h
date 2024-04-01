@@ -4,18 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "K2Node_CallFunction.h"
-#include "BPNode_ImGuiScope.generated.h"
+#include "BPNode_ImGuiFunction.generated.h"
 
 UCLASS()
-class IMGUI_BLUEPRINT_API UBPNode_ImGuiScope : public UK2Node_CallFunction
+class IMGUI_BLUEPRINT_API UBPNode_ImGuiFunction : public UK2Node_CallFunction
 {
 	GENERATED_BODY()
 
 	FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
-	void AllocateDefaultPins() override;
 	void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
-	void ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
-
-	UPROPERTY()
-	FMemberReference ExitFunctionReference;
 };

@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "BPNode_ImGuiBoolTrigger.h"
+#include "BPNode_ImGuiTrigger.h"
 
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
@@ -13,13 +13,12 @@
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
-FText UBPNode_ImGuiBoolTrigger::GetNodeTitle(ENodeTitleType::Type TitleType) const
+FText UBPNode_ImGuiTrigger::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	const FString NodeTitle = Super::GetNodeTitle(TitleType).ToString();
-	return FText::FromString(NodeTitle.Replace(TEXT("Im Gui"), TEXT("ImGui")));
+	return FText::Format(LOCTEXT("ImGuiFunctionPrefix", "ImGui {0}"), Super::GetNodeTitle(TitleType));
 }
 
-void UBPNode_ImGuiBoolTrigger::AllocateDefaultPins()
+void UBPNode_ImGuiTrigger::AllocateDefaultPins()
 {
 	Super::AllocateDefaultPins();
 
@@ -32,7 +31,7 @@ void UBPNode_ImGuiBoolTrigger::AllocateDefaultPins()
 	}
 }
 
-void UBPNode_ImGuiBoolTrigger::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
+void UBPNode_ImGuiTrigger::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
 {
 	const UClass* ActionKey = GetClass();
 	if (!ActionRegistrar.IsOpenForRegistration(ActionKey))
@@ -40,11 +39,11 @@ void UBPNode_ImGuiBoolTrigger::GetMenuActions(FBlueprintActionDatabaseRegistrar&
 		return;
 	}
 
-	const static FName MD_ImGuiBoolTrigger = TEXT("ImGuiBoolTrigger");
-	for (TFieldIterator<UFunction> It{ UUnrealImGuiLibrary::StaticClass() }; It; ++It)
+	const static FName MD_ImGuiTrigger = TEXT("ImGuiTrigger");
+	for (TFieldIterator<UFunction> It{ UImGui::StaticClass() }; It; ++It)
 	{
 		const UFunction* Function = *It;
-		if (Function->HasMetaData(MD_ImGuiBoolTrigger) == false)
+		if (Function->HasMetaData(MD_ImGuiTrigger) == false)
 		{
 			continue;
 		}
@@ -57,16 +56,23 @@ void UBPNode_ImGuiBoolTrigger::GetMenuActions(FBlueprintActionDatabaseRegistrar&
 		UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
 		NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda([Function](UEdGraphNode* NewNode, bool bIsTemplateNode)
 		{
-			UBPNode_ImGuiBoolTrigger* ImGuiBoolTrigger = CastChecked<UBPNode_ImGuiBoolTrigger>(NewNode);
+			UBPNode_ImGuiTrigger* ImGuiBoolTrigger = CastChecked<UBPNode_ImGuiTrigger>(NewNode);
 			ImGuiBoolTrigger->SetFromFunction(Function);
 		});
 		ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
 	}
 }
 
-void UBPNode_ImGuiBoolTrigger::ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
+void UBPNode_ImGuiTrigger::ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
 {
 	Super::Super::ExpandNode(CompilerContext, SourceGraph);
+
+	const UFunction* Function = GetTargetFunction();
+	if (Function == nullptr)
+	{
+		BreakAllNodeLinks();
+		return;
+	}
 
 	UK2Node_CallFunction* FunctionNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 	FunctionNode->FunctionReference = FunctionReference;

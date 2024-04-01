@@ -36,7 +36,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "ImGui")
 	FVector2D DesiredSize{ 800, 600 };
 
-	UPROPERTY(EditAnywhere, Category = "ImGui", meta = (Bitmask, BitmaskEnum = EImGuiConfigFlags))
+	UPROPERTY(EditAnywhere, Category = "ImGui", meta = (Bitmask, BitmaskEnum = "/Script/ImGui_Slate.EImGuiConfigFlags"))
 	int32 ConfigFlags;
 
 	UPROPERTY(EditAnywhere, Category = "ImGui")
