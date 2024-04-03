@@ -356,9 +356,8 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 		constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet;
 		ImGui::TreeNodeEx(TCHAR_TO_UTF8(*Name), flags);
 	}
-	if (ImGui::IsItemHovered())
+	if (ImGui::BeginItemTooltip())
 	{
-		ImGui::BeginTooltip();
 #if WITH_EDITOR
 		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Property->GetToolTipText().ToString()));
 #else
@@ -550,9 +549,8 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 
 				const FString CategoryName = FString::Printf(TEXT("%s##%d%d"), *DetailClass->GetName(), InnerValue::GPropertyDepth, InnerValue::GImGuiContainerIndex);
 				const bool IsShowChildren = ImGui::TreeNode(TCHAR_TO_UTF8(*CategoryName));
-				if (ImGui::IsItemHovered())
+				if (ImGui::BeginItemTooltip())
 				{
-					ImGui::BeginTooltip();
 #if WITH_EDITOR
 					ImGui::TextUnformatted(TCHAR_TO_UTF8(*DetailClass->GetToolTipText().ToString()));
 #else

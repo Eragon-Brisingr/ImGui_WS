@@ -20,34 +20,6 @@ namespace UnrealImGui
 		TMap<uint32, TWeakObjectPtr<const UTexture>> IdTextureMap;
 	}
 
-	FImGuiTextureHandle::FImGuiTextureHandle(const UTexture* Texture)
-	{
-		using namespace ImGuiTextureId;
-		bool bCreated;
-		ImTextureId = FindOrCreateHandle(Texture, bCreated).ImTextureId;
-	}
-
-	FImGuiTextureHandle FImGuiTextureHandle::MakeUnique()
-	{
-		using namespace ImGuiTextureId;
-		HandleIdCounter += 1;
-		return { HandleIdCounter };
-	}
-
-	FImGuiTextureHandle FImGuiTextureHandle::FindOrCreateHandle(const UTexture* Texture, bool& bCreated)
-	{
-		using namespace ImGuiTextureId;
-		uint32& Id = HandleIdMap.FindOrAdd(Texture);
-		bCreated = Id == 0;
-		if (bCreated)
-		{
-			HandleIdCounter += 1;
-			Id = HandleIdCounter;
-			IdTextureMap.Add(Id, Texture);
-		}
-		return FImGuiTextureHandle{ Id };
-	}
-
 	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data)
 	{
 		if (ensure(Private::UpdateTextureData_WS))
@@ -418,4 +390,32 @@ namespace UnrealImGui
 		using namespace ImGuiTextureId;
 		return IdTextureMap.FindRef(ImTextureId).Get();
 	}
+}
+
+FImGuiTextureHandle::FImGuiTextureHandle(const UTexture* Texture)
+{
+	using namespace UnrealImGui::ImGuiTextureId;
+	bool bCreated;
+	ImTextureId = FindOrCreateHandle(Texture, bCreated).ImTextureId;
+}
+
+FImGuiTextureHandle FImGuiTextureHandle::MakeUnique()
+{
+	using namespace UnrealImGui::ImGuiTextureId;
+	HandleIdCounter += 1;
+	return { HandleIdCounter };
+}
+
+FImGuiTextureHandle FImGuiTextureHandle::FindOrCreateHandle(const UTexture* Texture, bool& bCreated)
+{
+	using namespace UnrealImGui::ImGuiTextureId;
+	uint32& Id = HandleIdMap.FindOrAdd(Texture);
+	bCreated = Id == 0;
+	if (bCreated)
+	{
+		HandleIdCounter += 1;
+		Id = HandleIdCounter;
+		IdTextureMap.Add(Id, Texture);
+	}
+	return FImGuiTextureHandle{ Id };
 }

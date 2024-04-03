@@ -376,7 +376,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 
 					if (DesktopPlatform->OpenFileDialog(
 						ParentWindowWindowHandle,
-						NSLOCTEXT("UnrealImGui", "ImportTooltip", "Select File Import").ToString(),
+						NSLOCTEXT("ImGui_WS", "ImportTooltip", "Select File Import").ToString(),
 						FileDialogState.FileDialogCurrentFolder,
 						*Path,
 						Ext,

@@ -12,7 +12,7 @@ bool UImGuiEditorDefaultLayoutBase::ShouldCreateLayout(UObject* Owner) const
 	return Owner && Owner->IsA<UImGuiEditorDefaultDebugger>();
 }
 
-void UImGuiEditorDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+void UImGuiEditorDefaultLayout::LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	Super::LoadDefaultLayout(Owner, LayoutBuilder);
 
@@ -38,7 +38,8 @@ void UImGuiEditorDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealI
 
 UImGuiEditorDefaultDebugger::UImGuiEditorDefaultDebugger()
 {
-	PanelBuilder.DockSpaceName = TEXT("ImGuiEditorDefaultLayoutDockSpace");
+	PanelBuilder = CreateDefaultSubobject<UUnrealImGuiPanelBuilder>(GET_MEMBER_NAME_CHECKED(ThisClass, PanelBuilder));
+	PanelBuilder->DockSpaceName = TEXT("ImGuiEditorDefaultLayoutDockSpace");
 }
 
 UWorld* UImGuiEditorDefaultDebugger::GetWorld() const
@@ -48,7 +49,7 @@ UWorld* UImGuiEditorDefaultDebugger::GetWorld() const
 
 void UImGuiEditorDefaultDebugger::Register()
 {
-	PanelBuilder.Register(this);
+	PanelBuilder->Register(this);
 }
 
 void UImGuiEditorDefaultDebugger::Draw(float DeltaSeconds)
@@ -57,18 +58,18 @@ void UImGuiEditorDefaultDebugger::Draw(float DeltaSeconds)
 
 	if (ImGui::BeginMainMenuBar())
 	{
-		if (ImGui::BeginMenu("Layout"))
-		{
-			PanelBuilder.DrawLayoutStateMenu(Owner);
-			if (ImGui::MenuItem("Reset"))
-			{
-				PanelBuilder.LoadDefaultLayout(Owner);
-			}
-			ImGui::EndMenu();
-		}
 		if (ImGui::BeginMenu("Windows"))
 		{
-			PanelBuilder.DrawPanelStateMenu(Owner);
+			PanelBuilder->DrawPanelStateMenu(Owner);
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Layout"))
+		{
+			PanelBuilder->DrawLayoutStateMenu(Owner);
+			if (ImGui::MenuItem("Reset"))
+			{
+				PanelBuilder->LoadDefaultLayout(Owner);
+			}
 			ImGui::EndMenu();
 		}
 
@@ -86,7 +87,7 @@ void UImGuiEditorDefaultDebugger::Draw(float DeltaSeconds)
 	WindowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 	if (ImGui::Begin("Background", nullptr, WindowFlags))
 	{
-		PanelBuilder.DrawPanels(Owner, DeltaSeconds);
+		PanelBuilder->DrawPanels(Owner, DeltaSeconds);
 	}
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();

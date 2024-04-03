@@ -13,7 +13,7 @@ class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerDetailsPanel : public UImGuiWor
 public:
 	UImGuiWorldDebuggerDetailsPanel();
 	
-	void Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds) override;
+	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
 	
 	UPROPERTY(Config)
 	uint8 bDisplayAllProperties : 1;

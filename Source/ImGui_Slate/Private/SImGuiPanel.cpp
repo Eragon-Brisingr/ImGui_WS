@@ -85,6 +85,7 @@ SImGuiPanel::FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 
 void SImGuiPanel::Construct(const FArguments& Args)
 {
+	ImGui::FScopedContext ScopedContext{ nullptr };
 	Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
 	PlotContext = ImPlot::CreateContext();
 	OnImGuiTick = Args._OnImGuiTick;

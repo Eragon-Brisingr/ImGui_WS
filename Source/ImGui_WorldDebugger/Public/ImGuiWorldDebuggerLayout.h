@@ -30,5 +30,5 @@ public:
 		Utils,
 	};
 	UImGuiWorldDebuggerDefaultLayout();
-	void LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) override;
+	void LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder) override;
 };

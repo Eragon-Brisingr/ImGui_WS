@@ -201,7 +201,14 @@ public:
 		const FString PluginResourcesPath = Plugin->GetBaseDir() / TEXT("Resources");
 
 		IMGUI_CHECKVERSION();
+
+		ImGuiContext* PrevContext = ImGui::GetCurrentContext();
 		Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
+		ImGui::SetCurrentContext(Context);
+		ON_SCOPE_EXIT
+		{
+			ImGui::SetCurrentContext(PrevContext);
+		};
 		ImGuiIO& IO = ImGui::GetIO();
 
 		IO.MouseDrawCursor = false;
@@ -270,10 +277,10 @@ public:
 
 		// prepare font texture
 		{
-			unsigned char* pixels;
-			int32 width, height;
-			ImGui::GetIO().Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
-			ImGuiWS.SetTexture(0, ImGuiWS::FTexture::Type::Alpha8, width, height, pixels);
+			unsigned char* Pixels;
+			int32 Width, Height;
+			IO.Fonts->GetTexDataAsAlpha8(&Pixels, &Width, &Height);
+			ImGuiWS.SetTexture(0, ImGuiWS::FTexture::Type::Alpha8, Width, Height, Pixels);
 		}
 
 		using namespace UnrealImGui;
@@ -747,9 +754,8 @@ public:
 						{
 							StopRecord();
 						}
-						if (RecordSession.IsValid() && ImGui::IsItemHovered())
+						if (RecordSession.IsValid() && ImGui::BeginItemTooltip())
 						{
-							ImGui::BeginTooltip();
 							ImGui::Text("Stop Current Record");
 							ImGui::Text("Record Info:");
 							ImGui::Text("	Frame: %d", RecordSession->nFrames());
@@ -760,9 +766,8 @@ public:
 
 					{
 						ImGui::Text("Connections: %d", ImGuiWS.NumConnected());
-						if (ImGui::IsItemHovered())
+						if (ImGui::BeginItemTooltip())
 						{
-							ImGui::BeginTooltip();
 							ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 							ImGui::Separator();
 							ImGui::Text(" Id   Ip address");

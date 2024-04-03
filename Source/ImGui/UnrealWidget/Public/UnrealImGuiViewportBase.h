@@ -27,9 +27,9 @@ class IMGUI_API UUnrealImGuiViewportBase : public UUnrealImGuiPanelBase
 public:
 	UUnrealImGuiViewportBase();
 
-	void Register(UObject* Owner) override;
-	void Unregister(UObject* Owner) override;
-	void Draw(UObject* Owner, float DeltaSeconds) override;
+	void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+	void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
 
 	virtual bool ShouldCreateExtent(UObject* Owner, const TSubclassOf<UUnrealImGuiViewportExtentBase>& ExtentType) const { return true; }
 	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) {}

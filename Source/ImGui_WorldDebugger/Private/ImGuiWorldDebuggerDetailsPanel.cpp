@@ -5,25 +5,28 @@
 
 #include "imgui.h"
 #include "UnrealImGuiPropertyDetails.h"
-#include "ImGuiWorldDebuggerBase.h"
 #include "ImGuiWorldDebuggerLayout.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
+#include "UnrealImGuiPanelBuilder.h"
+
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UImGuiWorldDebuggerDetailsPanel::UImGuiWorldDebuggerDetailsPanel()
 	: bDisplayAllProperties(false)
 	, bEnableEditVisibleProperty(false)
 {
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
-	Title = NSLOCTEXT("ImGuiWorldDebugger", "Details", "Details");
+	Title = LOCTEXT("Details", "Details");
+	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
 	DefaultDockSpace =
 	{
 		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Details }
 	};
 }
 
-void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds)
+void UImGuiWorldDebuggerDetailsPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
-	const UImGuiWorldDebuggerViewportPanel* Viewport = WorldDebugger->PanelBuilder.FindPanel<UImGuiWorldDebuggerViewportPanel>();
+	const UImGuiWorldDebuggerViewportPanel* Viewport = Builder->FindPanel<UImGuiWorldDebuggerViewportPanel>();
 	if (Viewport == nullptr)
 	{
 		return;
@@ -70,7 +73,9 @@ void UImGuiWorldDebuggerDetailsPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugge
 	{
 		if (Extent->bEnable)
 		{
-			Extent->DrawDetailsPanel(WorldDebugger, this);
+			Extent->DrawDetailsPanel(Owner, this);
 		}
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

@@ -11,20 +11,21 @@ UUnrealImGuiLogPanel::UUnrealImGuiLogPanel()
 {
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
 	Title = LOCTEXT("Log", "Log");
-	DefaultState = FDefaultPanelState{ true, true };
+	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
+	DefaultState = { true, true };
 }
 
-void UUnrealImGuiLogPanel::Register(UObject* Owner)
+void UUnrealImGuiLogPanel::Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
 	LogDevice.Register();
 }
 
-void UUnrealImGuiLogPanel::Unregister(UObject* Owner)
+void UUnrealImGuiLogPanel::Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
 	LogDevice.Unregister();
 }
 
-void UUnrealImGuiLogPanel::Draw(UObject* Owner, float DeltaSeconds)
+void UUnrealImGuiLogPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
 	LogDevice.Draw(this);
 	CmdDevice.Draw(this);

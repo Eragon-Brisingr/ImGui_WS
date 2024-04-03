@@ -5,21 +5,24 @@
 
 #include "EngineUtils.h"
 #include "imgui.h"
-#include "ImGuiWorldDebuggerBase.h"
 #include "ImGuiWorldDebuggerLayout.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
+#include "UnrealImGuiPanelBuilder.h"
+
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UImGuiWorldDebuggerOutlinerPanel::UImGuiWorldDebuggerOutlinerPanel()
 	: bInvokeRefreshSortOrder(false)
 {
-	Title = NSLOCTEXT("ImGuiWorldDebugger", "Outliner", "Outliner");
+	Title = LOCTEXT("Outliner", "Outliner");
+	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
 	DefaultDockSpace =
 	{
 		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Outliner }
 	};
 }
 
-void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDebugger)
+void UImGuiWorldDebuggerOutlinerPanel::Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
 	const UWorld* World = GetWorld();
 	RefreshDisplayActors();
@@ -52,7 +55,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Register(AImGuiWorldDebuggerBase* WorldDe
 	}));
 }
 
-void UImGuiWorldDebuggerOutlinerPanel::Unregister(AImGuiWorldDebuggerBase* WorldDebugger)
+void UImGuiWorldDebuggerOutlinerPanel::Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -62,9 +65,9 @@ void UImGuiWorldDebuggerOutlinerPanel::Unregister(AImGuiWorldDebuggerBase* World
 	FWorldDelegates::LevelAddedToWorld.Remove(OnLevelAdd_DelegateHandle);
 }
 
-void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds)
+void UImGuiWorldDebuggerOutlinerPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
-	UImGuiWorldDebuggerViewportPanel* Viewport = WorldDebugger->PanelBuilder.FindPanel<UImGuiWorldDebuggerViewportPanel>();
+	const UImGuiWorldDebuggerViewportPanel* Viewport = Builder->FindPanel<UImGuiWorldDebuggerViewportPanel>();
 	if (Viewport == nullptr)
 	{
 		return;
@@ -145,9 +148,8 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 							ViewportExtent->SetSelectedEntities({ Actor });
 							ViewportExtent->FocusActor(Actor);
 						}
-						if (ImGui::IsItemHovered())
+						if (ImGui::BeginItemTooltip())
 						{
-							ImGui::BeginTooltip();
 							ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetName()));
 							ImGui::EndTooltip();
 						}
@@ -156,9 +158,8 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(AImGuiWorldDebuggerBase* WorldDebugg
 					if (ImGui::TableNextColumn())
 					{
 						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
-						if (ImGui::IsItemHovered())
+						if (ImGui::BeginItemTooltip())
 						{
-							ImGui::BeginTooltip();
 							ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetClass()->GetName()));
 							ImGui::EndTooltip();
 						}
@@ -253,3 +254,5 @@ bool UImGuiWorldDebuggerOutlinerPanel::CanActorDisplay(const AActor* Actor) cons
 
 	return false;
 }
+
+#undef LOCTEXT_NAMESPACE

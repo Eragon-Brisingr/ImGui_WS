@@ -3,37 +3,42 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UnrealImGuiTexture.generated.h"
 
 class UTexture2D;
 class UTextureRenderTarget2D;
 class UTexture;
 
+USTRUCT(BlueprintType)
+struct IMGUI_API FImGuiTextureHandle
+{
+	GENERATED_BODY()
+
+	FImGuiTextureHandle()
+		: ImTextureId(0)
+	{}
+	FImGuiTextureHandle(const UTexture* Texture);
+	static FImGuiTextureHandle MakeUnique();
+	static FImGuiTextureHandle FindOrCreateHandle(const UTexture* Texture, bool& bCreated);
+
+	explicit operator bool() const
+	{
+		return ImTextureId != 0;
+	}
+	operator uint32() const
+	{
+		return ImTextureId;
+	}
+	bool IsValid() const { return ImTextureId != 0; }
+private:
+	FImGuiTextureHandle(uint32 Id)
+		: ImTextureId(Id)
+	{}
+	uint32 ImTextureId;
+};
+
 namespace UnrealImGui
 {
-	struct IMGUI_API FImGuiTextureHandle
-	{
-		FImGuiTextureHandle()
-			: ImTextureId(0)
-		{}
-		FImGuiTextureHandle(const UTexture* Texture);
-		static FImGuiTextureHandle MakeUnique();
-		static FImGuiTextureHandle FindOrCreateHandle(const UTexture* Texture, bool& bCreated);
-
-		explicit operator bool() const
-		{
-			return ImTextureId != 0;
-		}
-		operator uint32() const
-		{
-			return ImTextureId;
-		}
-	private:
-		FImGuiTextureHandle(uint32 Id)
-			: ImTextureId(Id)
-		{}
-		uint32 ImTextureId;
-	};
-
 	enum class ETextureFormat : uint8
 	{
 		Alpha8 = 0,

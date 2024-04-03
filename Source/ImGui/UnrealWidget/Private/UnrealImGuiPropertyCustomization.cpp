@@ -363,9 +363,8 @@ namespace UnrealImGui
 									ImGui::SetItemDefaultFocus();
 								}
 
-								if (ImGui::IsItemHovered())
+								if (ImGui::BeginItemTooltip())
 								{
-									ImGui::BeginTooltip();
 									ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 									ImGui::EndTooltip();
 								}
@@ -465,9 +464,8 @@ namespace UnrealImGui
 								ImGui::SetItemDefaultFocus();
 							}
 
-							if (ImGui::IsItemHovered())
+							if (ImGui::BeginItemTooltip())
 							{
-								ImGui::BeginTooltip();
 								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.GetSoftObjectPath().ToString()));
 								ImGui::EndTooltip();
 							}
@@ -486,9 +484,8 @@ namespace UnrealImGui
 			}
 			if (FirstValue)
 			{
-				if (ImGui::IsItemHovered())
+				if (ImGui::BeginItemTooltip())
 				{
-					ImGui::BeginTooltip();
 					ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue->GetPathName()));
 					ImGui::EndTooltip();
 				}
@@ -612,9 +609,8 @@ namespace UnrealImGui
 									ImGui::SetItemDefaultFocus();
 								}
 
-								if (ImGui::IsItemHovered())
+								if (ImGui::BeginItemTooltip())
 								{
-									ImGui::BeginTooltip();
 									ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetFullName()));
 									ImGui::EndTooltip();
 								}
@@ -701,9 +697,8 @@ namespace UnrealImGui
 								ImGui::SetItemDefaultFocus();
 							}
 
-							if (ImGui::IsItemHovered())
+							if (ImGui::BeginItemTooltip())
 							{
-								ImGui::BeginTooltip();
 								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.GetSoftObjectPath().ToString()));
 								ImGui::EndTooltip();
 							}
@@ -723,9 +718,8 @@ namespace UnrealImGui
 		}
 		if (IsIdentical && FirstValue.IsNull() == false)
 		{
-			if (ImGui::IsItemHovered())
+			if (ImGui::BeginItemTooltip())
 			{
-				ImGui::BeginTooltip();
 				ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue.ToString()));
 				ImGui::EndTooltip();
 			}
@@ -807,9 +801,8 @@ namespace UnrealImGui
 								ImGui::SetItemDefaultFocus();
 							}
 
-							if (ImGui::IsItemHovered())
+							if (ImGui::BeginItemTooltip())
 							{
-								ImGui::BeginTooltip();
 								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 								ImGui::EndTooltip();
 							}
@@ -829,9 +822,8 @@ namespace UnrealImGui
 		}
 		if (FirstValue)
 		{
-			if (ImGui::IsItemHovered())
+			if (ImGui::BeginItemTooltip())
 			{
-				ImGui::BeginTooltip();
 				ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue->GetPathName()));
 				ImGui::EndTooltip();
 			}
@@ -914,9 +906,8 @@ namespace UnrealImGui
 								ImGui::SetItemDefaultFocus();
 							}
 
-							if (ImGui::IsItemHovered())
+							if (ImGui::BeginItemTooltip())
 							{
-								ImGui::BeginTooltip();
 								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 								ImGui::EndTooltip();
 							}
@@ -936,9 +927,8 @@ namespace UnrealImGui
 		}
 		if (IsIdentical && FirstValue.IsNull() == false)
 		{
-			if (ImGui::IsItemHovered())
+			if (ImGui::BeginItemTooltip())
 			{
-				ImGui::BeginTooltip();
 				ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstValue.ToString()));
 				ImGui::EndTooltip();
 			}

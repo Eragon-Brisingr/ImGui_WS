@@ -4,16 +4,18 @@
 #include "UnrealImGuiPanelBuilder.h"
 
 #include "imgui.h"
+#include "ImGuiSettings.h"
 #include "UnrealImGuiLayout.h"
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiStat.h"
+#include "Engine/AssetManager.h"
 
-FUnrealImGuiPanelBuilder::FUnrealImGuiPanelBuilder()
+UUnrealImGuiPanelBuilder::UUnrealImGuiPanelBuilder()
 {
 
 }
 
-void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
+void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 {
 	if (DockSpaceName == NAME_None)
 	{
@@ -22,7 +24,7 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	}
 
 	// 只对继承树叶节点的类型生效
-	auto RemoveNotLeafClass = [](TArray<UClass*>& Classes)
+	static auto RemoveNotLeafClass = [](TArray<UClass*>& Classes)
 	{
 		for (int32 Idx = 0; Idx < Classes.Num(); ++Idx)
 		{
@@ -38,13 +40,40 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 			}
 		}
 	};
-	
+
+	static auto CreatePanel = [](UUnrealImGuiPanelBuilder* Builder, const UClass* Class)
+	{
+		UUnrealImGuiPanelBase* Panel = NewObject<UUnrealImGuiPanelBase>(Builder, Class, Class->GetFName(), RF_Transient);
+		if (Panel->Title.IsEmpty())
+		{
+			Panel->Title = FText::FromName(Panel->GetClass()->GetFName());
+		}
+		return Panel;
+	};
+
+	static auto RegisterPanel = [](UObject* Owner, const UUnrealImGuiLayoutBase* Layout, UUnrealImGuiPanelBase* Panel, UUnrealImGuiPanelBuilder* Builder)
+	{
+		if (const bool* IsOpenPtr = Panel->PanelOpenState.Find(Layout->GetClass()->GetFName()))
+		{
+			Panel->SetOpenState(*IsOpenPtr);
+		}
+		else if (const auto* LayoutSettings = Panel->DefaultDockSpace.Find(Layout->GetClass()->GetFName()))
+		{
+			Panel->SetOpenState(LayoutSettings->bOpen);
+		}
+		else
+		{
+			Panel->SetOpenState(Panel->DefaultState.bOpen);
+		}
+		Panel->Register(Owner, Builder);
+	};
+
 	TSet<const UClass*> VisitedLayoutClasses;
 	{
 		TArray<UClass*> LayoutClasses;
 		GetDerivedClasses(UUnrealImGuiLayoutBase::StaticClass(), LayoutClasses);
 		RemoveNotLeafClass(LayoutClasses);
-		for (UClass* Class : LayoutClasses)
+		for (const UClass* Class : LayoutClasses)
 		{
 			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
 			{
@@ -64,7 +93,7 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
-			UUnrealImGuiLayoutBase* Layout = NewObject<UUnrealImGuiLayoutBase>(Owner, Class, Class->GetFName(), RF_Transient);
+			UUnrealImGuiLayoutBase* Layout = NewObject<UUnrealImGuiLayoutBase>(this, Class, Class->GetFName(), RF_Transient);
 			if (Layout->LayoutName.IsEmpty())
 			{
 				Layout->LayoutName = FText::FromName(Layout->GetClass()->GetFName());
@@ -100,42 +129,80 @@ void FUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
+#if WITH_EDITOR
+			if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
+			{
+				continue;
+			}
+#endif
+
 			const UUnrealImGuiPanelBase* CDO = Class->GetDefaultObject<UUnrealImGuiPanelBase>();
 			if (CDO->ShouldCreatePanel(Owner) == false)
 			{
 				continue;
 			}
 
-			UUnrealImGuiPanelBase* Panel = NewObject<UUnrealImGuiPanelBase>(Owner, Class, Class->GetFName(), RF_Transient);
-			if (Panel->Title.IsEmpty())
-			{
-				Panel->Title = FText::FromName(Panel->GetClass()->GetFName());
-			}
+			UUnrealImGuiPanelBase* Panel = CreatePanel(this, Class);
 			Panels.Add(Panel);
+		}
+
+		TArray<FSoftObjectPath> ToLoadClasses;
+		const auto& ImGuiSettings = GetDefault<UImGuiSettings>()->BlueprintPanels;
+		for (const TSoftClassPtr<UUnrealImGuiPanelBase>& Panel : ImGuiSettings)
+		{
+			if (Panel.Get() == nullptr)
+			{
+				ToLoadClasses.AddUnique(Panel.ToSoftObjectPath());
+			}
+		}
+		if (ToLoadClasses.Num() > 0)
+		{
+			StreamableHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(ToLoadClasses, FStreamableDelegate::CreateWeakLambda(Owner, [ToLoadClasses, Owner, this]
+			{
+				StreamableHandle.Reset();
+				TArray<UClass*> Classes;
+				for (const FSoftObjectPath ObjectPath: ToLoadClasses)
+				{
+					UClass* Class = Cast<UClass>(ObjectPath.ResolveObject());
+					if (Class == nullptr)
+					{
+						continue;
+					}
+					if (Class->GetDefaultObject<UUnrealImGuiPanelBase>()->ShouldCreatePanel(Owner) == false)
+					{
+						continue;
+					}
+					Classes.Add(Class);
+				}
+				RemoveNotLeafClass(Classes);
+				int32 Idx = Panels.Num();
+				for (const UClass* Class : Classes)
+				{
+					UUnrealImGuiPanelBase* Panel = CreatePanel(this, Class);
+					Panels.Add(Panel);
+				}
+				const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
+				for (; Idx < Panels.Num(); ++Idx)
+				{
+					RegisterPanel(Owner, Layout, Panels[Idx], this);
+				}
+			}));
 		}
 	}
 
 	const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
-		if (const bool* IsOpenPtr = Panel->PanelOpenState.Find(Layout->GetClass()->GetFName()))
-		{
-			Panel->SetOpenState(*IsOpenPtr);
-		}
-		else if (const auto* LayoutSettings = Panel->DefaultDockSpace.Find(Layout->GetClass()->GetFName()))
-		{
-			Panel->SetOpenState(LayoutSettings->bOpen);
-		}
-		else
-		{
-			Panel->SetOpenState(Panel->DefaultState.bOpen);
-		}
-		Panel->Register(Owner);
+		RegisterPanel(Owner, Layout, Panel, this);
 	}
 }
 
-void FUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
+void UUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 {
+	if (StreamableHandle.IsValid())
+	{
+		StreamableHandle->CancelHandle();
+	}
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
 		if (Panel->bIsOpen)
@@ -149,17 +216,17 @@ void FUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 	}
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
-		Panel->Unregister(Owner);
+		Panel->Unregister(Owner, this);
 	}
 }
 
-void FUnrealImGuiPanelBuilder::LoadDefaultLayout(UObject* Owner)
+void UUnrealImGuiPanelBuilder::LoadDefaultLayout(UObject* Owner)
 {
 	UUnrealImGuiLayoutBase* Layout = Layouts[ActiveLayoutIndex];
 	Layout->LoadDefaultLayout(Owner, *this);
 }
 
-void FUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
+void UUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 {
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UnrealImGuiPanelBuilder_DrawPanels"), STAT_UnrealImGuiPanelBuilder_DrawPanels, STATGROUP_ImGui);
 	
@@ -167,11 +234,50 @@ void FUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 	Layout->CreateDockSpace(Owner, *this);
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
-		Panel->DrawWindow(Layout, Owner, DeltaSeconds);
+		Panel->DrawWindow(Layout, Owner, this, DeltaSeconds);
 	}
 }
 
-void FUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)
+void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
+{
+	for (UUnrealImGuiPanelBase* Panel : Panels)
+	{
+		int32 CategoryDepth = 0;
+		for (const FText& Category : Panel->Categories)
+		{
+			if (ImGui::BeginMenu(TCHAR_TO_UTF8(*Category.ToString())))
+			{
+				CategoryDepth += 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+		if (CategoryDepth == Panel->Categories.Num())
+		{
+			bool IsOpen = Panel->bIsOpen;
+			if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
+			{
+				const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
+				Panel->SetOpenState(IsOpen);
+				Panel->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
+				Panel->SaveConfig();
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
+				ImGui::EndTooltip();
+			}
+		}
+		for (int32 Idx = 0; Idx < CategoryDepth; ++Idx)
+		{
+			ImGui::EndMenu();
+		}
+	}
+}
+
+void UUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)
 {
 	for (int32 Idx = 0; Idx < Layouts.Num(); ++Idx)
 	{
@@ -180,39 +286,17 @@ void FUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)
 		{
 			ActiveLayoutIndex = Idx;
 			ActiveLayoutClass = Layout->GetClass();
-			Owner->SaveConfig();
+			SaveConfig();
 		}
-		if (ImGui::IsItemHovered())
+		if (ImGui::BeginItemTooltip())
 		{
-			ImGui::BeginTooltip();
 			ImGui::TextUnformatted(TCHAR_TO_UTF8(*Layout->GetClass()->GetName()));
 			ImGui::EndTooltip();
 		}
 	}
 }
 
-void FUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
-{
-	for (UUnrealImGuiPanelBase* Panel : Panels)
-	{
-		bool IsOpen = Panel->bIsOpen;
-		if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
-		{
-			const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
-			Panel->SetOpenState(IsOpen);
-			Panel->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
-			Panel->SaveConfig();
-		}
-		if (ImGui::IsItemHovered())
-		{
-			ImGui::BeginTooltip();
-			ImGui::TextUnformatted(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
-			ImGui::EndTooltip();
-		}
-	}
-}
-
-UUnrealImGuiPanelBase* FUnrealImGuiPanelBuilder::FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const
+UUnrealImGuiPanelBase* UUnrealImGuiPanelBuilder::FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const
 {
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{

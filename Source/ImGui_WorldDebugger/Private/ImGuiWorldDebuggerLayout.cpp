@@ -19,7 +19,7 @@ UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 	LayoutName = LOCTEXT("Default", "Default");
 }
 
-void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	const uint32 DockSpaceId = DockSpaceIdMap[ImGui::GetCurrentContext()];
 	const ImGuiID DockId = ImGui::DockBuilderAddNode(DockSpaceId, ImGuiDockNodeFlags_None);

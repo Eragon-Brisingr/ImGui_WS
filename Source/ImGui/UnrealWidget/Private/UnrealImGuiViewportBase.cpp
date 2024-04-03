@@ -20,7 +20,7 @@ UUnrealImGuiViewportBase::UUnrealImGuiViewportBase()
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
 }
 
-void UUnrealImGuiViewportBase::Register(UObject* Owner)
+void UUnrealImGuiViewportBase::Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
 	{
 		// Only last left child class
@@ -109,7 +109,7 @@ void UUnrealImGuiViewportBase::Register(UObject* Owner)
 	CurrentZoom = FMath::Pow(2.f, -ZoomFactor);
 }
 
-void UUnrealImGuiViewportBase::Unregister(UObject* Owner)
+void UUnrealImGuiViewportBase::Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
 	for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 	{
@@ -121,7 +121,7 @@ void UUnrealImGuiViewportBase::Unregister(UObject* Owner)
 	}
 }
 
-void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
+void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
 	const UWorld* World = Owner->GetWorld();
 	if (World == nullptr)
@@ -213,9 +213,8 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, float DeltaSeconds)
 						}
 						Extent->SaveConfig();
 					}
-					if (ImGui::IsItemHovered())
+					if (ImGui::BeginItemTooltip())
 					{
-						ImGui::BeginTooltip();
 						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Extent->GetClass()->GetName()));
 						ImGui::EndTooltip();
 					}

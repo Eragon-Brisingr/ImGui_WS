@@ -19,6 +19,7 @@
 UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 {
 	Title = LOCTEXT("Viewport", "Viewport");
+	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
 	DefaultDockSpace =
 	{
 		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Viewport }
@@ -248,9 +249,8 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawFilterPopup(UUnrealImGuiViewpor
 				if (FilterValue.IsEmpty() || ClassPathName.Contains(FilterValue))
 				{
 					ImGui::Selectable(TCHAR_TO_UTF8(*Class->GetName()));
-					if (ImGui::IsItemHovered())
+					if (ImGui::BeginItemTooltip())
 					{
-						ImGui::BeginTooltip();
 						ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class->GetFullName()));
 						ImGui::EndTooltip();
 						if (IO.MouseDown[ImGuiMouseButton_Left])
@@ -278,9 +278,8 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawFilterPopup(UUnrealImGuiViewpor
 			if (FilterActorString.IsEmpty() || Actor->GetName().Contains(FilterActorString))
 			{
 				ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()));
-				if (ImGui::IsItemHovered())
+				if (ImGui::BeginItemTooltip())
 				{
-					ImGui::BeginTooltip();
 					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetFullName(World)));
 					ImGui::EndTooltip();
 					if (IO.MouseDown[ImGuiMouseButton_Left])
@@ -515,9 +514,8 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UI
 	if (FilteredSelectedActors.Num() == 1)
 	{
 		ImGui::Text("Actor Name: %s", TCHAR_TO_UTF8(*FirstActor->GetName()));
-		if (ImGui::IsItemHovered())
+		if (ImGui::BeginItemTooltip())
 		{
-			ImGui::BeginTooltip();
 			ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstActor->GetName()));
 			ImGui::EndTooltip();
 		}

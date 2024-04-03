@@ -390,9 +390,8 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 						}
 						ImGui::TableNextColumn();
 						ImGui::TextUnformatted(*Cmd.CmdHelp);
-						if (ImGui::IsItemHovered())
+						if (ImGui::BeginItemTooltip())
 						{
-							ImGui::BeginTooltip();
 							ImGui::TextUnformatted(*Cmd.CmdHelp);
 							ImGui::EndTooltip();
 						}

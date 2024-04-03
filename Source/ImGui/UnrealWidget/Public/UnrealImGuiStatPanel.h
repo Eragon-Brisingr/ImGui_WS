@@ -14,5 +14,5 @@ class IMGUI_API UUnrealImGuiStatPanel : public UUnrealImGuiPanelBase
 public:
 	UUnrealImGuiStatPanel();
 
-	void Draw(UObject* Owner, float DeltaSeconds) override;
+	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
 };

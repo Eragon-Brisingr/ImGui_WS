@@ -8,7 +8,40 @@
 
 class UUnrealImGuiLayoutBase;
 
-UCLASS(Abstract, config = ImGuiPanelConfig, PerObjectConfig)
+USTRUCT()
+struct FImGuiDefaultPanelState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	bool bOpen{ false };
+	UPROPERTY(EditAnywhere)
+	bool bEnableDock{ true };
+};
+
+USTRUCT()
+struct FImGuiDefaultDockLayout : public FImGuiDefaultPanelState
+{
+	GENERATED_BODY()
+
+	FImGuiDefaultDockLayout() = default;
+	FImGuiDefaultDockLayout(int32 DockId)
+		: FImGuiDefaultDockLayout(DockId, true)
+	{}
+	FImGuiDefaultDockLayout(int32 DockId, bool bOpen, bool bEnableDock = true)
+		: FImGuiDefaultPanelState{ bOpen, bEnableDock }
+		, DockId(DockId)
+	{}
+	FImGuiDefaultDockLayout(int32 DockId, const FImGuiDefaultPanelState& DefaultPanelState)
+		: FImGuiDefaultPanelState{ DefaultPanelState }
+		, DockId(DockId)
+	{}
+
+	UPROPERTY(EditAnywhere)
+	int32 DockId = 0;
+};
+
+UCLASS(Abstract, Config = ImGuiPanelConfig, PerObjectConfig, Blueprintable)
 class IMGUI_API UUnrealImGuiPanelBase : public UObject
 {
 	GENERATED_BODY()
@@ -16,37 +49,23 @@ class IMGUI_API UUnrealImGuiPanelBase : public UObject
 public:
 	UUnrealImGuiPanelBase();
 
+	UPROPERTY(EditDefaultsOnly, meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"), Category = Settings)
 	int32 ImGuiWindowFlags;
+	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	FText Title;
-	struct FDefaultPanelState
-	{
-		bool bOpen;
-		bool bEnableDock;
-	};
-	struct FDefaultDockLayout : FDefaultPanelState
-	{
-		FDefaultDockLayout(int32 DockId)
-			: FDefaultDockLayout(DockId, true)
-		{}
-		FDefaultDockLayout(int32 DockId, bool bOpen, bool bEnableDock = true)
-			: FDefaultPanelState{ bOpen, bEnableDock }
-			, DockId(DockId)
-		{}
-		FDefaultDockLayout(int32 DockId, const FDefaultPanelState& DefaultPanelState)
-			: FDefaultPanelState{ DefaultPanelState }
-			, DockId(DockId)
-		{}
-		int32 DockId;
-	};
-	FDefaultPanelState DefaultState{ false, true };
+	UPROPERTY(EditDefaultsOnly, Category = Settings)
+	TArray<FText> Categories;
+	UPROPERTY(EditDefaultsOnly, Category = Settings)
+	FImGuiDefaultPanelState DefaultState{ false, true };
 	// Key为类型名
-	TMap<FName, FDefaultDockLayout> DefaultDockSpace;
+	UPROPERTY(EditDefaultsOnly, Category = Settings)
+	TMap<FName, FImGuiDefaultDockLayout> DefaultDockSpace;
 
 	bool IsOpen() const { return bIsOpen; }
 	void SetOpenState(bool bOpen);
 	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s_%s"), *Title.ToString(), *GetClass()->GetName(), *LayoutName); }
 protected:
-	friend struct FUnrealImGuiPanelBuilder;
+	friend class UUnrealImGuiPanelBuilder;
 	friend class UUnrealImGuiLayoutBase;
 	
 	UPROPERTY(Transient)
@@ -54,15 +73,27 @@ protected:
 	UPROPERTY(Config)
 	TMap<FName, bool> PanelOpenState;
 
-	virtual bool ShouldCreatePanel(UObject* Owner) const { return true; }
+	virtual bool ShouldCreatePanel(UObject* Owner) const { FEditorScriptExecutionGuard EditorScriptExecutionGuard; return ReceiveShouldCreatePanel(Owner); }
 
-	virtual void Register(UObject* Owner) {}
-	virtual void Unregister(UObject* Owner) {}
+	virtual void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveRegister(Owner, Builder); }
+	virtual void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveUnregister(Owner, Builder); }
 
-	virtual void WhenOpen() {}
-	virtual void WhenClose() {}
+	virtual void WhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveWhenOpen(Owner, Builder); }
+	virtual void WhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveWhenClose(Owner, Builder); }
 	
-	virtual void Draw(UObject* Owner, float DeltaSeconds) {}
+	virtual void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveDraw(Owner, Builder, DeltaSeconds); }
+	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
 
-	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, float DeltaSeconds);
+	UFUNCTION(BlueprintNativeEvent)
+	bool ReceiveShouldCreatePanel(UObject* Owner) const;
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReveiveRegister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReveiveUnregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReveiveWhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReveiveWhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReveiveDraw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
 };

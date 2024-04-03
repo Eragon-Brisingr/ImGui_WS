@@ -9,22 +9,22 @@
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiPanel.h"
 
-void UUnrealImGuiLayoutBase::Register(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+void UUnrealImGuiLayoutBase::Register(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	UnrealImGui::OnImGuiContextDestroyed.AddUObject(this, &ThisClass::WhenImGuiContextDestroyed);
 }
 
-void UUnrealImGuiLayoutBase::Unregister(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+void UUnrealImGuiLayoutBase::Unregister(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	UnrealImGui::OnImGuiContextDestroyed.RemoveAll(this);
 }
 
-void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuilder& LayoutBuilder, const TMap<int32, uint32>& DockIdMap, const int32 DefaultDockId)
+void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const UUnrealImGuiPanelBuilder& LayoutBuilder, const TMap<int32, uint32>& DockIdMap, const int32 DefaultDockId)
 {
 	for (UUnrealImGuiPanelBase* Panel : LayoutBuilder.Panels)
 	{
-		const UUnrealImGuiPanelBase::FDefaultDockLayout* DefaultDockLayout = Panel->DefaultDockSpace.Find(GetClass()->GetFName());
-		const UUnrealImGuiPanelBase::FDefaultPanelState& DefaultPanelState = DefaultDockLayout ? static_cast<const UUnrealImGuiPanelBase::FDefaultPanelState&>(*DefaultDockLayout) : Panel->DefaultState;
+		const FImGuiDefaultDockLayout* DefaultDockLayout = Panel->DefaultDockSpace.Find(GetClass()->GetFName());
+		const FImGuiDefaultPanelState& DefaultPanelState = DefaultDockLayout ? static_cast<const FImGuiDefaultPanelState&>(*DefaultDockLayout) : Panel->DefaultState;
 		const int32 PanelDockKey = DefaultDockLayout ? DefaultDockLayout->DockId : DefaultDockId;
 		const ImGuiID* MappedDockId = DockIdMap.Find(PanelDockKey);
 		if (DefaultPanelState.bEnableDock && MappedDockId)
@@ -43,7 +43,7 @@ void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const FUnrealImGuiPanelBuild
 	}
 }
 
-void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+void UUnrealImGuiLayoutBase::CreateDockSpace(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	uint32& DockSpaceId = DockSpaceIdMap.FindOrAdd(ImGui::GetCurrentContext(), INDEX_NONE);
 	if (DockSpaceId == INDEX_NONE)

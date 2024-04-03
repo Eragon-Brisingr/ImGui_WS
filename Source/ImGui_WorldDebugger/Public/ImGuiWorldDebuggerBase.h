@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UnrealImGuiPanelBuilder.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "ImGuiWorldDebuggerBase.generated.h"
 
+class UUnrealImGuiPanelBuilder;
 class AImGuiWorldDebuggerBase;
 
 namespace ImGuiWorldDebuggerBootstrap
@@ -17,7 +17,7 @@ namespace ImGuiWorldDebuggerBootstrap
 	void PostWorldInitialization(UWorld* World, const UWorld::InitializationValues);
 }
 
-UCLASS(Transient, DefaultToInstanced, config = ImGuiWorldDebugger, PerObjectConfig)
+UCLASS(Transient, DefaultToInstanced, Config = ImGuiPanelConfig, PerObjectConfig)
 class IMGUI_WORLDDEBUGGER_API AImGuiWorldDebuggerBase : public AActor
 {
 	GENERATED_BODY()
@@ -32,6 +32,6 @@ public:
 	UPROPERTY(Config)
 	uint8 bEnableImGuiWorldDebugger : 1;
 	
-	UPROPERTY(Config)
-	FUnrealImGuiPanelBuilder PanelBuilder;
+	UPROPERTY()
+	TObjectPtr<UUnrealImGuiPanelBuilder> PanelBuilder;
 };

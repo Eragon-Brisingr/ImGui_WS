@@ -20,8 +20,8 @@ public:
 	UPROPERTY(Config)
 	FUnrealImGuiCmdDevice CmdDevice;
 
-	void Register(UObject* Owner) override;
-	void Unregister(UObject* Owner) override;
-	void Draw(UObject* Owner, float DeltaSeconds) override;
+	void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+	void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
 };
 

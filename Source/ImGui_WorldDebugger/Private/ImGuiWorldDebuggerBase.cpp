@@ -6,6 +6,7 @@
 #include "EngineUtils.h"
 #include "imgui.h"
 #include "ImGuiUnrealContextManager.h"
+#include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiStat.h"
 #include "Engine/Engine.h"
 
@@ -106,7 +107,8 @@ namespace ImGuiWorldDebuggerBootstrap
 AImGuiWorldDebuggerBase::AImGuiWorldDebuggerBase()
 	: bEnableImGuiWorldDebugger(true)
 {
-	PanelBuilder.DockSpaceName = TEXT("ImGuiWorldDebuggerDockSpace");
+	PanelBuilder = CreateDefaultSubobject<UUnrealImGuiPanelBuilder>(GET_MEMBER_NAME_CHECKED(ThisClass, PanelBuilder));
+	PanelBuilder->DockSpaceName = TEXT("ImGuiWorldDebuggerDockSpace");
 }
 
 void AImGuiWorldDebuggerBase::BeginPlay()
@@ -118,12 +120,12 @@ void AImGuiWorldDebuggerBase::BeginPlay()
 	{
 		Context->OnDraw.AddUObject(this, &AImGuiWorldDebuggerBase::DrawDebugPanel);
 	}
-	PanelBuilder.Register(this);
+	PanelBuilder->Register(this);
 }
 
 void AImGuiWorldDebuggerBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	PanelBuilder.Unregister(this);
+	PanelBuilder->Unregister(this);
 	if (FImGuiUnrealContext* Context = UImGuiUnrealContextManager::GetImGuiContext(GetWorld()))
 	{
 		Context->OnDraw.RemoveAll(this);
@@ -149,7 +151,7 @@ void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 			}
 			if (bEnableImGuiWorldDebugger)
 			{
-				PanelBuilder.DrawPanelStateMenu(this);
+				PanelBuilder->DrawPanelStateMenu(this);
 			}
 			
 			ImGui::EndMenu();
@@ -158,12 +160,12 @@ void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 		{
 			if (ImGui::BeginMenu("Layout"))
 			{
-				PanelBuilder.DrawLayoutStateMenu(this);
+				PanelBuilder->DrawLayoutStateMenu(this);
 
 				ImGui::Separator();
 				if (ImGui::MenuItem("Reset Layout"))
 				{
-					PanelBuilder.LoadDefaultLayout(this);
+					PanelBuilder->LoadDefaultLayout(this);
 				}
 				ImGui::EndMenu();
 			}
@@ -186,7 +188,7 @@ void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 	WindowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 	if (ImGui::Begin("Background", nullptr, WindowFlags))
 	{
-		PanelBuilder.DrawPanels(this, DeltaSeconds);
+		PanelBuilder->DrawPanels(this, DeltaSeconds);
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();

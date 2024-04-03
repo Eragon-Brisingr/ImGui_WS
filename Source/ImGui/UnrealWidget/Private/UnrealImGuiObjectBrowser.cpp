@@ -17,11 +17,12 @@ UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
 	: bDisplayAllProperties(true)
 	, bEnableEditVisibleProperty(false)
 {
-	DefaultState = FDefaultPanelState{ false, true };
+	DefaultState = { false, true };
 	Title = LOCTEXT("Object Browser", "Object Browser");
+	Categories = { LOCTEXT("ToolsCategory", "Tools") };
 }
 
-void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, float DeltaSeconds)
+void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
 	if (ImGui::BeginChild("ObjectPathViewer", { 0.f, 30.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar))
 	{
@@ -138,9 +139,8 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, float DeltaSeconds)
 						SelectedObject = Object;
 						FilterString.Empty();
 					}
-					if (ImGui::IsItemHovered())
+					if (ImGui::BeginItemTooltip())
 					{
-						ImGui::BeginTooltip();
 						ImGui::TextUnformatted(TCHAR_TO_UTF8(*FString::Printf(TEXT("Class: %s"), *Object->GetClass()->GetName())));
 						ImGui::Text("InPackage: %s", Object->HasAnyFlags(RF_Load) ? "true" : "false");
 						ImGui::EndTooltip();

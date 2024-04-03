@@ -5,11 +5,13 @@
 
 #include "imgui.h"
 #include "UnrealImGuiLayout.h"
+#include "UnrealImGuiPanelBuilder.h"
 
 UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
 	: ImGuiWindowFlags(ImGuiWindowFlags_None)
 	, bIsOpen(false)
 {
+	Categories.Add(NSLOCTEXT("ImGui_WS", "MiscCategory", "Misc"));
 }
 
 void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
@@ -17,18 +19,19 @@ void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
 	if (bIsOpen != bOpen)
 	{
 		bIsOpen = bOpen;
+		UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
 		if (bIsOpen)
 		{
-			WhenOpen();
+			WhenOpen(Builder->GetOuter(), Builder);
 		}
 		else
 		{
-			WhenClose();
+			WhenClose(Builder->GetOuter(), Builder);
 		}
 	}
 }
 
-void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, float DeltaSeconds)
+void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
 	if (bIsOpen == false)
 	{
@@ -39,7 +42,7 @@ void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* 
 	const FString WindowName = GetLayoutPanelName(Layout->GetName());
 	if (ImGui::Begin(TCHAR_TO_UTF8(*WindowName), &IsOpen, ImGuiWindowFlags))
 	{
-		Draw(Owner, DeltaSeconds);
+		Draw(Owner, Builder, DeltaSeconds);
 	}
 	ImGui::End();
 	if (bIsOpen != IsOpen)
@@ -48,4 +51,9 @@ void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* 
 		SetOpenState(IsOpen);
 		SaveConfig();
 	}
+}
+
+bool UUnrealImGuiPanelBase::ReceiveShouldCreatePanel_Implementation(UObject* Owner) const
+{
+	return true;
 }

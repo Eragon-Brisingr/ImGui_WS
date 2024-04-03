@@ -13,11 +13,12 @@
 UUnrealImGuiStatPanel::UUnrealImGuiStatPanel()
 {
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
-	DefaultState = FDefaultPanelState{ false, true };
+	DefaultState = { false, true };
 	Title = LOCTEXT("Stat", "Stat");
+	Categories = { LOCTEXT("ToolsCategory", "Tools") };
 }
 
-void UUnrealImGuiStatPanel::Draw(UObject* Owner, float DeltaSeconds)
+void UUnrealImGuiStatPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
 #if STATS
 	// From RenderGroupedWithHierarchy

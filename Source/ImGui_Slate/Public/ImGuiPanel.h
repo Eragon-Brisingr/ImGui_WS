@@ -20,7 +20,7 @@ enum class EImGuiConfigFlags : int32
     NoMouseCursorChange  = ImGuiConfigFlags_NoMouseCursorChange    ,   // Instruct backend to not alter mouse cursor shape and visibility. Use if the backend cursor changes are interfering with yours and you don't want to use SetMouseCursor() to change mouse cursor. You may want to honor requests from imgui by reading GetMouseCursor() yourself instead.
 
     // [BETA] Docking
-    ImGuiConfigFlags_DockingEnable          ,   // Docking enable flags.
+    DockingEnable        = ImGuiConfigFlags_DockingEnable          ,   // Docking enable flags.
 };
 ENUM_CLASS_FLAGS(EImGuiConfigFlags);
 
@@ -37,7 +37,7 @@ public:
 	FVector2D DesiredSize{ 800, 600 };
 
 	UPROPERTY(EditAnywhere, Category = "ImGui", meta = (Bitmask, BitmaskEnum = "/Script/ImGui_Slate.EImGuiConfigFlags"))
-	int32 ConfigFlags;
+	int32 ConfigFlags = 0;
 
 	UPROPERTY(EditAnywhere, Category = "ImGui")
 	FString IniFileName;
@@ -47,7 +47,7 @@ public:
 	FOnImGuiTick OnImGuiTick;
 
 #if WITH_EDITOR
-	const FText GetPaletteCategory() override { return NSLOCTEXT("ImGui_WS", "Common", "Common"); }
+	const FText GetPaletteCategory() override;
 #endif
 
 private:

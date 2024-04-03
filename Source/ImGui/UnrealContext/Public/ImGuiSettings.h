@@ -6,6 +6,8 @@
 #include "Engine/DeveloperSettings.h"
 #include "ImGuiSettings.generated.h"
 
+class UUnrealImGuiPanelBase;
+
 UENUM()
 enum class EImGuiFontGlyphRanges : uint8
 {
@@ -29,7 +31,7 @@ enum class EImGuiFontGlyphRanges : uint8
 	Vietnamese,
 };
 
-UCLASS(Config=ImGui_WS, DisplayName = "ImGui WS")
+UCLASS(Config = Game, DefaultConfig, DisplayName = "ImGui WS")
 class IMGUI_API UImGuiSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -69,4 +71,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	float ServerTickInterval = 1 / 120.f;
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS")
+	TArray<TSoftClassPtr<UUnrealImGuiPanelBase>> BlueprintPanels;
 };

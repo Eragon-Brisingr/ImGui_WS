@@ -5,15 +5,16 @@
 #include "CoreMinimal.h"
 #include "UnrealImGuiPanelBuilder.generated.h"
 
+struct FStreamableHandle;
 class UUnrealImGuiPanelBase;
 class UUnrealImGuiLayoutBase;
 
-USTRUCT()
-struct IMGUI_API FUnrealImGuiPanelBuilder
+UCLASS(Config = ImGuiPanelConfig, PerObjectConfig)
+class IMGUI_API UUnrealImGuiPanelBuilder : public UObject
 {
 	GENERATED_BODY()
 public:
-	FUnrealImGuiPanelBuilder();
+	UUnrealImGuiPanelBuilder();
 	
 	// Layout name
 	FName DockSpaceName = NAME_None;
@@ -24,8 +25,8 @@ public:
 	void LoadDefaultLayout(UObject* Owner);
 	void DrawPanels(UObject* Owner, float DeltaSeconds);
 
-	void DrawLayoutStateMenu(UObject* Owner);
 	void DrawPanelStateMenu(UObject* Owner);
+	void DrawLayoutStateMenu(UObject* Owner);
 
 	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const;
 	template<typename T>
@@ -44,4 +45,6 @@ public:
 
 	UPROPERTY(Transient)
 	TArray<UUnrealImGuiPanelBase*> Panels;
+private:
+	TSharedPtr<FStreamableHandle> StreamableHandle;
 };

@@ -5,8 +5,12 @@
 
 #include "imgui_internal.h"
 #include "SImGuiPanel.h"
+#include "Engine/World.h"
 #include "GenericPlatform/GenericPlatformFile.h"
 #include "HAL/PlatformFileManager.h"
+#include "Widgets/Text/STextBlock.h"
+
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 UImGuiPanel::UImGuiPanel()
 {
@@ -18,9 +22,21 @@ UImGuiPanel::UImGuiPanel()
 
 TSharedRef<SWidget> UImGuiPanel::RebuildWidget()
 {
+#if WITH_EDITOR
+	if (IsDesignTime())
+	{
+		return SNew(STextBlock)
+			.Text(LOCTEXT("ImGuiPreviewWorldText", "ImGui Panel"))
+			.Justification(ETextJustify::Center);
+	}
+#endif
+
 	const TSharedRef<SImGuiPanel> ImGuiPanel = SNew(SImGuiPanel)
 		.OnImGuiTick_Lambda([this](float DeltaSeconds)
 		{
+#if WITH_EDITOR
+			FEditorScriptExecutionGuard EditorScriptExecutionGuard;
+#endif
 			OnImGuiTick.Broadcast(DeltaSeconds);
 		})
 		.DesiredSize_Lambda([this]
@@ -47,3 +63,12 @@ TSharedRef<SWidget> UImGuiPanel::RebuildWidget()
 	IO.ConfigFlags = ConfigFlags;
 	return ImGuiPanel;
 }
+
+#if WITH_EDITOR
+const FText UImGuiPanel::GetPaletteCategory()
+{
+	return LOCTEXT("Common", "Common");
+}
+#endif
+
+#undef LOCTEXT_NAMESPACE

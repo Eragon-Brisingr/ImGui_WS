@@ -16,9 +16,9 @@ class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerOutlinerPanel : public UImGuiWo
 public:
 	UImGuiWorldDebuggerOutlinerPanel();
 
-	void Register(AImGuiWorldDebuggerBase* WorldDebugger) override;
-	void Unregister(AImGuiWorldDebuggerBase* WorldDebugger) override;
-	void Draw(AImGuiWorldDebuggerBase* WorldDebugger, float DeltaSeconds) override;
+	void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+	void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
 private:
 	FDelegateHandle OnActorSpawnedHandler;
 	FDelegateHandle OnActorDestroyedHandler;

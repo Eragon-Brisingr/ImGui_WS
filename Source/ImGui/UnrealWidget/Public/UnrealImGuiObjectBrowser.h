@@ -21,5 +21,5 @@ public:
 	UPROPERTY(Config)
 	uint8 bEnableEditVisibleProperty : 1;
 	
-	void Draw(UObject* Owner, float DeltaSeconds) override;
+	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
 };
