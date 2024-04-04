@@ -13,6 +13,7 @@
 #include "ImGuiFontAtlas.h"
 #include "ImGuiSettings.h"
 #include "ImGuiUnrealContextManager.h"
+#include "imgui_internal.h"
 #include "imgui_notify.h"
 #include "implot.h"
 #include "UnrealImGuiStat.h"
@@ -539,21 +540,11 @@ public:
 	struct FImGuiData : FNoncopyable
 	{
 		ImDrawData CopiedDrawData;
-		const ImGuiMouseCursor MouseCursor;
-		const int32 ControlId;
-		const uint32 ControlIp;
-		const ImVec2 MousePos;
-		const ImVec2 ViewportSize;
-		const uint8 bWantTextInput : 1;
+		const ImGuiWS::FDrawInfo DrawInfo;
 
-		FImGuiData(const ImDrawData* DrawData, ImGuiWS_Record::FImGuiWS_Replay* Replay, const ImGuiMouseCursor MouseCursor, const int32 ControlId, uint32 ControlIp, const ImVec2& MousePos, const ImVec2& ViewportSize, bool bWantTextInput)
+		FImGuiData(const ImDrawData* DrawData, ImGuiWS_Record::FImGuiWS_Replay* Replay, const ImGuiWS::FDrawInfo&& DrawInfo)
 			: CopiedDrawData{ *DrawData }
-			, MouseCursor{ MouseCursor }
-			, ControlId{ ControlId }
-			, ControlIp{ ControlIp }
-			, MousePos{ MousePos }
-			, ViewportSize{ ViewportSize }
-			, bWantTextInput{ bWantTextInput }
+			, DrawInfo{ DrawInfo }
 		{
 			ImGuiWS_Record::FImGuiWS_Replay::FDrawData ReplayDrawData;
 			if (Replay && Replay->GetDrawData(ReplayDrawData))
@@ -812,9 +803,17 @@ public:
 			// store ImDrawData for asynchronous dispatching to WS clients
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
 			const ImDrawData* DrawData = ImGui::GetDrawData();
-			const ImVec2 MousePos = ImGui::GetMousePos();
 			const auto CurControlIp = State.Clients.FindRef(State.CurControlId).Ip;
-			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, RecordReplay.Get(), ImGui::GetMouseCursor(), State.CurControlId, CurControlIp, MousePos, IO.DisplaySize, IO.WantTextInput));
+			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, RecordReplay.Get(),
+				ImGuiWS::FDrawInfo{
+					ImGui::GetMouseCursor(),
+					State.CurControlId,
+					CurControlIp,
+					FVector2f{ ImGui::GetMousePos() },
+					FVector2f{ IO.DisplaySize },
+					IO.WantTextInput,
+					IO.WantTextInput ? FVector2f{ ImGui::GetCurrentContext()->PlatformImeData.InputPos } : FVector2f::ZeroVector
+				}));
 		}
 
 	    ImGui::EndFrame();
@@ -831,19 +830,8 @@ public:
 			const TSharedPtr<FImGuiData> ImGuiData = ImGuiDataTripleBuffer.SwapAndRead();
 			{
 				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_SetDrawData"), STAT_ImGuiWS_SetDrawData, STATGROUP_ImGui);
-				const ImVec2 MousePos = ImGuiData->MousePos;
-				const ImVec2 ViewportSize = ImGuiData->ViewportSize;
 				ImGuiWS.SetDrawData(&ImGuiData->CopiedDrawData);
-				ImGuiWS.SetDrawInfo({
-					ImGuiData->MouseCursor,
-					ImGuiData->ControlId,
-					ImGuiData->ControlIp,
-					MousePos.x,
-					MousePos.y,
-					ViewportSize.x,
-					ViewportSize.y,
-					ImGuiData->bWantTextInput
-				});
+				ImGuiWS.SetDrawInfo(ImGuiData->DrawInfo);
 			}
 
 			if (const auto RecordSessionKeeper = RecordSession)

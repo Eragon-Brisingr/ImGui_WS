@@ -90,13 +90,12 @@ public:
         int32 MouseCursor = 0;
         int32 ControlId;
         uint32 ControlIp;
-        float MousePosX;
-        float MousePosY;
-        float ViewportSizeX;
-        float ViewportSizeY;
+        FVector2f MousePos;
+        FVector2f ViewportSize;
         uint8 bWantTextInput;
+        FVector2f ImeInputPos;
     };
-    bool SetDrawInfo(FDrawInfo&& DrawInfo);
+    void SetDrawInfo(const FDrawInfo& DrawInfo);
     void AddVar(const TPath& Path, TGetter&& Getter);
     void AddServerEvent(int32 ClientId, int32 EventId, TArray<uint8>&& Payload);
 

@@ -121,20 +121,21 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
         return FIncppect::view(Impl->DrawInfo.bWantTextInput);
     });
 
+    Impl->Incpp.Var(TEXT("imgui.input_pos"), [this](const auto& )
+    {
+        return FIncppect::view(Impl->DrawInfo.ImeInputPos);
+    });
+
     // sync to uncontrol mouse position
     Impl->Incpp.Var(TEXT("imgui.mouse_pos"), [this](const auto& )
     {
-        static FVector2f MousePos;
-        MousePos = { Impl->DrawInfo.MousePosX, Impl->DrawInfo.MousePosY };
-        return FIncppect::view(MousePos);
+        return FIncppect::view(Impl->DrawInfo.MousePos);
     });
 
     // sync to uncontrol viewport size
     Impl->Incpp.Var(TEXT("imgui.viewport_size"), [this](const auto& )
     {
-        static FVector2f ViewportSize;
-        ViewportSize = { Impl->DrawInfo.ViewportSizeX, Impl->DrawInfo.ViewportSizeY };
-        return FIncppect::view(ViewportSize);
+        return FIncppect::view(Impl->DrawInfo.ViewportSize);
     });
 
     // texture ids
@@ -384,10 +385,9 @@ bool ImGuiWS::SetDrawData(const ImDrawData* DrawData)
     return Result;
 }
 
-bool ImGuiWS::SetDrawInfo(FDrawInfo&& DrawInfo)
+void ImGuiWS::SetDrawInfo(const FDrawInfo& DrawInfo)
 {
-    Impl->DrawInfo = MoveTemp(DrawInfo);
-    return true;
+    Impl->DrawInfo = DrawInfo;
 }
 
 int32 ImGuiWS::NumConnected() const

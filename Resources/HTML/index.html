@@ -29,8 +29,6 @@
 
     .virtual-input {
         position: fixed;
-        right: 0;
-        bottom: 0;
         z-index: -1;
         border: none;
         outline: none;
@@ -176,6 +174,10 @@
                         }
                     }
                     this.pre_want_input_text = want_input_text;
+
+                    const virtual_input_pos = this.get_float_arr('imgui.input_pos');
+                    virtual_input.style.left = virtual_input_pos[0] + 'px';
+                    virtual_input.style.top = virtual_input_pos[1] + 'px';
                 }
             }
             else {
@@ -192,7 +194,7 @@
             imgui_ws.render();
 
             if (my_id !== control_id) {
-                var mouse_pos = this.get_float_arr('imgui.mouse_pos');
+                const mouse_pos = this.get_float_arr('imgui.mouse_pos');
                 draw_mouse_pos.render(mouse_pos[0], mouse_pos[1]);
             }
         }
