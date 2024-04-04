@@ -746,8 +746,9 @@ public:
 		return ImGui::Combo(TCHAR_TO_UTF8(*Label.ToString()), &CurrentItem, [](void* UserData, int32 Idx)
 		{
 			const TArray<FText>& Items = static_cast<FUserData*>(UserData)->Items;
-			const ANSICHAR* String = TCHAR_TO_UTF8(*Items[Idx].ToString());
-			return String;
+			static UnrealImGui::FUTF8String String;
+			String = Items[Idx].ToString();
+			return *String;
 		}, &UserData, Items.Num(), PopupMaxHeightInItems);
 	}
 
@@ -1219,8 +1220,9 @@ public:
 		return ImGui::ListBox(TCHAR_TO_UTF8(*Label.ToString()), &CurrentItem, [](void* UserData, int32 Idx)->const char*
 		{
 			const TArray<FText>& Items = static_cast<FUserData*>(UserData)->Items;
-			const ANSICHAR* String = TCHAR_TO_UTF8(*Items[Idx].ToString());
-			return String;
+			static UnrealImGui::FUTF8String String;
+			String = Items[Idx].ToString();
+			return *String;
 		}, &UserData, Items.Num(), HeightInItems);
 	}
 
