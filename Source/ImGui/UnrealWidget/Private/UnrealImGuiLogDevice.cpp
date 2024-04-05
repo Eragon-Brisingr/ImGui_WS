@@ -323,45 +323,45 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 				ImGui::SetScrollHereY(1.0f);
 			}
 		}
-		ImGui::EndChild();
+	}
+	ImGui::EndChild();
 
-		if (ImGui::BeginPopupContextItem("PopupContext"))
+	if (ImGui::BeginPopupContextItem("PopupContext"))
+	{
+		if (ImGui::MenuItem("Clear Log"))
 		{
-			if (ImGui::MenuItem("Clear Log"))
+			ClearCurrentLines();
+		}
+		ImGui::Separator();
+		if (UnrealImGui::GUnrealImGuiOutputDevice.Logs.IsValidIndex(HoveredLogIndex))
+		{
+			if (ImGui::MenuItem("Copy Selected"))
 			{
-				ClearCurrentLines();
-			}
-			ImGui::Separator();
-			if (UnrealImGui::GUnrealImGuiOutputDevice.Logs.IsValidIndex(HoveredLogIndex))
-			{
-				if (ImGui::MenuItem("Copy Selected"))
-				{
-					const auto& Log = UnrealImGui::GUnrealImGuiOutputDevice.Logs[HoveredLogIndex];
-					const FString ToClipboardText = FString::Printf(TEXT("%s: %s: %s"), *Log.Category.ToString(), ToString(Log.Verbosity), UTF8_TO_TCHAR(*Log.LogString));
-					ImGui::SetClipboardText(TCHAR_TO_UTF8(*ToClipboardText));
-				}
-			}
-			if (ImGui::MenuItem("Copy All"))
-			{
-				FString ToClipboardText;
-				const auto& Logs = UnrealImGui::GUnrealImGuiOutputDevice.Logs;
-				for (int32 Idx = 0; Idx < DisplayLines.Num(); ++Idx)
-				{
-					const auto& Log = Logs[DisplayLines[Idx] + DisplayLineIndexOffset];
-					ToClipboardText += FString::Printf(TEXT("%s: %s: %s"), *Log.Category.ToString(), ToString(Log.Verbosity), UTF8_TO_TCHAR(*Log.LogString));
-					if (Idx != Logs.Num() - 1)
-					{
-						ToClipboardText += TEXT("\n");
-					}
-				}
+				const auto& Log = UnrealImGui::GUnrealImGuiOutputDevice.Logs[HoveredLogIndex];
+				const FString ToClipboardText = FString::Printf(TEXT("%s: %s: %s"), *Log.Category.ToString(), ToString(Log.Verbosity), UTF8_TO_TCHAR(*Log.LogString));
 				ImGui::SetClipboardText(TCHAR_TO_UTF8(*ToClipboardText));
 			}
-			ImGui::EndPopup();
 		}
-		else
+		if (ImGui::MenuItem("Copy All"))
 		{
-			HoveredLogIndex = INDEX_NONE;
+			FString ToClipboardText;
+			const auto& Logs = UnrealImGui::GUnrealImGuiOutputDevice.Logs;
+			for (int32 Idx = 0; Idx < DisplayLines.Num(); ++Idx)
+			{
+				const auto& Log = Logs[DisplayLines[Idx] + DisplayLineIndexOffset];
+				ToClipboardText += FString::Printf(TEXT("%s: %s: %s"), *Log.Category.ToString(), ToString(Log.Verbosity), UTF8_TO_TCHAR(*Log.LogString));
+				if (Idx != Logs.Num() - 1)
+				{
+					ToClipboardText += TEXT("\n");
+				}
+			}
+			ImGui::SetClipboardText(TCHAR_TO_UTF8(*ToClipboardText));
 		}
+		ImGui::EndPopup();
+	}
+	else
+	{
+		HoveredLogIndex = INDEX_NONE;
 	}
 }
 

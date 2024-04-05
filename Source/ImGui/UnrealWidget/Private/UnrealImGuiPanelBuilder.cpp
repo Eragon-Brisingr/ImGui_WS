@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "ImGuiSettings.h"
+#include "ImGuiUnrealContextManager.h"
 #include "UnrealImGuiLayout.h"
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiStat.h"
@@ -21,6 +22,11 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	{
 		checkNoEntry();
 		return;
+	}
+
+	if (UImGuiUnrealContextWorldSubsystem* ImGuiUnrealContextWorld = UImGuiUnrealContextWorldSubsystem::Get(this))
+	{
+		ImGuiUnrealContextWorld->PanelBuilders.Add(this);
 	}
 
 	// 只对继承树叶节点的类型生效
@@ -217,6 +223,11 @@ void UUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
 		Panel->Unregister(Owner, this);
+	}
+
+	if (UImGuiUnrealContextWorldSubsystem* ImGuiUnrealContextWorld = UImGuiUnrealContextWorldSubsystem::Get(this))
+	{
+		ImGuiUnrealContextWorld->PanelBuilders.Remove(this);
 	}
 }
 

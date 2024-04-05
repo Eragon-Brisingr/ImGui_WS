@@ -170,9 +170,8 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(UObject* Owner, UUnrealImGuiPanelBui
 			
 			ImGui::EndTable();
 		}
-		
-		ImGui::EndChild();
 	}
+	ImGui::EndChild();
 
 	ImGui::Text("%d Selected | %d Filtered | %d Existed ", ViewportExtent->SelectedActors.Num(), DisplayActors.Num(), ViewportExtent->GetDrawableActorsCount());
 }

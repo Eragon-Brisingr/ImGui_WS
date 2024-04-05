@@ -115,7 +115,6 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 		IO.BackendFlags ^= ImGuiBackendFlags_HasGamepad;
 	}
 
-	VirtualInput.CachedGeometry = AllottedGeometry;
 	if (HasAnyUserFocus())
 	{
 		if (IO.WantSetMousePos)
@@ -550,14 +549,14 @@ int32 SImGuiPanel::GetCharacterIndexFromPoint(const FVector2D& InPoint)
 bool SImGuiPanel::GetTextBounds(const uint32 InBeginIndex, const uint32 InLength, FVector2D& OutPosition, FVector2D& OutSize)
 {
 	// Let the IME editor follow the cursor
-	const auto& CachedGeometry = VirtualInput.CachedGeometry;
+	const auto& CachedGeometry = GetTickSpaceGeometry();
 	OutPosition = FVector2D(CachedGeometry.AbsolutePosition.X + Context->PlatformImeData.InputPos.x, CachedGeometry.AbsolutePosition.Y + Context->PlatformImeData.InputPos.y + 20);
 	return true;
 }
 
 void SImGuiPanel::GetScreenBounds(FVector2D& OutPosition, FVector2D& OutSize)
 {
-	const auto& CachedGeometry = VirtualInput.CachedGeometry;
+	const auto& CachedGeometry = GetTickSpaceGeometry();
 	OutPosition = CachedGeometry.GetAccumulatedRenderTransform().GetTranslation();
 	OutSize = TransformVector(CachedGeometry.GetAccumulatedRenderTransform(), CachedGeometry.GetLocalSize());
 }

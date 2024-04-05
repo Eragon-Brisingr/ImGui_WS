@@ -7,6 +7,8 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "ImGuiUnrealContextManager.generated.h"
 
+class UUnrealImGuiPanelBuilder;
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnImGui_WS_Draw, float);
 
 USTRUCT()
@@ -26,16 +28,21 @@ public:
 };
 
 UCLASS()
-class UImGuiUnrealContextWorldSubsystem : public UWorldSubsystem
+class IMGUI_API UImGuiUnrealContextWorldSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 public:
+	static UImGuiUnrealContextWorldSubsystem* Get(const UObject* WorldContextObject);
+
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
 	bool DoesSupportWorldType(const EWorldType::Type WorldType) const override { return WorldType == EWorldType::Game || WorldType == EWorldType::PIE; }
 
 	UPROPERTY()
 	FImGuiUnrealContext Context;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UUnrealImGuiPanelBuilder>> PanelBuilders;
 };
 
 UCLASS()

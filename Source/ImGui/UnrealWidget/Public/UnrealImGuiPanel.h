@@ -64,7 +64,7 @@ public:
 	bool IsOpen() const { return bIsOpen; }
 	void SetOpenState(bool bOpen);
 	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s_%s"), *Title.ToString(), *GetClass()->GetName(), *LayoutName); }
-protected:
+
 	friend class UUnrealImGuiPanelBuilder;
 	friend class UUnrealImGuiLayoutBase;
 	

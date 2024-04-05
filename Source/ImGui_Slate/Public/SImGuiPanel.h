@@ -105,7 +105,6 @@ private:
 		uint32 SelectionRangeBeginIndex;
 		uint32 SelectionRangeLength;
 		ECaretPosition SelectionCaretPosition;
-		FGeometry CachedGeometry;
 		FString CompositionString;
 		TSharedPtr<ITextInputMethodChangeNotifier> TextInputMethodChangeNotifier;
 	} VirtualInput{};

@@ -6,10 +6,23 @@
 #include "imgui.h"
 #include "ImGuiEditorDefaultLayout.h"
 #include "imgui_notify.h"
-#include "implot.h"
 #include "Engine/Engine.h"
 #include "UObject/Package.h"
 
+
+UImGuiUnrealContextWorldSubsystem* UImGuiUnrealContextWorldSubsystem::Get(const UObject* WorldContextObject)
+{
+	if (WorldContextObject == nullptr)
+	{
+		return nullptr;
+	}
+	const UWorld* World = WorldContextObject->GetWorld();
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
+	return World->GetSubsystem<UImGuiUnrealContextWorldSubsystem>();
+}
 
 void UImGuiUnrealContextWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
