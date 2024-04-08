@@ -546,8 +546,8 @@ private:
 UENUM()
 enum class EImGuiTextureFormat : uint8
 {
-	Alpha8 = UnrealImGui::ETextureFormat::Alpha8,
-	Gray8 = UnrealImGui::ETextureFormat::Gray8,
-	RGB8 = UnrealImGui::ETextureFormat::RGB8,
-	RGBA8 = UnrealImGui::ETextureFormat::RGBA8,
+	Alpha8 = (uint8)UnrealImGui::ETextureFormat::Alpha8,
+	Gray8 = (uint8)UnrealImGui::ETextureFormat::Gray8,
+	RGB8 = (uint8)UnrealImGui::ETextureFormat::RGB8,
+	RGBA8 = (uint8)UnrealImGui::ETextureFormat::RGBA8,
 };

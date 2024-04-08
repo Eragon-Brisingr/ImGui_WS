@@ -185,7 +185,7 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 			{
 				StreamableHandle.Reset();
 				TArray<UClass*> Classes;
-				for (const FSoftObjectPath ObjectPath: ToLoadClasses)
+				for (const FSoftObjectPath& ObjectPath: ToLoadClasses)
 				{
 					UClass* Class = Cast<UClass>(ObjectPath.ResolveObject());
 					if (Class == nullptr)

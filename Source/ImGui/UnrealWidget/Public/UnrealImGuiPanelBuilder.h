@@ -47,11 +47,15 @@ public:
 	TArray<UUnrealImGuiPanelBase*> Panels;
 	struct FCategoryPanels
 	{
+		FCategoryPanels(const FText& Category)
+			: Category{ Category }
+		{}
+
 		FText Category;
 		TArray<UUnrealImGuiPanelBase*> Panels;
 		TMap<FName, TUniquePtr<FCategoryPanels>> Children;
 	};
-	FCategoryPanels CategoryPanels;
+	FCategoryPanels CategoryPanels{ FText::GetEmpty() };
 private:
 	TSharedPtr<FStreamableHandle> StreamableHandle;
 };

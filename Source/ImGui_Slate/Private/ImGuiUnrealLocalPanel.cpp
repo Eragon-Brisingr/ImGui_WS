@@ -638,14 +638,14 @@ void OpenLocalWindow(UWorld* World)
 						ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
 						if (ImGui::FWindow Window{ "Panel", nullptr, SinglePanelFlags | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysVerticalScrollbar })
 						{
-							static auto DrawPanelCheckBox = [](UWorld* World, SImGuiLocalPanelOverlay* Overlay, UUnrealImGuiPanelBuilder* Builder, UUnrealImGuiPanelBase* Panel)
+							static auto DrawPanelCheckBox = [](UWorld* InWorld, SImGuiLocalPanelOverlay* InOverlay, UUnrealImGuiPanelBuilder* Builder, UUnrealImGuiPanelBase* Panel)
 							{
-								bool IsOpen = Overlay->PanelBoxMap.Contains(Panel);
+								bool IsOpen = InOverlay->PanelBoxMap.Contains(Panel);
 								if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
 								{
 									if (IsOpen)
 									{
-										auto& RecentlyPanels = Overlay->Config->RecentlyPanels;
+										auto& RecentlyPanels = InOverlay->Config->RecentlyPanels;
 										const bool bRemoved = RecentlyPanels.RemoveSingle(Panel->GetClass()) > 0;
 										RecentlyPanels.Insert(Panel->GetClass(), 0);
 										constexpr int32 MaxRecentlyPanelNum = 20;
@@ -653,13 +653,13 @@ void OpenLocalWindow(UWorld* World)
 										{
 											RecentlyPanels.RemoveAt(MaxRecentlyPanelNum, RecentlyPanels.Num() - MaxRecentlyPanelNum);
 										}
-										Overlay->Config->SaveConfig();
+										InOverlay->Config->SaveConfig();
 
-										Overlay->OpenPanel(World, Builder, Panel);
+										InOverlay->OpenPanel(InWorld, Builder, Panel);
 									}
 									else
 									{
-										Overlay->ClosePanel(Panel);
+										InOverlay->ClosePanel(Panel);
 									}
 								}
 								if (ImGui::FItemTooltip Tooltip{})

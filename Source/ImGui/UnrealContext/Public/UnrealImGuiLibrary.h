@@ -579,37 +579,37 @@ public:
 	static void Text(FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::Text(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Text.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void TextColored(FLinearColor Color, FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::TextColored(ImVec4{ Color }, TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextColored(ImVec4{ Color }, "%s", TCHAR_TO_UTF8(*Text.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void TextDisabled(FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::TextDisabled(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextDisabled("%s", TCHAR_TO_UTF8(*Text.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void TextWrapped(FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::TextWrapped(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextWrapped("%s", TCHAR_TO_UTF8(*Text.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void LabelText(FText Label, FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::LabelText(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::LabelText(TCHAR_TO_UTF8(*Label.ToString()), "%s", TCHAR_TO_UTF8(*Text.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void BulletText(FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::BulletText(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::BulletText("%s", TCHAR_TO_UTF8(*Text.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void SeparatorText(FText Text)
@@ -1304,7 +1304,7 @@ public:
 	static void SetTooltip(FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::SetTooltip(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::SetTooltip("%s", TCHAR_TO_UTF8(*Text.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Tooltip", meta=(ImGuiScopeExit = EndTooltip, DisplayName = "Tooltip"), BlueprintInternalUseOnly)
 	static bool BeginItemTooltip()
@@ -1316,7 +1316,7 @@ public:
 	static void SetItemTooltip(FText Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::SetItemTooltip(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::SetItemTooltip("%s", TCHAR_TO_UTF8(*Text.ToString()));
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta=(ImGuiScopeExit = EndPopup, DisplayName = "Popup", AdvancedDisplay = 1), BlueprintInternalUseOnly)
