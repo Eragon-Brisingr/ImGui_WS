@@ -45,6 +45,13 @@ public:
 
 	UPROPERTY(Transient)
 	TArray<UUnrealImGuiPanelBase*> Panels;
+	struct FCategoryPanels
+	{
+		FText Category;
+		TArray<UUnrealImGuiPanelBase*> Panels;
+		TMap<FName, TUniquePtr<FCategoryPanels>> Children;
+	};
+	FCategoryPanels CategoryPanels;
 private:
 	TSharedPtr<FStreamableHandle> StreamableHandle;
 };

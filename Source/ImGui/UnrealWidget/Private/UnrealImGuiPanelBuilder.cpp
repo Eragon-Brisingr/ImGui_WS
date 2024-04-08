@@ -116,6 +116,23 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		}
 	}
 
+	auto UpdateCategoryPanels = [this](UUnrealImGuiPanelBase* Panel)
+	{
+		FCategoryPanels* Container = &CategoryPanels;
+		for (const FText& Category : Panel->Categories)
+		{
+			const FName CategoryName = *Category.ToString();
+			if (const auto ContainerPtr = Container->Children.Find(CategoryName))
+			{
+				Container = ContainerPtr->Get();
+			}
+			else
+			{
+				Container = Container->Children.Emplace(CategoryName, MakeUnique<FCategoryPanels>(Category)).Get();
+			}
+		}
+		Container->Panels.Add(Panel);
+	};
 	TSet<const UClass*> VisitedPanelClasses;
 	{
 		TArray<UClass*> PanelClasses;
@@ -150,6 +167,7 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 
 			UUnrealImGuiPanelBase* Panel = CreatePanel(this, Class);
 			Panels.Add(Panel);
+			UpdateCategoryPanels(Panel);
 		}
 
 		TArray<FSoftObjectPath> ToLoadClasses;
@@ -163,7 +181,7 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		}
 		if (ToLoadClasses.Num() > 0)
 		{
-			StreamableHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(ToLoadClasses, FStreamableDelegate::CreateWeakLambda(Owner, [ToLoadClasses, Owner, this]
+			StreamableHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(ToLoadClasses, FStreamableDelegate::CreateWeakLambda(Owner, [ToLoadClasses, Owner, this, UpdateCategoryPanels]
 			{
 				StreamableHandle.Reset();
 				TArray<UClass*> Classes;
@@ -185,6 +203,7 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				for (const UClass* Class : Classes)
 				{
 					UUnrealImGuiPanelBase* Panel = CreatePanel(this, Class);
+					UpdateCategoryPanels(Panel);
 					Panels.Add(Panel);
 				}
 				const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
@@ -251,41 +270,45 @@ void UUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 
 void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 {
-	for (UUnrealImGuiPanelBase* Panel : Panels)
+	struct FLocal
 	{
-		int32 CategoryDepth = 0;
-		for (const FText& Category : Panel->Categories)
+		static void DrawCategory(const UUnrealImGuiLayoutBase* Layout, const FCategoryPanels& Panels)
 		{
-			if (ImGui::BeginMenu(TCHAR_TO_UTF8(*Category.ToString())))
+			if (ImGui::BeginMenu(TCHAR_TO_UTF8(*Panels.Category.ToString())))
 			{
-				CategoryDepth += 1;
-			}
-			else
-			{
-				break;
+				for (const auto& [_, Child] : Panels.Children)
+				{
+					DrawCategory(Layout, *Child);
+				}
+				DrawPanelState(Layout, Panels);
+				ImGui::EndMenu();
 			}
 		}
-		if (CategoryDepth == Panel->Categories.Num())
+		static void DrawPanelState(const UUnrealImGuiLayoutBase* Layout, const FCategoryPanels& Panels)
 		{
-			bool IsOpen = Panel->bIsOpen;
-			if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
+			for (UUnrealImGuiPanelBase* Panel : Panels.Panels)
 			{
-				const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
-				Panel->SetOpenState(IsOpen);
-				Panel->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
-				Panel->SaveConfig();
-			}
-			if (ImGui::BeginItemTooltip())
-			{
-				ImGui::TextUnformatted(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
-				ImGui::EndTooltip();
+				bool IsOpen = Panel->bIsOpen;
+				if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
+				{
+					Panel->SetOpenState(IsOpen);
+					Panel->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
+					Panel->SaveConfig();
+				}
+				if (ImGui::BeginItemTooltip())
+				{
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
+					ImGui::EndTooltip();
+				}
 			}
 		}
-		for (int32 Idx = 0; Idx < CategoryDepth; ++Idx)
-		{
-			ImGui::EndMenu();
-		}
+	};
+	const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
+	for (const auto& [_, Child] : CategoryPanels.Children)
+	{
+		FLocal::DrawCategory(Layout, *Child);
 	}
+	FLocal::DrawPanelState(Layout, CategoryPanels);
 }
 
 void UUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)

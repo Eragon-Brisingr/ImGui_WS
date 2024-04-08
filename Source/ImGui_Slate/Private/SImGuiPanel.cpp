@@ -87,6 +87,7 @@ void SImGuiPanel::Construct(const FArguments& Args)
 {
 	ImGui::FScopedContext ScopedContext{ nullptr };
 	Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
+	Context->IO.IniFilename = nullptr;
 	PlotContext = ImPlot::CreateContext();
 	OnImGuiTick = Args._OnImGuiTick;
 	DesiredSize = Args._DesiredSize;

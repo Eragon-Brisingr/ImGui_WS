@@ -1140,13 +1140,13 @@ public:
 		ImGui::SetColorEditOptions(Flags);
 	}
 
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiScopeExit = TreePop, DisplayName = "Tree Node"), BlueprintInternalUseOnly)
 	static bool TreeNode(FText Label)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::TreeNode(TCHAR_TO_UTF8(*Label.ToString()));
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiScopeExit = TreePop, DisplayName = "Tree Node Ex"), BlueprintInternalUseOnly)
 	static bool TreeNodeEx(FText Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
