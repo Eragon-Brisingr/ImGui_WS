@@ -9,6 +9,7 @@
 #include "imgui-ws.h"
 #include "imgui.h"
 #include "ImGuiDelegates.h"
+#include "ImGuiEx.h"
 #include "ImGuiFileDialog.h"
 #include "ImGuiFontAtlas.h"
 #include "ImGuiSettings.h"
@@ -19,7 +20,6 @@
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiTexture.h"
-#include "UnrealImGuiWrapper.h"
 #include "UnrealImGui_Log.h"
 #include "WebKeyCodeToImGui.h"
 #include "Containers/TripleBuffer.h"
@@ -642,7 +642,7 @@ public:
 							ImGui::Text("Save Path:");
 							ImGui::SameLine();
 							ImGui::SetNextItemWidth(600.f);
-							UnrealImGui::InputText("##RecordSavePath", GRecordSaveDirPathString);
+							ImGui::InputText("##RecordSavePath", GRecordSaveDirPathString);
 
 							ImGui::SameLine();
 							if (ImGui::ArrowButton("SaveRecordFile", ImGuiDir_Down))
@@ -685,7 +685,7 @@ public:
 							ImGui::Text("File Path:");
 							ImGui::SameLine();
 							ImGui::SetNextItemWidth(600.f);
-							UnrealImGui::InputText("##RecordFilePath", LoadFilePath);
+							ImGui::InputText("##RecordFilePath", LoadFilePath);
 
 							ImGui::SameLine();
 							if (ImGui::ArrowButton("OpenRecordFile", ImGuiDir_Down))

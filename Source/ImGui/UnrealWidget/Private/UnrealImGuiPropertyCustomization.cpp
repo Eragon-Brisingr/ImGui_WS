@@ -5,8 +5,8 @@
 
 #include "EngineUtils.h"
 #include "imgui.h"
+#include "ImGuiEx.h"
 #include "UnrealImGuiString.h"
-#include "UnrealImGuiWrapper.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
@@ -291,7 +291,7 @@ namespace UnrealImGui
 			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
 			{
-				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
 				if (ImGui::Selectable("Clear"))
@@ -409,7 +409,7 @@ namespace UnrealImGui
 			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName.ToString())))
 			{
-				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
 				if (ImGui::Selectable("Clear"))
@@ -552,7 +552,7 @@ namespace UnrealImGui
 			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
 			{
-				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
 				if (ImGui::Selectable("Clear"))
@@ -641,7 +641,7 @@ namespace UnrealImGui
 			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
 			{
-				UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
 				if (ImGui::Selectable("Clear"))
@@ -735,7 +735,7 @@ namespace UnrealImGui
 		ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
 		{
-			UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 			const bool IsFiltered = ImGui::IsItemEdited();
 			ImGui::Separator();
 			if (ImGui::Selectable("Clear"))
@@ -839,7 +839,7 @@ namespace UnrealImGui
 		ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
 		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue.IsNull() ? TEXT("Null") : *FirstValue.GetUniqueID().GetAssetName())))
 		{
-			UnrealImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 			const bool IsFiltered = ImGui::IsItemEdited();
 			ImGui::Separator();
 			if (ImGui::Selectable("Clear"))

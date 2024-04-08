@@ -4,10 +4,10 @@
 #include "UnrealImGuiPropertyDetails.h"
 
 #include "imgui.h"
+#include "ImGuiEx.h"
 #include "UnrealImGuiPropertyCustomization.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
-#include "UnrealImGuiWrapper.h"
 #include "UObject/EnumProperty.h"
 #include "UObject/Package.h"
 #include "UObject/TextProperty.h"
@@ -148,7 +148,7 @@ namespace UnrealImGui
 	void FDetailsFilter::Draw(const char* Label)
 	{
 		FUTF8String UTF8String{ *StringFilter };
-		if (InputTextWithHint(Label, "Filter", UTF8String))
+		if (ImGui::InputTextWithHint(Label, "Filter", UTF8String))
 		{
 			StringFilter = *UTF8String;
 		}

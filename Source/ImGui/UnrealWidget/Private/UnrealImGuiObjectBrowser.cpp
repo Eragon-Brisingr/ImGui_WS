@@ -6,9 +6,10 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_notify.h"
+#include "ImGuiDelegates.h"
+#include "ImGuiEx.h"
 #include "UnrealImGuiPropertyDetails.h"
 #include "UnrealImGuiString.h"
-#include "UnrealImGuiWrapper.h"
 #include "UObject/Package.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
@@ -20,6 +21,20 @@ UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
 	DefaultState = { false, true };
 	Title = LOCTEXT("Object Browser", "Object Browser");
 	Categories = { LOCTEXT("ToolsCategory", "Tools") };
+}
+
+void UUnrealImGuiObjectBrowserPanel::Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
+{
+	Super::Register(Owner, Builder);
+
+	UnrealImGui::OnImGuiContextDestroyed.AddUObject(this, &ThisClass::WhenImGuiContextDestroyed);
+}
+
+void UUnrealImGuiObjectBrowserPanel::Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
+{
+	UnrealImGui::OnImGuiContextDestroyed.RemoveAll(this);
+
+	Super::Unregister(Owner, Builder);
 }
 
 void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
@@ -55,6 +70,7 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 	}
 
 	const ImGuiWindowClass* WindowClass = &ImGui::GetCurrentWindowRead()->WindowClass;
+	uint32& DockSpaceId = DockSpaceIdMap.FindOrAdd(ImGui::GetCurrentContext(), INDEX_NONE);
 	if (DockSpaceId == INDEX_NONE)
 	{
 		DockSpaceId = ImGui::GetID("ObjectBrowser");
@@ -71,7 +87,7 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 	if (ImGui::Begin("ObjectBrowserContent"))
 	{
 		static UnrealImGui::FUTF8String FilterString;
-		const bool bInvokeSearch = UnrealImGui::InputTextWithHint("##Filter", "Filter (Input full path then press Enter to search object)", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool bInvokeSearch = ImGui::InputTextWithHint("##Filter", "Filter (Input full path then press Enter to search object)", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 		if (bInvokeSearch && ImGui::IsItemDeactivatedAfterEdit())
 		{
 			SelectedObject = FindObject<UObject>(nullptr, *FilterString.ToString());
@@ -195,6 +211,11 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 
 		ImGui::End();
 	}
+}
+
+void UUnrealImGuiObjectBrowserPanel::WhenImGuiContextDestroyed(ImGuiContext* Context)
+{
+	DockSpaceIdMap.Remove(Context);
 }
 
 #undef LOCTEXT_NAMESPACE

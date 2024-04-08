@@ -5,9 +5,9 @@
 
 #include "ConsoleSettings.h"
 #include "imgui.h"
+#include "ImGuiEx.h"
 #include "imgui_internal.h"
 #include "ShowFlags.h"
-#include "UnrealImGuiScope.h"
 #include "UnrealImGuiStat.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -416,7 +416,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 
 	ImGui::SameLine();
 	{
-		UnrealImGui::FWidgetDisableScope ImGuiDisableScope{ CmdString.IsEmpty() };
+		ImGui::FDisabled Disabled{ CmdString.IsEmpty() };
 		if (ImGui::Button("Execute"))
 		{
 			ExecuteCmd(Owner, CmdString);

@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "imgui.h"
+#include "ImGuiEx.h"
 #include "InputCoreTypes.h"
 #include "UnrealImGuiKeyUtils.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGuiTypes.h"
-#include "UnrealImGuiWrapper.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UnrealImGuiLibrary.generated.h"
 
@@ -975,7 +975,7 @@ public:
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		UnrealImGui::FUTF8String UTF8String{ Value };
-		const bool Ret = UnrealImGui::InputText(TCHAR_TO_UTF8(*Label.ToString()), UTF8String, Flags);
+		const bool Ret = ImGui::InputText(TCHAR_TO_UTF8(*Label.ToString()), UTF8String, Flags);
 		if (Ret)
 		{
 			Value = UTF8String.ToString();
@@ -987,7 +987,7 @@ public:
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		UnrealImGui::FUTF8String UTF8String{ Value };
-		const bool Ret = UnrealImGui::InputTextMultiline(TCHAR_TO_UTF8(*Label.ToString()), UTF8String, ImVec2{ Size }, Flags);
+		const bool Ret = ImGui::InputTextMultiline(TCHAR_TO_UTF8(*Label.ToString()), UTF8String, ImVec2{ Size }, Flags);
 		if (Ret)
 		{
 			Value = UTF8String.ToString();
@@ -999,7 +999,7 @@ public:
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		UnrealImGui::FUTF8String UTF8String{ Value };
-		const bool Ret = UnrealImGui::InputTextWithHint(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Hint.ToString()), UTF8String, Flags);
+		const bool Ret = ImGui::InputTextWithHint(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Hint.ToString()), UTF8String, Flags);
 		if (Ret)
 		{
 			Value = UTF8String.ToString();

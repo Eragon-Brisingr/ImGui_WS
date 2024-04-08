@@ -1,12 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UnrealImGuiWrapper.h"
+#include "ImGuiEx.h"
 
 #include "UnrealImGuiString.h"
 
-namespace UnrealImGui
+namespace ImGui
 {
+	using FUTF8String = UnrealImGui::FUTF8String;
+
 	struct InputTextCallback_UserData
 	{
 	    FUTF8String&            Str;

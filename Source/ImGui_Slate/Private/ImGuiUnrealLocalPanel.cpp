@@ -3,13 +3,13 @@
 
 #include "ImGuiUnrealLocalPanel.h"
 
-#include "imgui.h"
+#include "imgui_internal.h"
+#include "ImGuiEx.h"
 #include "ImGuiUnrealContextManager.h"
 #include "SImGuiPanel.h"
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiString.h"
-#include "UnrealImGuiWrapper.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Framework/Application/SlateApplication.h"
@@ -489,13 +489,13 @@ void OpenLocalWindow(UWorld* World)
 						}
 						ImGui::SetNextWindowPos(ImVec2{ 0, 0 });
 						ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
-						if (ImGui::Begin("Panel", nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags))
+						if (ImGui::FWindow Window{ "Panel", nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
 						{
 							Panel->Draw(World, Builder, DeltaSeconds);
 						}
-						ImGui::End();
 					});
 				const FImGuiLocalPanelConfig PanelConfig = Config->PanelConfigMap.FindRef(Panel->GetClass());
+				ImGuiPanel->GetContext()->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
 				const auto DragResizeBox = SNew(SDragResizeContainer::SDragResizeBox)
 					.TitleContent()
 					[
@@ -539,6 +539,8 @@ void OpenLocalWindow(UWorld* World)
 					});
 				AddChild(DragResizeBox, PanelConfig.Pos, PanelConfig.Size);
 				PanelBoxMap.Add(Panel, DragResizeBox);
+
+				FSlateApplication::Get().SetUserFocus(FSlateApplication::Get().GetUserIndexForKeyboard(), ImGuiPanel, EFocusCause::SetDirectly);
 			}
 			void ClosePanel(UUnrealImGuiPanelBase* Panel)
 			{
@@ -579,6 +581,7 @@ void OpenLocalWindow(UWorld* World)
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
 					.Padding(20.f, 2.f, 2.f, 2.f)
+					.AutoWidth()
 					.VAlign(VAlign_Center)
 					[
 						SNew(STextBlock)
@@ -586,8 +589,8 @@ void OpenLocalWindow(UWorld* World)
 						.Text(LOCTEXT("ImGuiPanelManagerTitle", "ImGui Panel Manager"))
 					]
 					+ SHorizontalBox::Slot()
+					.AutoWidth()
 					.VAlign(VAlign_Center)
-					.FillWidth(1.f)
 					[
 						SNew(STextBlock)
 						.TextStyle(FAppStyle::Get(), TEXT("TinyText"))
@@ -598,8 +601,8 @@ void OpenLocalWindow(UWorld* World)
 					]
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.f)
-					.HAlign(HAlign_Right)
 					.Padding(2.f)
+					.HAlign(HAlign_Right)
 					[
 						SNew(SButton)
 						.Text(LOCTEXT("MinimizeManager", "➖"))
@@ -633,7 +636,7 @@ void OpenLocalWindow(UWorld* World)
 						}
 						ImGui::SetNextWindowPos(ImVec2{ 0, 0 });
 						ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
-						if (ImGui::Begin("Panel", nullptr, SinglePanelFlags | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysVerticalScrollbar))
+						if (ImGui::FWindow Window{ "Panel", nullptr, SinglePanelFlags | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysVerticalScrollbar })
 						{
 							static auto DrawPanelCheckBox = [](UWorld* World, SImGuiLocalPanelOverlay* Overlay, UUnrealImGuiPanelBuilder* Builder, UUnrealImGuiPanelBase* Panel)
 							{
@@ -659,7 +662,7 @@ void OpenLocalWindow(UWorld* World)
 										Overlay->ClosePanel(Panel);
 									}
 								}
-								if (ImGui::BeginItemTooltip())
+								if (ImGui::FItemTooltip Tooltip{})
 								{
 									FText CategoryPath;
 									for (const FText& Category : Panel->Categories)
@@ -667,10 +670,9 @@ void OpenLocalWindow(UWorld* World)
 										CategoryPath = FText::Format(LOCTEXT("PanelCheckBoxTooltipCategoryAppend", "{0} {1}"), CategoryPath, Category);
 									}
 									ImGui::TextUnformatted(TCHAR_TO_UTF8(*FText::Format(LOCTEXT("PanelCheckBoxTooltip", "Class: {0}\nCategoryPath:{1}"), FText::FromString(Panel->GetClass()->GetPathName()), CategoryPath).ToString()));
-									ImGui::EndTooltip();
 								}
 							};
-							if (ImGui::BeginMenuBar())
+							if (ImGui::FMenuBar MenuBar{})
 							{
 								for (UUnrealImGuiPanelBuilder* Builder : ImGuiUnrealContextWorld->PanelBuilders)
 								{
@@ -681,14 +683,13 @@ void OpenLocalWindow(UWorld* World)
 										using FCategoryPanels = UUnrealImGuiPanelBuilder::FCategoryPanels;
 										void DrawCategory(UUnrealImGuiPanelBuilder* Builder, const FCategoryPanels& Panels) const
 										{
-											if (ImGui::BeginMenu(TCHAR_TO_UTF8(*Panels.Category.ToString())))
+											if (ImGui::FMenu Menu{ TCHAR_TO_UTF8(*Panels.Category.ToString()) })
 											{
 												for (const auto& [_, Child] : Panels.Children)
 												{
 													DrawCategory(Builder, *Child);
 												}
 												DrawPanelState(Builder, Panels);
-												ImGui::EndMenu();
 											}
 										}
 										void DrawPanelState(UUnrealImGuiPanelBuilder* Builder, const FCategoryPanels& Panels) const
@@ -706,7 +707,7 @@ void OpenLocalWindow(UWorld* World)
 									}
 									Local.DrawPanelState(Builder, Builder->CategoryPanels);
 								}
-								if (ImGui::BeginMenu("Viewport"))
+								if (ImGui::FMenu Menu{ "Viewport" })
 								{
 									ImGui::Separator();
 									bool IsOpen = Overlay->ViewportPtr.IsValid();
@@ -776,18 +777,15 @@ void OpenLocalWindow(UWorld* World)
 											}
 										}
 									}
-									ImGui::EndMenu();
 								}
-
-								ImGui::EndMenuBar();
 							}
 
 							constexpr float ItemWidth = 100.f;
 							const int32 ColumnsNum = FMath::Max(FMath::FloorToInt32(ImGui::GetWindowSize().x / ItemWidth), 1);
 							ImGui::Text("Recently Panels"); ImGui::SameLine(); ImGui::Separator();
-							if (ImGui::TreeNodeEx("Recently Panels", ImGuiTreeNodeFlags_DefaultOpen))
+							if (ImGui::FTreeNodeEx TreeNodeEx{ "Recently Panels", ImGuiTreeNodeFlags_DefaultOpen })
 							{
-								if (ImGui::BeginTable("RecentlyPanels", ColumnsNum))
+								if (ImGui::FTable Table{ "RecentlyPanels", ColumnsNum })
 								{
 									int32 ItemCounter = 0;
 									for (int32 Idx = 0; Idx < Overlay->Config->RecentlyPanels.Num(); ++Idx)
@@ -818,17 +816,15 @@ void OpenLocalWindow(UWorld* World)
 											}
 										}
 									}
-									ImGui::EndTable();
 								}
-								ImGui::TreePop();
 							}
 
 							ImGui::Text("Filter Panel"); ImGui::SameLine(); ImGui::Separator();
-							if (ImGui::TreeNode("FilterPanel"))
+							if (ImGui::FTreeNodeEx TreeNodeEx{ "FilterPanel" })
 							{
 								UnrealImGui::FUTF8String& FilterString = Overlay->FilterString;
-								UnrealImGui::InputTextWithHint("##FilterPanel", "Filter Panel", FilterString);
-								if (ImGui::BeginListBox("##FilteredPanel", ImVec2{ 0.f, 100.f }))
+								ImGui::InputTextWithHint("##FilterPanel", "Filter Panel", FilterString);
+								if (ImGui::FListBox ListBox{ "##FilteredPanel", ImVec2{ 0.f, 100.f } })
 								{
 									if (FilterString.Len() == 0)
 									{
@@ -890,9 +886,7 @@ void OpenLocalWindow(UWorld* World)
 											}
 										}
 									}
-									ImGui::EndListBox();
 								}
-								ImGui::TreePop();
 							}
 
 							ImGui::Text("Category Panel"); ImGui::SameLine(); ImGui::Separator();
@@ -906,13 +900,13 @@ void OpenLocalWindow(UWorld* World)
 									using FCategoryPanels = UUnrealImGuiPanelBuilder::FCategoryPanels;
 									void DrawCategory(const FString& CategoryName, ImGuiTreeNodeFlags_ ImGuiTreeNodeFlags, UUnrealImGuiPanelBuilder* Builder, const FCategoryPanels& Panels) const
 									{
-										if (ImGui::TreeNodeEx(TCHAR_TO_UTF8(*CategoryName), ImGuiTreeNodeFlags))
+										if (ImGui::FTreeNodeEx TreeNodeEx{ TCHAR_TO_UTF8(*CategoryName), ImGuiTreeNodeFlags })
 										{
 											for (const auto& [_, Child] : Panels.Children)
 											{
 												DrawCategory(Child->Category.ToString(), ImGuiTreeNodeFlags_None, Builder, *Child);
 											}
-											if (ImGui::BeginTable("PanelTable", ColumnsNum))
+											if (ImGui::FTable Table{ "PanelTable", ColumnsNum })
 											{
 												for (int32 Idx = 0; Idx < Panels.Panels.Num(); ++Idx)
 												{
@@ -927,16 +921,13 @@ void OpenLocalWindow(UWorld* World)
 														DrawPanelCheckBox(World, Overlay, Builder, Panel);
 													}
 												}
-												ImGui::EndTable();
 											}
-											ImGui::TreePop();
 										}
 									}
 								};
 								FLocal{ ColumnsNum, World, Overlay }.DrawCategory(TCHAR_TO_UTF8(*Builder->GetOuter()->GetClass()->GetName()), ImGuiTreeNodeFlags_DefaultOpen, Builder, Builder->CategoryPanels);
 							}
 						}
-						ImGui::End();
 					})
 				]
 				.OnDragged_Lambda([this](const FVector2f& Pos)

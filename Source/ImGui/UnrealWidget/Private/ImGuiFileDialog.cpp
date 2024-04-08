@@ -10,8 +10,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_notify.h"
+#include "ImGuiEx.h"
 #include "UnrealImGuiString.h"
-#include "UnrealImGuiWrapper.h"
 #include "Framework/Application/SlateApplication.h"
 
 namespace UnrealImGui
@@ -363,7 +363,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 
 		FUTF8String SelectedFilePath = *(FileDialogState.CurrentPath + (FileDialogState.CurrentPath.IsEmpty() || FileDialogState.CurrentPath[FileDialogState.CurrentPath.Len() - 1] == TEXT('/') ? TEXT("") : TEXT("/")) + (FileDialogState.FileDialogCurrentFolder.Len() > 0 ? FileDialogState.FileDialogCurrentFolder : FileDialogState.CurrentFile));
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() - 130);
-		UnrealImGui::InputText("##SelectedFilePath", SelectedFilePath, ImGuiInputTextFlags_ReadOnly);
+		ImGui::InputText("##SelectedFilePath", SelectedFilePath, ImGuiInputTextFlags_ReadOnly);
 		ImGui::SameLine();
 		if (ImGui::Button("System Browser"))
 		{
@@ -432,7 +432,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FUTF8St
 		{
 			ImGui::Text("Enter a name for the new folder");
 			static FUTF8String NewFolderName;
-			UnrealImGui::InputText("##newfolder", NewFolderName, sizeof(NewFolderName));
+			ImGui::InputText("##newfolder", NewFolderName, sizeof(NewFolderName));
 			if (ImGui::Button("Create##1"))
 			{
 				if (NewFolderName.Len() <= 0)

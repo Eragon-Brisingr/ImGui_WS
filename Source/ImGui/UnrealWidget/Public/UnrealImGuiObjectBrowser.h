@@ -6,6 +6,8 @@
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiObjectBrowser.generated.h"
 
+struct ImGuiContext;
+
 UCLASS()
 class IMGUI_API UUnrealImGuiObjectBrowserPanel : public UUnrealImGuiPanelBase
 {
@@ -15,11 +17,17 @@ public:
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UObject> SelectedObject = nullptr;
-	uint32 DockSpaceId = INDEX_NONE;
 	UPROPERTY(Config)
 	uint8 bDisplayAllProperties : 1;
 	UPROPERTY(Config)
 	uint8 bEnableEditVisibleProperty : 1;
-	
+
+	void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+	void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
+
 	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
+protected:
+	TMap<void*, uint32> DockSpaceIdMap;
+
+	void WhenImGuiContextDestroyed(ImGuiContext* Context);
 };
