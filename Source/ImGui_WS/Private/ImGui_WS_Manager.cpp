@@ -296,7 +296,7 @@ public:
 	}
 	~FImpl() override
 	{
-		UnrealImGui::OnImGuiContextDestroyed.Broadcast(Context);
+		FImGuiDelegates::OnImGuiContextDestroyed.Broadcast(Context);
 		ImGui::DestroyContext(Context);
 		ImPlot::DestroyContext(PlotContext);
 		UnrealImGui::Private::UpdateTextureData_WS.Reset();
@@ -872,6 +872,14 @@ UImGui_WS_Manager* UImGui_WS_Manager::GetChecked()
 	return Manager;
 }
 
+UImGui_WS_Manager::~UImGui_WS_Manager()
+{
+	if (Impl)
+	{
+		delete Impl;
+	}
+}
+
 bool UImGui_WS_Manager::IsSettingsEnable()
 {
 	const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
@@ -897,13 +905,14 @@ void UImGui_WS_Manager::Enable()
 {
 	check(IsEnable() == false);
 	UE_LOG(LogImGui, Log, TEXT("Enable ImGui WS"));
-	Impl = MakeUnique<FImpl>(*this);
+	Impl = new FImpl{ *this };
 }
 
 void UImGui_WS_Manager::Disable()
 {
 	check(IsEnable());
-	Impl.Reset();
+	delete Impl;
+	Impl = nullptr;
 	UE_LOG(LogImGui, Log, TEXT("Disable ImGui WS"));
 }
 

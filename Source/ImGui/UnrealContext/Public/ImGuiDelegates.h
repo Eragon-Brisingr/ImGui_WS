@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 
-namespace UnrealImGui
+struct FImGuiDelegates
 {
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnImGuiContextDestroyed, struct ImGuiContext*);
-	IMGUI_API extern FOnImGuiContextDestroyed OnImGuiContextDestroyed;
-}
+	IMGUI_API static FOnImGuiContextDestroyed OnImGuiContextDestroyed;
+};

@@ -66,6 +66,9 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 		// Initialize notify
 		ImGui::MergeIconsWithLatestFont(FontAtlas, 12.f * DPIScale, false);
 
+		// build font
+		FontAtlas.Build();
+
 		return FontAtlas;
 	}();
 	return DefaultFontAtlas;

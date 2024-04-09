@@ -27,12 +27,12 @@ void UUnrealImGuiObjectBrowserPanel::Register(UObject* Owner, UUnrealImGuiPanelB
 {
 	Super::Register(Owner, Builder);
 
-	UnrealImGui::OnImGuiContextDestroyed.AddUObject(this, &ThisClass::WhenImGuiContextDestroyed);
+	FImGuiDelegates::OnImGuiContextDestroyed.AddUObject(this, &ThisClass::WhenImGuiContextDestroyed);
 }
 
 void UUnrealImGuiObjectBrowserPanel::Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
-	UnrealImGui::OnImGuiContextDestroyed.RemoveAll(this);
+	FImGuiDelegates::OnImGuiContextDestroyed.RemoveAll(this);
 
 	Super::Unregister(Owner, Builder);
 }

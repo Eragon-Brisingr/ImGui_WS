@@ -3,7 +3,4 @@
 
 #include "ImGuiDelegates.h"
 
-namespace UnrealImGui
-{
-	FOnImGuiContextDestroyed OnImGuiContextDestroyed;
-}
+FImGuiDelegates::FOnImGuiContextDestroyed FImGuiDelegates::OnImGuiContextDestroyed;

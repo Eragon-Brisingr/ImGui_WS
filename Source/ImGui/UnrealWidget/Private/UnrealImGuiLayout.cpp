@@ -11,12 +11,12 @@
 
 void UUnrealImGuiLayoutBase::Register(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
-	UnrealImGui::OnImGuiContextDestroyed.AddUObject(this, &ThisClass::WhenImGuiContextDestroyed);
+	FImGuiDelegates::OnImGuiContextDestroyed.AddUObject(this, &ThisClass::WhenImGuiContextDestroyed);
 }
 
 void UUnrealImGuiLayoutBase::Unregister(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
-	UnrealImGui::OnImGuiContextDestroyed.RemoveAll(this);
+	FImGuiDelegates::OnImGuiContextDestroyed.RemoveAll(this);
 }
 
 void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const UUnrealImGuiPanelBuilder& LayoutBuilder, const TMap<int32, uint32>& DockIdMap, const int32 DefaultDockId)

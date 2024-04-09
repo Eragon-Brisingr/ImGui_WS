@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "Subsystems/WorldSubsystem.h"
 #include "Subsystems/EngineSubsystem.h"
 #include "ImGui_WS_Manager.generated.h"
 
@@ -15,8 +14,10 @@ class IMGUI_WS_API UImGui_WS_Manager : public UEngineSubsystem
 public:
 	static UImGui_WS_Manager* GetChecked();
 
+	~UImGui_WS_Manager() override;
+
 	static bool IsSettingsEnable();
-	bool IsEnable() const { return Impl.IsValid(); }
+	bool IsEnable() const { return Impl != nullptr; }
 	void Enable();
 	void Disable();
 	
@@ -34,5 +35,5 @@ private:
 	friend class UImGui_WS_WorldSubsystem;
 
 	class FImpl;
-	TUniquePtr<FImpl> Impl;
+	FImpl* Impl = nullptr;
 };

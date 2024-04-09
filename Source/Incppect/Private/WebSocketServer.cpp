@@ -53,7 +53,7 @@ namespace Incppect
 static int unreal_networking_client(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
 static void lws_debugLogS(int level, const char *line)
 {
-	UE_LOG(LogIncppect, Log, TEXT("client: %hs"), ANSI_TO_TCHAR(line));
+	UE_LOG(LogIncppect, Log, TEXT("client: %s"), ANSI_TO_TCHAR(line));
 }
 
 FWebSocket::FWebSocket(

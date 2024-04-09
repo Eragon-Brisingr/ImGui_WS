@@ -3,7 +3,6 @@
 
 #include "SImGuiPanel.h"
 
-#include "imgui.h"
 #include "ImGuiDelegates.h"
 #include "ImGuiFontAtlas.h"
 #include "imgui_internal.h"
@@ -45,17 +44,6 @@ private:
 };
 }
 
-struct FImGuiDrawList
-{
-	FImGuiDrawList() = default;
-	explicit FImGuiDrawList(ImDrawList* Source);
-
-	ImVector<ImDrawVert> VtxBuffer;
-	ImVector<ImDrawIdx> IdxBuffer;
-	ImVector<ImDrawCmd> CmdBuffer;
-	ImDrawListFlags Flags = ImDrawListFlags_None;
-};
-
 FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)
 {
 	VtxBuffer.swap(Source->VtxBuffer);
@@ -96,7 +84,7 @@ void SImGuiPanel::Construct(const FArguments& Args)
 SImGuiPanel::~SImGuiPanel()
 {
 	DisableVirtualInput();
-	UnrealImGui::OnImGuiContextDestroyed.Broadcast(Context);
+	FImGuiDelegates::OnImGuiContextDestroyed.Broadcast(Context);
 	ImGui::DestroyContext(Context);
 	ImPlot::DestroyContext(PlotContext);
 }
@@ -193,35 +181,50 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 			TArray VerticesSlice(Vertices.GetData() + DrawCmd.VtxOffset, Vertices.Num() - DrawCmd.VtxOffset);
 			TArray IndicesSlice(Indices.GetData() + DrawCmd.IdxOffset, DrawCmd.ElemCount);
 
-			const UTexture* Texture = UnrealImGui::FindTexture(DrawCmd.GetTexID());
-			if (TextureBrush.GetResourceObject() != Texture)
+			if (DrawCmd.GetTexID() == UnrealImGui::FontTextId)
 			{
-				TextureBrush.SetResourceObject(const_cast<UTexture*>(Texture));
-				if (IsValid(Texture))
+				static TSharedPtr<FSlateBrush> FontAtlasTexturePtr = [this]
 				{
-					if (const UTexture2D* Texture2D = Cast<UTexture2D>(Texture))
+					uint8* TextureDataRaw;
+					int32 TextureWidth, TextureHeight, BytesPerPixel;
+					Context->IO.Fonts->GetTexDataAsRGBA32(&TextureDataRaw, &TextureWidth, &TextureHeight, &BytesPerPixel);
+					return FSlateDynamicImageBrush::CreateWithImageData(TEXT("ImGuiFontAtlas"), FVector2D(TextureWidth, TextureHeight),
+					TArray(TextureDataRaw, TextureWidth * TextureHeight * BytesPerPixel));
+				}();
+				TextureBrush = *FontAtlasTexturePtr;
+			}
+			else
+			{
+				const UTexture* Texture = UnrealImGui::FindTexture(DrawCmd.GetTexID());
+				if (TextureBrush.GetResourceObject() != Texture)
+				{
+					TextureBrush.SetResourceObject(const_cast<UTexture*>(Texture));
+					if (IsValid(Texture))
 					{
-						TextureBrush.ImageSize.X = Texture2D->GetSizeX();
-						TextureBrush.ImageSize.Y = Texture2D->GetSizeY();
-					}
-					else if (const UTextureRenderTarget2D* RT = Cast<UTextureRenderTarget2D>(Texture))
-					{
-						TextureBrush.ImageSize.X = RT->SizeX;
-						TextureBrush.ImageSize.Y = RT->SizeY;
+						if (const UTexture2D* Texture2D = Cast<UTexture2D>(Texture))
+						{
+							TextureBrush.ImageSize.X = Texture2D->GetSizeX();
+							TextureBrush.ImageSize.Y = Texture2D->GetSizeY();
+						}
+						else if (const UTextureRenderTarget2D* RT = Cast<UTextureRenderTarget2D>(Texture))
+						{
+							TextureBrush.ImageSize.X = RT->SizeX;
+							TextureBrush.ImageSize.Y = RT->SizeY;
+						}
+						else
+						{
+							ensure(false);
+						}
+						TextureBrush.ImageType = ESlateBrushImageType::FullColor;
+						TextureBrush.DrawAs = ESlateBrushDrawType::Image;
 					}
 					else
 					{
-						ensure(false);
+						TextureBrush.ImageSize.X = 0;
+						TextureBrush.ImageSize.Y = 0;
+						TextureBrush.ImageType = ESlateBrushImageType::NoImage;
+						TextureBrush.DrawAs = ESlateBrushDrawType::NoDrawType;
 					}
-					TextureBrush.ImageType = ESlateBrushImageType::FullColor;
-					TextureBrush.DrawAs = ESlateBrushDrawType::Image;
-				}
-				else
-				{
-					TextureBrush.ImageSize.X = 0;
-					TextureBrush.ImageSize.Y = 0;
-					TextureBrush.ImageType = ESlateBrushImageType::NoImage;
-					TextureBrush.DrawAs = ESlateBrushDrawType::NoDrawType;
 				}
 			}
 

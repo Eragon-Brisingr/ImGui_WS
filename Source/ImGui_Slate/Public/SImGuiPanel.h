@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "imgui.h"
 #include "GenericPlatform/ITextInputMethodSystem.h"
 #include "Widgets/SLeafWidget.h"
 #include "Widgets/Input/IVirtualKeyboardEntry.h"
@@ -10,7 +11,17 @@
 struct ImPlotContext;
 struct ImGuiContext;
 struct ImDrawData;
-struct FImGuiDrawList;
+
+struct FImGuiDrawList
+{
+	FImGuiDrawList() = default;
+	explicit FImGuiDrawList(ImDrawList* Source);
+
+	ImVector<ImDrawVert> VtxBuffer;
+	ImVector<ImDrawIdx> IdxBuffer;
+	ImVector<ImDrawCmd> CmdBuffer;
+	ImDrawListFlags Flags = ImDrawListFlags_None;
+};
 
 class IMGUI_SLATE_API SImGuiPanel : public SLeafWidget, public IVirtualKeyboardEntry, public ITextInputMethodContext
 {

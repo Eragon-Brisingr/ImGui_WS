@@ -9,4 +9,5 @@ struct ImFontAtlas;
 namespace UnrealImGui
 {
 	IMGUI_API ImFontAtlas& GetDefaultFontAtlas();
+	constexpr uint32 FontTextId = 0;
 }
