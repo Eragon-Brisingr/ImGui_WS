@@ -24,7 +24,7 @@ enum class EImGuiConfigFlags : int32
 };
 ENUM_CLASS_FLAGS(EImGuiConfigFlags);
 
-UCLASS(meta = (DisplayName = "ImGuiPanel"))
+UCLASS(meta = (DisplayName = "ImGui Panel"))
 class IMGUI_SLATE_API UImGuiPanel : public UWidget
 {
 	GENERATED_BODY()

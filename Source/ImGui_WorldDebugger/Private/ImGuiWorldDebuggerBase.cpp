@@ -31,11 +31,8 @@ namespace ImGuiWorldDebuggerBootstrap
 
 		FActorSpawnParameters SpawnParameters;
 		SpawnParameters.Name = ImGuiWorldDebuggerName;
-		SpawnParameters.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Required_ReturnNull;
+		SpawnParameters.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
 		SpawnParameters.ObjectFlags = RF_Transient;
-#if WITH_EDITOR
-		SpawnParameters.bHideFromSceneOutliner = true;
-#endif
 		World->SpawnActor<AImGuiWorldDebuggerBase>(SpawnedDebuggerClass, SpawnParameters);
 	}
 
@@ -47,12 +44,10 @@ namespace ImGuiWorldDebuggerBootstrap
 		for (TActorIterator<AImGuiWorldDebuggerBase> It(World); It; ++It)
 		{
 			It->Destroy();
-			// 直接删了，避免没GC导致再次创建同名的失败
-			It->ConditionalBeginDestroy();
 		}
 	}
 
-	bool bLaunchImGuiWorldDebugger = true;
+	bool bLaunchImGuiWorldDebugger = false;
 	FAutoConsoleVariable EnableImGuiWorldDebugger
 	{
 		TEXT("ImGui.DebugGameWorld"),
@@ -100,8 +95,51 @@ namespace ImGuiWorldDebuggerBootstrap
 		{
 			SpawnDebugger(World);
 		}
-	};
+	}
 
+	int32 RequireDebuggerCounter = 0;
+	void RequireCreateDebugger()
+	{
+		RequireDebuggerCounter += 1;
+		if (bLaunchImGuiWorldDebugger == false)
+		{
+			bLaunchImGuiWorldDebugger = true;
+
+			for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
+			{
+				UWorld* World = WorldContext.World();
+				if (World == nullptr)
+				{
+					continue;
+				}
+				if (IsEnableDebugWorld(World))
+				{
+					SpawnDebugger(World);
+				}
+			}
+		}
+	}
+	void RequireDestroyDebugger()
+	{
+		RequireDebuggerCounter -= 1;
+		ensure(RequireDebuggerCounter >= 0);
+		if (RequireDebuggerCounter == 0 && bLaunchImGuiWorldDebugger)
+		{
+			bLaunchImGuiWorldDebugger = false;
+			for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
+			{
+				UWorld* World = WorldContext.World();
+				if (World == nullptr)
+				{
+					continue;
+				}
+				if (IsEnableDebugWorld(World))
+				{
+					DestroyDebugger(World);
+				}
+			}
+		}
+	}
 }
 
 AImGuiWorldDebuggerBase::AImGuiWorldDebuggerBase()

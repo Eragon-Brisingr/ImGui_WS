@@ -3,6 +3,7 @@
 
 #include "ImGuiUnrealLocalPanel.h"
 
+#include "ImGuiDelegates.h"
 #include "imgui_internal.h"
 #include "ImGuiEx.h"
 #include "ImGuiUnrealContextManager.h"
@@ -18,6 +19,7 @@
 #include "Widgets/SCanvas.h"
 #include "Widgets/SWindow.h"
 #include "Widgets/Docking/SDockTab.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
@@ -231,11 +233,15 @@ public:
 					.VAlign(VAlign_Bottom)
 					[
 						SNew(SResizeArea, this)
+						.ToolTipText(LOCTEXT("ResizeAreaTooltip", "Resize"))
 						.BorderImage(FAppStyle::GetBrush("NoBorder"))
 						.ContentScale(1.f)
 						.Padding(0.f)
 						[
-							SNew(STextBlock).Text(LOCTEXT("ResizeText", "◢"))
+							SNew(SImage)
+							.Image(FAppStyle::GetBrush("TreeArrow_Expanded"))
+							.RenderTransformPivot(FVector2D{ 0.5f })
+							.RenderTransform(FSlateRenderTransform{ FQuat2D(FMath::DegreesToRadians(-45)) })
 						]
 					]
 				]
@@ -383,6 +389,28 @@ TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 }
 void OpenLocalWindow(UWorld* World)
 {
+	class SImGuiPanelLifetime : public SCompoundWidget
+	{
+		SLATE_BEGIN_ARGS(SImGuiPanelLifetime)
+		{}
+		SLATE_DEFAULT_SLOT(FArguments, Content)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& Args)
+		{
+			FImGuiDelegates::OnImGuiLocalPanelEnable.Broadcast();
+
+			ChildSlot
+			[
+				Args._Content.Widget
+			];
+		}
+		~SImGuiPanelLifetime() override
+		{
+			FImGuiDelegates::OnImGuiLocalPanelDisable.Broadcast();
+		}
+	};
+
 	const ELocalPanelMode PanelMode{ CVarLocalPanelMode.GetValueOnAnyThread() };
 	if (PanelMode == ELocalPanelMode::DockWindow && GIsEditor)
 	{
@@ -390,7 +418,7 @@ void OpenLocalWindow(UWorld* World)
 		{
 			FGlobalTabmanager::Get()->RegisterNomadTabSpawner(WindowTabId, FOnSpawnTab::CreateLambda([](const FSpawnTabArgs& Args)
 			{
-				static int32 ContextIndex = INDEX_NONE;
+				static int32 ContextIndex = 0;
 				TSharedPtr<SWidget> Panel = CreatePanel(ContextIndex);
 				if (Panel == nullptr)
 				{
@@ -400,7 +428,10 @@ void OpenLocalWindow(UWorld* World)
 				.TabRole(NomadTab)
 				.Label(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
 				[
-					Panel.ToSharedRef()
+					SNew(SImGuiPanelLifetime)
+					[
+						Panel.ToSharedRef()
+					]
 				];
 				NewTab->SetTabIcon(FAppStyle::Get().GetBrush("LevelEditor.Tab"));
 				return NewTab;
@@ -415,7 +446,7 @@ void OpenLocalWindow(UWorld* World)
 		{
 			return;
 		}
-		static int32 ContextIndex = INDEX_NONE;
+		static int32 ContextIndex = 0;
 		const TSharedPtr<SImGuiPanel> Panel = CreatePanel(ContextIndex);
 		if (Panel == nullptr)
 		{
@@ -426,7 +457,10 @@ void OpenLocalWindow(UWorld* World)
 			.Title(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
 			.ClientSize(FVector2f(1000.f, 800.f))
 			[
-				Panel.ToSharedRef()
+				SNew(SImGuiPanelLifetime)
+				[
+					Panel.ToSharedRef()
+				]
 			];
 		WindowPtr = Window;
 		FSlateApplication::Get().AddWindow(Window);
@@ -470,6 +504,11 @@ void OpenLocalWindow(UWorld* World)
 			{
 				Config = NewObject<UImGuiLocalPanelManagerConfig>(World, TEXT("ImGuiLocalPanelOverlayConfig"));
 				Super::Construct(Args);
+				FImGuiDelegates::OnImGuiLocalPanelEnable.Broadcast();
+			}
+			~SImGuiLocalPanelOverlay() override
+			{
+				FImGuiDelegates::OnImGuiLocalPanelDisable.Broadcast();
 			}
 			TMap<TObjectPtr<UUnrealImGuiPanelBase>, TSharedRef<SDragResizeBox>> PanelBoxMap;
 			TSharedPtr<SDragResizeBox> ViewportPtr;
@@ -514,13 +553,16 @@ void OpenLocalWindow(UWorld* World)
 						.Padding(2.f)
 						[
 							SNew(SButton)
-							.Text(LOCTEXT("CloseBox", "✖"))
 							.ToolTipText(LOCTEXT("CloseBoxTooltip", "Close"))
 							.OnClicked_Lambda([this, Panel]
 							{
 								ClosePanel(Panel);
 								return FReply::Handled();
 							})
+							[
+								SNew(SImage)
+								.Image(FAppStyle::GetBrush("Icons.X"))
+							]
 						]
 					]
 					.Content()
@@ -589,8 +631,9 @@ void OpenLocalWindow(UWorld* World)
 						.Text(LOCTEXT("ImGuiPanelManagerTitle", "ImGui Panel Manager"))
 					]
 					+ SHorizontalBox::Slot()
+					.Padding(10.f, 2.f, 2.f, 4.f)
 					.AutoWidth()
-					.VAlign(VAlign_Center)
+					.VAlign(VAlign_Bottom)
 					[
 						SNew(STextBlock)
 						.TextStyle(FAppStyle::Get(), TEXT("TinyText"))
@@ -605,7 +648,6 @@ void OpenLocalWindow(UWorld* World)
 					.HAlign(HAlign_Right)
 					[
 						SNew(SButton)
-						.Text(LOCTEXT("MinimizeManager", "➖"))
 						.ToolTipText(LOCTEXT("MinimizeManagerTooltip", "Minimize"))
 						.OnClicked_Lambda([this]
 						{
@@ -618,6 +660,10 @@ void OpenLocalWindow(UWorld* World)
 							Minimize();
 							return FReply::Handled();
 						})
+						[
+							SNew(SImage)
+							.Image(FAppStyle::GetBrush("Icons.Minus"))
+						]
 					]
 				]
 				.Content()
@@ -737,7 +783,6 @@ void OpenLocalWindow(UWorld* World)
 														.Padding(2.f)
 														[
 															SNew(SButton)
-															.Text(LOCTEXT("CloseBox", "✖"))
 															.ToolTipText(LOCTEXT("CloseBoxTooltip", "Close"))
 															.OnClicked_Lambda([this]
 															{
@@ -748,6 +793,10 @@ void OpenLocalWindow(UWorld* World)
 																}
 																return FReply::Handled();
 															})
+															[
+																SNew(SImage)
+																.Image(FAppStyle::GetBrush("Icons.X"))
+															]
 														]
 													]
 													.Content()

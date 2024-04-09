@@ -15,9 +15,11 @@ namespace ImGuiWorldDebuggerBootstrap
 	IMGUI_WORLDDEBUGGER_API extern TSubclassOf<AImGuiWorldDebuggerBase> DebuggerClass;
 	IMGUI_WORLDDEBUGGER_API extern bool bLaunchImGuiWorldDebugger;
 	void PostWorldInitialization(UWorld* World, const UWorld::InitializationValues);
+	void RequireCreateDebugger();
+	void RequireDestroyDebugger();
 }
 
-UCLASS(Transient, DefaultToInstanced, Config = ImGuiPanelConfig, PerObjectConfig)
+UCLASS(Transient, Config = ImGuiPanelConfig, PerObjectConfig)
 class IMGUI_WORLDDEBUGGER_API AImGuiWorldDebuggerBase : public AActor
 {
 	GENERATED_BODY()

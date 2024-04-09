@@ -293,9 +293,12 @@ public:
 			static_assert((int32_t)ImGuiWS::FTexture::Type::RGBA32 == (uint8)ETextureFormat::RGBA8);
 			ImGuiWS.SetTexture(Handle, ImGuiWS::FTexture::Type{ static_cast<uint8>(TextureFormat) }, Width, Height, Data);
 		};
+
+		FImGuiDelegates::OnImGui_WS_Enable.Broadcast();
 	}
 	~FImpl() override
 	{
+		FImGuiDelegates::OnImGui_WS_Disable.Broadcast();
 		FImGuiDelegates::OnImGuiContextDestroyed.Broadcast(Context);
 		ImGui::DestroyContext(Context);
 		ImPlot::DestroyContext(PlotContext);
