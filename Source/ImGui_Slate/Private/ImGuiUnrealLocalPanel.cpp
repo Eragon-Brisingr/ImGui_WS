@@ -30,6 +30,25 @@
 
 namespace ImGui_WS::LocalPanel
 {
+const auto& GetTextBlockStyles()
+{
+	struct FTextBlockStyles : FNoncopyable
+	{
+		FTextBlockStyle Large;
+		FTextBlockStyle Tiny;
+
+		FTextBlockStyles()
+		{
+			const FTextBlockStyle& Normal = FCoreStyle::Get().GetWidgetStyle<FTextBlockStyle>("NormalText");
+			Large = Normal;
+			Large.SetFontSize(14);
+			Tiny = Normal;
+			Tiny.SetFontSize(10);
+		}
+	};
+	static FTextBlockStyles Styles;
+	return Styles;
+}
 class SDragResizeContainer : public SCompoundWidget
 {
 public:
@@ -235,13 +254,17 @@ public:
 						SNew(SResizeArea, this)
 						.ToolTipText(LOCTEXT("ResizeAreaTooltip", "Resize"))
 						.BorderImage(FAppStyle::GetBrush("NoBorder"))
-						.ContentScale(1.f)
 						.Padding(0.f)
 						[
-							SNew(SImage)
-							.Image(FAppStyle::GetBrush("TreeArrow_Expanded"))
-							.RenderTransformPivot(FVector2D{ 0.5f })
-							.RenderTransform(FSlateRenderTransform{ FQuat2D(FMath::DegreesToRadians(-45)) })
+							SNew(SBox)
+							.WidthOverride(32.f)
+							.HeightOverride(32.f)
+							[
+								SNew(SImage)
+								.Image(FAppStyle::GetBrush("TreeArrow_Expanded"))
+								.RenderTransformPivot(FVector2D{ 0.5f })
+								.RenderTransform(FSlateRenderTransform{ FQuat2D(FMath::DegreesToRadians(-45)) })
+							]
 						]
 					]
 				]
@@ -545,7 +568,7 @@ void OpenLocalWindow(UWorld* World)
 						.VAlign(VAlign_Center)
 						[
 							SNew(STextBlock)
-							.TextStyle(FAppStyle::Get(), TEXT("LargeText"))
+							.TextStyle(&GetTextBlockStyles().Large)
 							.Text(Panel->Title)
 						]
 						+ SHorizontalBox::Slot()
@@ -627,7 +650,7 @@ void OpenLocalWindow(UWorld* World)
 					.VAlign(VAlign_Center)
 					[
 						SNew(STextBlock)
-						.TextStyle(FAppStyle::Get(), TEXT("LargeText"))
+						.TextStyle(&GetTextBlockStyles().Large)
 						.Text(LOCTEXT("ImGuiPanelManagerTitle", "ImGui Panel Manager"))
 					]
 					+ SHorizontalBox::Slot()
@@ -636,7 +659,7 @@ void OpenLocalWindow(UWorld* World)
 					.VAlign(VAlign_Bottom)
 					[
 						SNew(STextBlock)
-						.TextStyle(FAppStyle::Get(), TEXT("TinyText"))
+						.TextStyle(&GetTextBlockStyles().Tiny)
 						.Text_Lambda([]
 						{
 							return FText::FromString(FDateTime::Now().ToString(TEXT("%m.%d-%H.%M.%S")));
@@ -775,7 +798,7 @@ void OpenLocalWindow(UWorld* World)
 														.VAlign(VAlign_Center)
 														[
 															SNew(STextBlock)
-															.TextStyle(FAppStyle::Get(), TEXT("LargeText"))
+															.TextStyle(&GetTextBlockStyles().Large)
 															.Text(LOCTEXT("ImGuiViewportTitle", "ImGui Viewport"))
 														]
 														+ SHorizontalBox::Slot()
@@ -868,11 +891,11 @@ void OpenLocalWindow(UWorld* World)
 								}
 							}
 
-							ImGui::Text("Filter Panel"); ImGui::SameLine(); ImGui::Separator();
-							if (ImGui::FTreeNodeEx TreeNodeEx{ "FilterPanel" })
+							ImGui::Text("Search Panel"); ImGui::SameLine(); ImGui::Separator();
+							if (ImGui::FTreeNodeEx TreeNodeEx{ "Search Panel" })
 							{
 								UnrealImGui::FUTF8String& FilterString = Overlay->FilterString;
-								ImGui::InputTextWithHint("##FilterPanel", "Filter Panel", FilterString);
+								ImGui::InputTextWithHint("##SearchPanel", "Search Panel", FilterString);
 								if (ImGui::FListBox ListBox{ "##FilteredPanel", ImVec2{ 0.f, 100.f } })
 								{
 									if (FilterString.Len() == 0)
@@ -1035,18 +1058,21 @@ void OpenLocalWindow(UWorld* World)
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot()
 								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
 								.Padding(2.f)
+								.FillHeight(1.f)
 								[
 									SNew(STextBlock)
-									.TextStyle(FAppStyle::Get(), TEXT("LargeText"))
+									.TextStyle(&GetTextBlockStyles().Large)
 									.Text(LOCTEXT("ImGuiPanelManagerMinimizeTitle", "ImGui"))
 								]
 								+ SVerticalBox::Slot()
 								.HAlign(HAlign_Center)
-								.Padding(2.f)
+								.VAlign(VAlign_Center)
+								.Padding(4.f)
 								[
 									SNew(STextBlock)
-									.TextStyle(FAppStyle::Get(), TEXT("TinyText"))
+									.TextStyle(&GetTextBlockStyles().Tiny)
 									.Text_Lambda([]
 									{
 										return FText::FromString(FDateTime::Now().ToString(TEXT("%H.%M.%S")));

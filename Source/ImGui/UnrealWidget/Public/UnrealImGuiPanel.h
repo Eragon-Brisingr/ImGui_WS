@@ -41,7 +41,7 @@ struct FImGuiDefaultDockLayout : public FImGuiDefaultPanelState
 	int32 DockId = 0;
 };
 
-UCLASS(Abstract, Config = ImGuiPanelConfig, PerObjectConfig, Blueprintable)
+UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig, Blueprintable)
 class IMGUI_API UUnrealImGuiPanelBase : public UObject
 {
 	GENERATED_BODY()

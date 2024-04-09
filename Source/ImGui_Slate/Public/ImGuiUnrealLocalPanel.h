@@ -32,7 +32,7 @@ public:
 	FVector2f Size{ 0.4f, 0.4f };
 };
 
-UCLASS(Config = ImGuiPanelConfig, PerObjectConfig)
+UCLASS(Config = ImGuiPanelUserConfig, PerObjectConfig)
 class UImGuiLocalPanelManagerConfig : public UObject
 {
 	GENERATED_BODY()

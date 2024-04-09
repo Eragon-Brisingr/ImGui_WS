@@ -9,7 +9,7 @@ struct FStreamableHandle;
 class UUnrealImGuiPanelBase;
 class UUnrealImGuiLayoutBase;
 
-UCLASS(Config = ImGuiPanelConfig, PerObjectConfig)
+UCLASS(Config = ImGuiPanelUserConfig, PerObjectConfig)
 class IMGUI_API UUnrealImGuiPanelBuilder : public UObject
 {
 	GENERATED_BODY()

@@ -8,7 +8,7 @@
 
 class AImGuiWorldDebuggerBase;
 
-UCLASS(Abstract, Config = ImGuiPanelConfig, PerObjectConfig)
+UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig)
 class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerPanelBase : public UUnrealImGuiPanelBase
 {
 	GENERATED_BODY()

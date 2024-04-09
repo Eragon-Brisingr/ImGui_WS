@@ -11,7 +11,7 @@ class UUnrealImGuiViewportBase;
 struct FUnrealImGuiViewportContext;
 class UImGuiWorldDebuggerDetailsPanel;
 
-UCLASS(Abstract, Config = ImGuiPanelConfig, PerObjectConfig)
+UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig)
 class IMGUI_API UUnrealImGuiViewportExtentBase : public UObject
 {
 	GENERATED_BODY()
