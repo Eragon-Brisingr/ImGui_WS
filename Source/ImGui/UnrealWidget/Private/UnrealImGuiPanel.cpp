@@ -8,8 +8,9 @@
 #include "UnrealImGuiPanelBuilder.h"
 
 UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
-	: ImGuiWindowFlags(ImGuiWindowFlags_None)
-	, bIsOpen(false)
+	: ImGuiWindowFlags{ ImGuiWindowFlags_None }
+	, bIsOpen{ false }
+	, LocalOpenCounter{ 0 }
 {
 	Categories.Add(NSLOCTEXT("ImGui_WS", "MiscCategory", "Misc"));
 }
@@ -19,15 +20,38 @@ void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
 	if (bIsOpen != bOpen)
 	{
 		bIsOpen = bOpen;
+		if (LocalOpenCounter == 0)
+		{
+			UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
+			if (bIsOpen)
+			{
+				WhenOpen(Builder->GetOuter(), Builder);
+			}
+			else
+			{
+				WhenClose(Builder->GetOuter(), Builder);
+			}
+		}
+	}
+}
+
+void UUnrealImGuiPanelBase::LocalPanelOpened()
+{
+	if (LocalOpenCounter == 0 && bIsOpen == false)
+	{
 		UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
-		if (bIsOpen)
-		{
-			WhenOpen(Builder->GetOuter(), Builder);
-		}
-		else
-		{
-			WhenClose(Builder->GetOuter(), Builder);
-		}
+		WhenOpen(Builder->GetOuter(), Builder);
+	}
+	LocalOpenCounter += 1;
+}
+
+void UUnrealImGuiPanelBase::LocalPanelClosed()
+{
+	LocalOpenCounter -= 1;
+	if (LocalOpenCounter == 0 && bIsOpen == false)
+	{
+		UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
+		WhenClose(Builder->GetOuter(), Builder);
 	}
 }
 

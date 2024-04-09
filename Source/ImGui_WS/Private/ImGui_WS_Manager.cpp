@@ -885,6 +885,8 @@ UImGui_WS_Manager::~UImGui_WS_Manager()
 
 bool UImGui_WS_Manager::IsSettingsEnable()
 {
+	return false;
+
 	const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
 	if (GIsEditor)
 	{

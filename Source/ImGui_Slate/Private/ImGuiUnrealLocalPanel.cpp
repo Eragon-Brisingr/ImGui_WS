@@ -558,7 +558,26 @@ void OpenLocalWindow(UWorld* World)
 					});
 				const FImGuiLocalPanelConfig PanelConfig = Config->PanelConfigMap.FindRef(Panel->GetClass());
 				ImGuiPanel->GetContext()->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
-				const auto DragResizeBox = SNew(SDragResizeContainer::SDragResizeBox)
+				class SImGuiPanelBox : public SDragResizeBox
+				{
+					using Super = SDragResizeBox;
+				public:
+					TWeakObjectPtr<UUnrealImGuiPanelBase> PanelPtr;
+					void Construct(const FArguments& Args, UUnrealImGuiPanelBase* Panel)
+					{
+						PanelPtr = Panel;
+						Super::Construct(Args);
+						Panel->LocalPanelOpened();
+					}
+					~SImGuiPanelBox() override
+					{
+						if (UUnrealImGuiPanelBase* Panel = PanelPtr.Get())
+						{
+							Panel->LocalPanelClosed();
+						}
+					}
+				};
+				const auto DragResizeBox = SNew(SImGuiPanelBox, Panel)
 					.TitleContent()
 					[
 						SNew(SHorizontalBox)

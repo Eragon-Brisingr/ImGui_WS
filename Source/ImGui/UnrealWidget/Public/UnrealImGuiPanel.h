@@ -65,14 +65,18 @@ public:
 	void SetOpenState(bool bOpen);
 	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s_%s"), *Title.ToString(), *GetClass()->GetName(), *LayoutName); }
 
+	void LocalPanelOpened();
+	void LocalPanelClosed();
+private:
 	friend class UUnrealImGuiPanelBuilder;
 	friend class UUnrealImGuiLayoutBase;
-	
+
 	UPROPERTY(Transient)
 	uint8 bIsOpen : 1;
+	uint8 LocalOpenCounter : 7;
 	UPROPERTY(Config)
 	TMap<FName, bool> PanelOpenState;
-
+public:
 	virtual bool ShouldCreatePanel(UObject* Owner) const { FEditorScriptExecutionGuard EditorScriptExecutionGuard; return ReceiveShouldCreatePanel(Owner); }
 
 	virtual void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveRegister(Owner, Builder); }
@@ -83,7 +87,7 @@ public:
 	
 	virtual void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveDraw(Owner, Builder, DeltaSeconds); }
 	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
-
+protected:
 	UFUNCTION(BlueprintNativeEvent)
 	bool ReceiveShouldCreatePanel(UObject* Owner) const;
 	UFUNCTION(BlueprintImplementableEvent)

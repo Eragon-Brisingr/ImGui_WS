@@ -37,7 +37,7 @@ public:
 	}
 
 	UPROPERTY(Transient)
-	TArray<UUnrealImGuiLayoutBase*> Layouts;
+	TArray<TObjectPtr<UUnrealImGuiLayoutBase>> Layouts;
 	int32 ActiveLayoutIndex = 0;
 	UUnrealImGuiLayoutBase* GetActiveLayout() const { return Layouts[ActiveLayoutIndex]; }
 	UPROPERTY(Config)
