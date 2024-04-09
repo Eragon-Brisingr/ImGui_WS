@@ -11,13 +11,17 @@ ImGui_WS插件提供了虚幻调试信息远程网页显示的能力，支持打
 ## 特性
 
 * ImGui网页绘制
+* 本地Slate面板绘制
+* UMG支持
+* ImGui蓝图节点（自动管理作用域）
 * 虚幻世界调试器
   * 虚幻世界俯视图
   * 细节面板
   * 世界大纲视图
   * 日志与控制台功能
 * 面板布局系统
-* 已接入ImPlot数据可视化库
+* ImPlot数据可视化库
+* C++ RAII API
 
 ## 学习如何使用ImGui
 
@@ -76,6 +80,36 @@ static UnrealImGui::FImGuiTextureHandle TextureHandle = []
 // 步骤3
 ImGui::Image(TextureHandle, ImVec2{ 256.f, 256.f });
 ```
+
+## 本地Slate面板绘制
+
+控制台变量 `ImGui.WS.LocalPanelMode <ELocalPanelMode>` 设置本地面板模式
+
+* 0: 在当前游戏的面板上绘制  
+  ![GameViewportPanel](Docs/GameViewportPanel.gif)
+* 1: 打开一个独立窗口绘制（只支持桌面平台）  
+  ![LocalPanelWindow](Docs/LocalPanelWindow.png)
+* 2: 打开一个可合并的窗口绘制（只支持编辑器）  
+  ![LocalPanelDock](Docs/LocalPanelDock.png)
+
+控制台命令
+
+* `ImGui.WS.OpenPanel` 打开本地面板
+* `ImGui.WS.ClosePanel` 关闭本地面板
+
+## UMG支持
+
+新增`ImGuiPanel`控件，将控件提升为变量（勾选Is Variable）后可绑定`OnImGuiTick`绘制事件
+
+![UMG Panel](Docs/UMG_Panel.png)
+
+## ImGui蓝图节点
+
+封装大部分ImGui绘制函数给蓝图使用，且节点自动管理作用域，不用手动控制Begin、End调用配对
+
+![ImGui BPNode](Docs/BPNode_ImGui.png)
+
+![BPNode Result](Docs/BP_Result.gif)
 
 ## World Debugger
 
@@ -316,6 +350,26 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 ### 回放录制数据
 
 菜单->ImGui_WS->Load Record，选择录制的文件进行回看
+
+## C++ RAII API
+
+封装ImGui API支持自动管理作用域，引用ImGuiEx.h头文件可使用作用域接口
+
+```cpp
+// RAII 写法，不用开发者关心ImGui::End的调用
+if (ImGui::FWindow Window{ "WindowName" })
+{
+    ImGui::Text("Content");
+}
+
+// 等价的ImGui默认API写法，需要管理ImGui::End的调用
+if (ImGui::Begin("WindowName"))
+{
+    ImGui::Text("Content");
+}
+// 不能漏了，否则绘制会出错
+ImGui::End();
+```
 
 ## 引用仓库地址
 

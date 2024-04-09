@@ -9,14 +9,17 @@ Unreal ImGui_WS plugin provides the ability to display debugging information fro
 ## Feature
 
 * ImGui webpage drawing
+* Local Slate panel rendering
+* UMG support
+* ImGui blueprint nodes (automatic scope management)
 * Unreal world debugger
   * Top view of the unreal world
   * Details panel
   * World outline view
   * Logging and console features
 * Panel layout system
-* ImPlot data visualization library embedded
-
+* ImPlot data visualization library
+* C++ RAII API
 
 ## Learn how to use ImGui
 
@@ -75,6 +78,36 @@ static UnrealImGui::FImGuiTextureHandle TextureHandle = []
 // step 3
 ImGui::Image(TextureHandle, ImVec2{ 256.f, 256.f });
 ```
+
+## Local Slate Panel Rendering
+
+Console variable `ImGui.WS.LocalPanelMode <ELocalPanelMode>` sets the local panel mode
+
+* 0: Draw on the current game viewport  
+  ![GameViewportPanel](Docs/GameViewportPanel.gif)
+* 1: Open a separate window for rendering (desktop platforms only)  
+  ![LocalPanelWindow](Docs/LocalPanelWindow.png)
+* 2: Open a mergeable window for rendering (editor only)  
+  ![LocalPanelDock](Docs/LocalPanelDock.png)
+
+Console commands
+
+* `ImGui.WS.OpenPanel` opens the local panel
+* `ImGui.WS.ClosePanel` closes the local panel
+
+## UMG Support
+
+Added `ImGuiPanel` widget, expose the widget as a variable (Is Variable) and bind the `OnImGuiTick` drawing event
+
+![UMG Panel](Docs/UMG_Panel.png)
+
+## ImGui Blueprint Nodes
+
+Encapsulates most ImGui drawing functions for use in blueprints, and nodes automatically manage scope, no need to manually control Begin and End call pairing
+
+![ImGui BPNode](Docs/BPNode_ImGui.png)
+
+![BPNode Result](Docs/BP_Result.gif)
 
 ## World Debugger
 
@@ -315,6 +348,26 @@ To end recording:
 ### Play back recorded data
 
 Menu->ImGui_WS->Load Record, select the recorded file for review
+
+## C++ RAII API
+
+Encapsulates ImGui API to support automatic scope management, include ImGuiEx.h header file to use the scope interface
+
+```cpp
+// RAII style, no need for developers to worry about ImGui::End call
+if (ImGui::FWindow Window{ "WindowName" })
+{
+    ImGui::Text("Content");
+}
+
+// Equivalent ImGui default API, need to manage ImGui::End call
+if (ImGui::Begin("WindowName"))
+{
+    ImGui::Text("Content");
+}
+// Cannot be omitted, otherwise rendering will be incorrect
+ImGui::End();
+```
 
 ## Credits
 
