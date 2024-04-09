@@ -34,6 +34,15 @@ public:
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::Begin(TCHAR_TO_UTF8(*Name.ToString()), &OpenState, Flags);
 	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, Name = "NSLOCTEXT(\"WS\", \"BP_DefaultTitle\", \"Untitle\")", DisplayName = "Window (Full Viewport)", AdvancedDisplay = 1), BlueprintInternalUseOnly)
+	static bool BeginFullViewport(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags)
+	{
+		if (!CheckImGuiContextThrowError()) { return false; }
+		static constexpr auto SinglePanelFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
+		ImGui::SetNextWindowPos(ImVec2{ 0, 0 });
+		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
+		return ImGui::Begin(TCHAR_TO_UTF8(*Name.ToString()), nullptr, Flags | SinglePanelFlags);
+	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", BlueprintInternalUseOnly)
 	static void End()
 	{
