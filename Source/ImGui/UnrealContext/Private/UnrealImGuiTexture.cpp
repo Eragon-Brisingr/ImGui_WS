@@ -36,12 +36,17 @@ namespace UnrealImGui
 		return RT;
 	}
 
-	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data, UTextureRenderTarget2D* Texture)
+	void UpdateTextureDataToWS(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data)
 	{
 		if (Private::UpdateTextureData_WS)
 		{
 			Private::UpdateTextureData_WS(Handle, TextureFormat, Width, Height, Data);
 		}
+	}
+
+	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data, UTextureRenderTarget2D* Texture)
+	{
+		UpdateTextureDataToWS(Handle, TextureFormat, Width, Height, Data);
 		if (Texture)
 		{
 			int32 BytesPerPixel;
@@ -146,7 +151,7 @@ namespace UnrealImGui
 		}
 		switch (Image.Format) {
 		case ERawImageFormat::G8:
-			UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Image.AsG8().GetData(), nullptr);
+			UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Image.AsG8().GetData());
 			break;
 		case ERawImageFormat::BGRA8:
 		case ERawImageFormat::BGRE8:
@@ -162,7 +167,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx].A;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -176,7 +181,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx].G;
 						Data[Idx * 3 + 2] = RawData[Idx].B;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -191,7 +196,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx].B;
 						Data[Idx * 4 + 3] = RawData[Idx].A;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			}
@@ -210,7 +215,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx * 4 + 3] * RGBA16Scale;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -225,7 +230,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx * 4 + 1] * RGBA16Scale;
 						Data[Idx * 3 + 2] = RawData[Idx * 4 + 2] * RGBA16Scale;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -241,7 +246,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx * 4 + 2] * RGBA16Scale;
 						Data[Idx * 4 + 3] = RawData[Idx * 4 + 3] * RGBA16Scale;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			}
@@ -259,7 +264,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -273,7 +278,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx].G * TNumericLimits<uint8>::Max();
 						Data[Idx * 3 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -288,7 +293,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 						Data[Idx * 4 + 3] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			}
@@ -306,7 +311,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -320,7 +325,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx].G * TNumericLimits<uint8>::Max();
 						Data[Idx * 3 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -335,7 +340,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 						Data[Idx * 4 + 3] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
 			}
@@ -349,7 +354,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] / (float)TNumericLimits<uint16>::Max() * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+				UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 			}
 			break;
 		case ERawImageFormat::R16F:
@@ -361,7 +366,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+				UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 			}
 			break;
 		case ERawImageFormat::R32F:
@@ -373,7 +378,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
+				UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 			}
 			break;
 		default:
@@ -428,7 +433,7 @@ namespace UnrealImGui
 						Data[Idx] = RawData[Idx].A;
 					}
 				}
-				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData(), nullptr);
+				UpdateTextureDataToWS(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
 			}
 			break;
 		case ETextureFormat::RGB8:
@@ -441,7 +446,7 @@ namespace UnrealImGui
 					Data[Idx * 3 + 1] = RawData[Idx].G;
 					Data[Idx * 3 + 2] = RawData[Idx].B;
 				}
-				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData(), nullptr);
+				UpdateTextureDataToWS(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
 			}
 			break;
 		case ETextureFormat::RGBA8:
@@ -455,7 +460,7 @@ namespace UnrealImGui
 					Data[Idx * 4 + 2] = RawData[Idx].B;
 					Data[Idx * 4 + 3] = RawData[Idx].A;
 				}
-				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData(), nullptr);
+				UpdateTextureDataToWS(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
 			}
 			break;
 		default:
