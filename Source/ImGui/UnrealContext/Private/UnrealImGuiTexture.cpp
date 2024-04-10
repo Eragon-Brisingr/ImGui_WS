@@ -4,6 +4,8 @@
 #include "UnrealImGuiTexture.h"
 
 #include "ImageUtils.h"
+#include "imgui.h"
+#include "RenderingThread.h"
 #include "TextureResource.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
@@ -12,19 +14,122 @@ namespace UnrealImGui
 {
 	Private::FUpdateTextureData_WS Private::UpdateTextureData_WS;
 
-	namespace ImGuiTextureId
+	namespace TextureIdManager
 	{
 		// note: font texture use id 0
 		uint32 HandleIdCounter = 0;
-		TMap<const UTexture*, uint32> HandleIdMap;
+		TMap<TWeakObjectPtr<const UTexture>, uint32> HandleIdMap;
 		TMap<uint32, TWeakObjectPtr<const UTexture>> IdTextureMap;
 	}
 
-	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data)
+	UTextureRenderTarget2D* CreateTexture(FImGuiTextureHandle& Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, UObject* Outer, const FName& Name)
 	{
-		if (ensure(Private::UpdateTextureData_WS))
+		UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>(Outer, Name);
+		check(RT);
+		RT->RenderTargetFormat = RTF_RGBA8;
+		RT->ClearColor = FLinearColor::Black;
+		RT->bAutoGenerateMips = false;
+		RT->InitAutoFormat(Width, Height);
+		RT->LODGroup = TEXTUREGROUP_Pixels2D;
+		RT->UpdateResourceImmediate(false);
+		Handle = FImGuiTextureHandle{ RT };
+		return RT;
+	}
+
+	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data, UTextureRenderTarget2D* Texture)
+	{
+		if (Private::UpdateTextureData_WS)
 		{
 			Private::UpdateTextureData_WS(Handle, TextureFormat, Width, Height, Data);
+		}
+		if (Texture)
+		{
+			int32 BytesPerPixel;
+			switch (TextureFormat)
+			{
+			case ETextureFormat::Alpha8:
+			case ETextureFormat::Gray8:
+				BytesPerPixel = 1;
+				break;
+			case ETextureFormat::RGB8:
+				BytesPerPixel = 3;
+				break;
+			case ETextureFormat::RGBA8:
+				BytesPerPixel = 4;
+				break;
+			default:
+				checkNoEntry();
+				BytesPerPixel = 0;
+			}
+			ENQUEUE_RENDER_COMMAND(ImGuiFontAtlas)(
+				[TextureDataRaw = TArray<uint8>{ Data, Width * Height * BytesPerPixel },
+				TextureFormat,
+				RenderTargetPtr = TWeakObjectPtr<UTextureRenderTarget2D>(Texture)]
+				(FRHICommandListImmediate& RHICmdList)
+				{
+					UTextureRenderTarget2D* RT = RenderTargetPtr.Get();
+					if (!RT)
+					{
+						return;
+					}
+					const FTextureResource* RenderTargetResource = RT->GetResource();
+					if (RenderTargetResource == nullptr)
+					{
+						return;
+					}
+
+					TArray<uint8> FontAtlasTextureData;
+					FontAtlasTextureData.SetNumUninitialized(TextureDataRaw.Num() * 4);
+					{
+						const uint8* Src = TextureDataRaw.GetData();
+						uint32* Dst = reinterpret_cast<uint32*>(FontAtlasTextureData.GetData());
+						switch (TextureFormat)
+						{
+						case ETextureFormat::Alpha8:
+							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
+							{
+								*Dst++ = IM_COL32(255, 255, 255, *Src++);
+							}
+							break;
+						case ETextureFormat::Gray8:
+							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
+							{
+								const uint8 V = *Src++;
+								*Dst++ = IM_COL32(V, V, V, 255);
+							}
+							break;
+						case ETextureFormat::RGB8:
+							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
+							{
+								const uint8 R = *Src++;
+								const uint8 G = *Src++;
+								const uint8 B = *Src++;
+								*Dst++ = IM_COL32(R, G, B, 255);
+							}
+							break;
+						case ETextureFormat::RGBA8:
+							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
+							{
+								const uint8 R = *Src++;
+								const uint8 G = *Src++;
+								const uint8 B = *Src++;
+								*Dst++ = IM_COL32(R, G, B, *Src++);
+							}
+							break;
+						}
+					}
+
+					constexpr uint32 SrcBpp = sizeof(uint32);
+					const uint32 SrcPitch = RT->SizeX * SrcBpp;
+					FRHITexture2D* Texture = RenderTargetResource->GetTexture2DRHI();
+					const FUpdateTextureRegion2D Region{ 0, 0, 0, 0, uint32(RT->SizeX), uint32(RT->SizeY) };
+					RHIUpdateTexture2D(
+						Texture,
+						0,
+						Region,
+						SrcPitch,
+						FontAtlasTextureData.GetData());
+				});
 		}
 	}
 
@@ -41,7 +146,7 @@ namespace UnrealImGui
 		}
 		switch (Image.Format) {
 		case ERawImageFormat::G8:
-			UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Image.AsG8().GetData());
+			UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Image.AsG8().GetData(), nullptr);
 			break;
 		case ERawImageFormat::BGRA8:
 		case ERawImageFormat::BGRE8:
@@ -57,7 +162,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx].A;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -71,7 +176,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx].G;
 						Data[Idx * 3 + 2] = RawData[Idx].B;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -86,7 +191,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx].B;
 						Data[Idx * 4 + 3] = RawData[Idx].A;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			}
@@ -105,7 +210,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx * 4 + 3] * RGBA16Scale;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -120,7 +225,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx * 4 + 1] * RGBA16Scale;
 						Data[Idx * 3 + 2] = RawData[Idx * 4 + 2] * RGBA16Scale;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -136,7 +241,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx * 4 + 2] * RGBA16Scale;
 						Data[Idx * 4 + 3] = RawData[Idx * 4 + 3] * RGBA16Scale;
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			}
@@ -154,7 +259,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -168,7 +273,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx].G * TNumericLimits<uint8>::Max();
 						Data[Idx * 3 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -183,7 +288,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 						Data[Idx * 4 + 3] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			}
@@ -201,7 +306,7 @@ namespace UnrealImGui
 					{
 						Data[Idx] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGB8:
@@ -215,7 +320,7 @@ namespace UnrealImGui
 						Data[Idx * 3 + 1] = RawData[Idx].G * TNumericLimits<uint8>::Max();
 						Data[Idx * 3 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			case ETextureFormat::RGBA8:
@@ -230,7 +335,7 @@ namespace UnrealImGui
 						Data[Idx * 4 + 2] = RawData[Idx].B * TNumericLimits<uint8>::Max();
 						Data[Idx * 4 + 3] = RawData[Idx].A * TNumericLimits<uint8>::Max();
 					}
-					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+					UpdateTextureData(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 				}
 				break;
 			}
@@ -244,7 +349,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] / (float)TNumericLimits<uint16>::Max() * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 			}
 			break;
 		case ERawImageFormat::R16F:
@@ -256,7 +361,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 			}
 			break;
 		case ERawImageFormat::R32F:
@@ -268,7 +373,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+				UpdateTextureData(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData(), nullptr);
 			}
 			break;
 		default:
@@ -323,7 +428,7 @@ namespace UnrealImGui
 						Data[Idx] = RawData[Idx].A;
 					}
 				}
-				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
+				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData(), nullptr);
 			}
 			break;
 		case ETextureFormat::RGB8:
@@ -336,7 +441,7 @@ namespace UnrealImGui
 					Data[Idx * 3 + 1] = RawData[Idx].G;
 					Data[Idx * 3 + 2] = RawData[Idx].B;
 				}
-				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
+				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData(), nullptr);
 			}
 			break;
 		case ETextureFormat::RGBA8:
@@ -350,7 +455,7 @@ namespace UnrealImGui
 					Data[Idx * 4 + 2] = RawData[Idx].B;
 					Data[Idx * 4 + 3] = RawData[Idx].A;
 				}
-				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
+				UpdateTextureData(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData(), nullptr);
 			}
 			break;
 		default:
@@ -387,28 +492,28 @@ namespace UnrealImGui
 
 	const UTexture* FindTexture(uint32 ImTextureId)
 	{
-		using namespace ImGuiTextureId;
+		using namespace TextureIdManager;
 		return IdTextureMap.FindRef(ImTextureId).Get();
 	}
 }
 
 FImGuiTextureHandle::FImGuiTextureHandle(const UTexture* Texture)
 {
-	using namespace UnrealImGui::ImGuiTextureId;
+	using namespace UnrealImGui::TextureIdManager;
 	bool bCreated;
 	ImTextureId = FindOrCreateHandle(Texture, bCreated).ImTextureId;
 }
 
 FImGuiTextureHandle FImGuiTextureHandle::MakeUnique()
 {
-	using namespace UnrealImGui::ImGuiTextureId;
+	using namespace UnrealImGui::TextureIdManager;
 	HandleIdCounter += 1;
 	return { HandleIdCounter };
 }
 
 FImGuiTextureHandle FImGuiTextureHandle::FindOrCreateHandle(const UTexture* Texture, bool& bCreated)
 {
-	using namespace UnrealImGui::ImGuiTextureId;
+	using namespace UnrealImGui::TextureIdManager;
 	uint32& Id = HandleIdMap.FindOrAdd(Texture);
 	bCreated = Id == 0;
 	if (bCreated)

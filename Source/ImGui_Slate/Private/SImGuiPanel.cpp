@@ -7,6 +7,8 @@
 #include "ImGuiFontAtlas.h"
 #include "imgui_internal.h"
 #include "implot.h"
+#include "RenderingThread.h"
+#include "TextureResource.h"
 #include "UnrealImGuiKeyUtils.h"
 #include "UnrealImGuiTexture.h"
 #include "Engine/Texture.h"
@@ -181,21 +183,8 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 			TArray VerticesSlice(Vertices.GetData() + DrawCmd.VtxOffset, Vertices.Num() - DrawCmd.VtxOffset);
 			TArray IndicesSlice(Indices.GetData() + DrawCmd.IdxOffset, DrawCmd.ElemCount);
 
-			if (DrawCmd.GetTexID() == UnrealImGui::FontTextId)
+			auto SetTexture = [&TextureBrush](const UTexture* Texture)
 			{
-				static TSharedPtr<FSlateBrush> FontAtlasTexturePtr = [this]
-				{
-					uint8* TextureDataRaw;
-					int32 TextureWidth, TextureHeight, BytesPerPixel;
-					Context->IO.Fonts->GetTexDataAsRGBA32(&TextureDataRaw, &TextureWidth, &TextureHeight, &BytesPerPixel);
-					return FSlateDynamicImageBrush::CreateWithImageData(TEXT("ImGuiFontAtlas"), FVector2D(TextureWidth, TextureHeight),
-					TArray(TextureDataRaw, TextureWidth * TextureHeight * BytesPerPixel));
-				}();
-				TextureBrush = *FontAtlasTexturePtr;
-			}
-			else
-			{
-				const UTexture* Texture = UnrealImGui::FindTexture(DrawCmd.GetTexID());
 				if (TextureBrush.GetResourceObject() != Texture)
 				{
 					TextureBrush.SetResourceObject(const_cast<UTexture*>(Texture));
@@ -226,6 +215,73 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 						TextureBrush.DrawAs = ESlateBrushDrawType::NoDrawType;
 					}
 				}
+			};
+			if (DrawCmd.GetTexID() == UnrealImGui::FontTextId)
+			{
+				static const UTextureRenderTarget2D* FontAtlasTexture = [this]
+				{
+					uint8* TextureDataRaw;
+					int32 SizeX, SizeY, BytesPerPixel;
+					Context->IO.Fonts->GetTexDataAsAlpha8(&TextureDataRaw, &SizeX, &SizeY, &BytesPerPixel);
+
+					UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>((UObject*)GetTransientPackage(), TEXT("ImGuiFontAtlas"));
+					check(RT);
+					RT->RenderTargetFormat = RTF_RGBA8;
+					RT->ClearColor = FLinearColor::Black;
+					RT->bAutoGenerateMips = false;
+					RT->InitAutoFormat(SizeX, SizeY);
+					RT->LODGroup = TEXTUREGROUP_Pixels2D;
+					RT->UpdateResourceImmediate(false);
+
+					RT->AddToRoot();
+
+					ENQUEUE_RENDER_COMMAND(ImGuiFontAtlas)(
+						[TextureDataRaw = TArray<uint8>{ TextureDataRaw, SizeX * SizeY * BytesPerPixel },
+						RenderTargetPtr = TWeakObjectPtr<UTextureRenderTarget2D>(RT)]
+						(FRHICommandListImmediate& RHICmdList)
+						{
+							UTextureRenderTarget2D* RT = RenderTargetPtr.Get();
+							if (!RT)
+							{
+								return;
+							}
+							const FTextureResource* RenderTargetResource = RT->GetResource();
+							if (RenderTargetResource == nullptr)
+							{
+								return;
+							}
+
+							TArray<uint8> FontAtlasTextureData;
+							FontAtlasTextureData.SetNumUninitialized(TextureDataRaw.Num() * 4);
+							{
+								const uint8* Src = TextureDataRaw.GetData();
+								uint32* Dst = reinterpret_cast<uint32*>(FontAtlasTextureData.GetData());
+								for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
+								{
+									*Dst++ = IM_COL32(255, 255, 255, *Src++);
+								}
+							}
+
+							constexpr uint32 SrcBpp = sizeof(uint32);
+							const uint32 SrcPitch = RT->SizeX * SrcBpp;
+							FRHITexture2D* Texture = RenderTargetResource->GetTexture2DRHI();
+							const FUpdateTextureRegion2D Region{ 0, 0, 0, 0, uint32(RT->SizeX), uint32(RT->SizeY) };
+							RHIUpdateTexture2D(
+								Texture,
+								0,
+								Region,
+								SrcPitch,
+								FontAtlasTextureData.GetData());
+						});
+
+					return RT;
+				}();
+				SetTexture(FontAtlasTexture);
+			}
+			else
+			{
+				const UTexture* Texture = UnrealImGui::FindTexture(DrawCmd.GetTexID());
+				SetTexture(Texture);
 			}
 
 			FSlateRect ClipRect(DrawCmd.ClipRect.x, DrawCmd.ClipRect.y, DrawCmd.ClipRect.z, DrawCmd.ClipRect.w);

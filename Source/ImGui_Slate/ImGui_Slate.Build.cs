@@ -23,6 +23,8 @@ public class ImGui_Slate : ModuleRules
                 "InputCore",
                 "ApplicationCore",
                 "UMG",
+                "RenderCore",
+                "RHI",
 
                 "ImGui",
             }

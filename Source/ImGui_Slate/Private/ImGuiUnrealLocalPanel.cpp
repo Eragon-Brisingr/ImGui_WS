@@ -353,7 +353,13 @@ TMap<TWeakObjectPtr<UWorld>, FViewportPanel> ViewportPanelMap;
 TAutoConsoleVariable<int32> CVarLocalPanelMode
 {
 	TEXT("ImGui.WS.LocalPanelMode"),
+#if WITH_EDITOR
 	(int32)ELocalPanelMode::DockWindow,
+#elif PLATFORM_DESKTOP
+	(int32)ELocalPanelMode::SingleWindow,
+#else
+	(int32)ELocalPanelMode::GameViewport,
+#endif
 	TEXT("0: open in game viewport\n")
 	TEXT("1: open as single window (desktop platform only)\n")
 	TEXT("2: open as dockable window (editor only)")

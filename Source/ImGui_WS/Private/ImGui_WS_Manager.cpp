@@ -285,7 +285,7 @@ public:
 		}
 
 		using namespace UnrealImGui;
-		Private::UpdateTextureData_WS = [this](FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, uint8* Data)
+		Private::UpdateTextureData_WS = [this](FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data)
 		{
 			static_assert((int32_t)ImGuiWS::FTexture::Type::Alpha8 == (uint8)ETextureFormat::Alpha8);
 			static_assert((int32_t)ImGuiWS::FTexture::Type::Gray8 == (uint8)ETextureFormat::Gray8);
@@ -885,8 +885,6 @@ UImGui_WS_Manager::~UImGui_WS_Manager()
 
 bool UImGui_WS_Manager::IsSettingsEnable()
 {
-	return false;
-
 	const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
 	if (GIsEditor)
 	{

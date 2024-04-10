@@ -26,6 +26,8 @@ public class ImGui : ModuleRules
 			"Navmesh",
 			"NavigationSystem",
 			"DeveloperSettings",
+			"RenderCore",
+			"RHI",
 		});
 		
 		PublicIncludePaths.AddRange(new string[] {
