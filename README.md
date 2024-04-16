@@ -210,7 +210,7 @@ See how **FStructCustomizerScoped** is used
 
 ### UnrealImGuiPanelBuilder
 
-FUnrealImGuiPanelBuilder is used to build the layout of its window, and the following parameters need to be configured
+UUnrealImGuiPanelBuilder is used to build the layout of its window, and the following parameters need to be configured
 
 | property          | describe                                                                                   |
 |-------------------|--------------------------------------------------------------------------------------------|
@@ -227,7 +227,7 @@ After configuring the description information of the layout system, call the fol
 
 ### Add layout
 
-Inherit the layout base class types supported under FUnrealImGuiPanelBuilder. For example, ImGuiWorldDebugger extended layout inherits UImGuiWorldDebuggerLayoutBase
+Inherit the layout base class types supported under UUnrealImGuiPanelBuilder. For example, ImGuiWorldDebugger extended layout inherits UImGuiWorldDebuggerLayoutBase
 
 * Configure LayoutName. Unnamed layouts will not be displayed
 * implement LoadDefaultLayout to declare the default layout structure
@@ -252,7 +252,7 @@ public:
 		Utils,
 	};
 	UImGuiWorldDebuggerDefaultLayout();
-	void LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) override;
+	void LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder) override;
 };
 ```
 
@@ -263,7 +263,7 @@ UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 	LayoutName = LOCTEXT("Default", "Default");
 }
 
-void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	const ImGuiID DockId = ImGui::DockBuilderAddNode(DockSpaceId, ImGuiDockNodeFlags_None);
 
@@ -291,7 +291,7 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 
 ### Add panel
 
-Inherit the panel base class types supported under FUnrealImGuiPanelBuilder. For example, the ImGuiWorldDebugger extended panel inherits UImGuiWorldDebuggerPanelBase
+Inherit the panel base class types supported under UUnrealImGuiPanelBuilder. For example, the ImGuiWorldDebugger extended panel inherits UImGuiWorldDebuggerPanelBase
 
 * Configure Title. Unnamed panels will not be registered
 * Configure DefaultDockSpace to add the position of the panel in the layout
@@ -314,6 +314,8 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 	};
 }
 ```
+
+> Blueprint created panel need add in `Project Settings - ImGui WS - Blueprint Panels`
 
 ## Viewport Extent
 

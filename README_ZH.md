@@ -212,7 +212,7 @@ if (ImGui::BeginMenu("Example Menu"))
 
 ### UnrealImGuiPanelBuilder
 
-FUnrealImGuiPanelBuilder用于构建所属窗口的布局，需要配置以下参数
+UUnrealImGuiPanelBuilder用于构建所属窗口的布局，需要配置以下参数
 
 | 属性名                | 描述                        |
 |--------------------|---------------------------|
@@ -229,7 +229,7 @@ FUnrealImGuiPanelBuilder用于构建所属窗口的布局，需要配置以下�
 
 ### 新增布局
 
-继承FUnrealImGuiPanelBuilder下支持的布局基类类型，例如ImGuiWorldDebugger拓展布局就继承UImGuiWorldDebuggerLayoutBase  
+继承UUnrealImGuiPanelBuilder下支持的布局基类类型，例如ImGuiWorldDebugger拓展布局就继承UImGuiWorldDebuggerLayoutBase  
 
 * 配置LayoutName，没配置布局名的布局不会显示
 * 重写LoadDefaultLayout，声明默认的布局结构
@@ -254,7 +254,7 @@ public:
 		Utils,
 	};
 	UImGuiWorldDebuggerDefaultLayout();
-	void LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder) override;
+	void LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder) override;
 };
 ```
 
@@ -265,7 +265,7 @@ UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 	LayoutName = LOCTEXT("Default", "Default");
 }
 
-void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const FUnrealImGuiPanelBuilder& LayoutBuilder)
+void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
 {
 	const ImGuiID DockId = ImGui::DockBuilderAddNode(DockSpaceId, ImGuiDockNodeFlags_None);
 
@@ -293,7 +293,7 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const F
 
 ### 新增面板
 
-继承FUnrealImGuiPanelBuilder下支持的面板基类类型，例如ImGuiWorldDebugger拓展面板就继承UImGuiWorldDebuggerPanelBase
+继承UUnrealImGuiPanelBuilder下支持的面板基类类型，例如ImGuiWorldDebugger拓展面板就继承UImGuiWorldDebuggerPanelBase
 
 * 配置Title，无命名的面板不会被注册
 * 配置DefaultDockSpace，添加面板在布局中的位置
@@ -316,6 +316,8 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 	};
 }
 ```
+
+> 蓝图创建的面板需要在`Project Settings - ImGui WS - Blueprint Panels`中添加才会显示
 
 ## Viewport拓展
 
