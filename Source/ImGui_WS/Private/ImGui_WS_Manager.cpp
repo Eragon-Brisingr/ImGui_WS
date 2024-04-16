@@ -652,8 +652,8 @@ public:
 							{
 								ImGui::OpenPopup("Select Save Record Directory");
 							}
-							static UnrealImGui::FFileDialogState FileDialogState;
-							UnrealImGui::ShowFileDialog("Select Save Record Directory", FileDialogState, SaveFilePath, nullptr, UnrealImGui::FileDialogType::SelectFolder);
+							static ImGui::FFileDialogState FileDialogState;
+							ImGui::ShowFileDialog("Select Save Record Directory", FileDialogState, SaveFilePath, nullptr, ImGui::FileDialogType::SelectFolder);
 
 							ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 110.f);
 							if (ImGui::Button("Start"))
@@ -695,8 +695,8 @@ public:
 							{
 								ImGui::OpenPopup("Load Replay File");
 							}
-							static UnrealImGui::FFileDialogState FileDialogState;
-							UnrealImGui::ShowFileDialog("Load Replay File", FileDialogState, LoadFilePath, ".imgrcd", UnrealImGui::FileDialogType::OpenFile);
+							static ImGui::FFileDialogState FileDialogState;
+							ImGui::ShowFileDialog("Load Replay File", FileDialogState, LoadFilePath, ".imgrcd", ImGui::FileDialogType::OpenFile);
 
 							ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.f);
 							if (ImGui::Button("Load"))

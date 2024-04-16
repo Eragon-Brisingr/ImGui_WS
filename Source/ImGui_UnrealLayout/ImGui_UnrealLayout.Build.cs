@@ -1,8 +1,8 @@
 ﻿using UnrealBuildTool;
 
-public class ImGui_WorldDebugger : ModuleRules
+public class ImGui_UnrealLayout : ModuleRules
 {
-    public ImGui_WorldDebugger(ReadOnlyTargetRules Target) : base(Target)
+    public ImGui_UnrealLayout(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -22,14 +22,7 @@ public class ImGui_WorldDebugger : ModuleRules
                 "SlateCore",
 
                 "ImGui",
-                "ImGui_UnrealLayout",
-                "ImGui_UnrealPanels",
             }
         );
-
-        if (Target.Type == TargetType.Editor)
-        {
-            PrivateDependencyModuleNames.Add("UnrealEd");
-        }
     }
 }

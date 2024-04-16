@@ -1,8 +1,8 @@
 ﻿using UnrealBuildTool;
 
-public class ImGui_WorldDebugger : ModuleRules
+public class ImGui_UnrealPanels : ModuleRules
 {
-    public ImGui_WorldDebugger(ReadOnlyTargetRules Target) : base(Target)
+    public ImGui_UnrealPanels(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -10,6 +10,7 @@ public class ImGui_WorldDebugger : ModuleRules
             new string[]
             {
                 "Core",
+                "Engine",
             }
         );
 
@@ -20,16 +21,15 @@ public class ImGui_WorldDebugger : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
+                "Navmesh",
+                "NavigationSystem",
+                "InputCore",
+                "EngineSettings",
 
                 "ImGui",
+                "ImGui_Slate",
                 "ImGui_UnrealLayout",
-                "ImGui_UnrealPanels",
             }
         );
-
-        if (Target.Type == TargetType.Editor)
-        {
-            PrivateDependencyModuleNames.Add("UnrealEd");
-        }
     }
 }

@@ -4,10 +4,10 @@
 #include "ImGuiWorldDebuggerDetailsPanel.h"
 
 #include "imgui.h"
-#include "UnrealImGuiPropertyDetails.h"
 #include "ImGuiWorldDebuggerLayout.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
+#include "UnrealImGuiPropertyDetails.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 

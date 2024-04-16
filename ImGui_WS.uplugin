@@ -31,11 +31,6 @@
 			"LoadingPhase": "Default"
 		},
 		{
-			"Name": "ImGui_WorldDebugger",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
 			"Name": "Incppect",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
@@ -48,6 +43,21 @@
 		{
 			"Name": "ImGui_Blueprint",
 			"Type": "UncookedOnly",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_UnrealLayout",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_UnrealPanels",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_WorldDebugger",
+			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
 	]

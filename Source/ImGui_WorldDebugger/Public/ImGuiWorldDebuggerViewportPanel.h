@@ -61,7 +61,7 @@ protected:
 	FDelegateHandle OnLevelAddHandle;
 private:
 #if WITH_EDITOR
-	friend class FImGui_EditorModule;
+	friend class FImGui_WorldDebuggerModule;
 	static void WhenEditorSelectionChanged(const TArray<AActor*>& SelectedActors);
 
 	DECLARE_DELEGATE_TwoParams(FEditorSelectActors, UWorld* World, const TSet<TWeakObjectPtr<AActor>>& SelectedActors);

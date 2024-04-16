@@ -45,7 +45,6 @@ public class ImGui_Editor : ModuleRules
 				
 				"ImGui",
 				"ImGui_WS",
-				"ImGui_WorldDebugger",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

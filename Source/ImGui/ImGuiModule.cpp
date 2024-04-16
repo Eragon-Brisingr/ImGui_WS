@@ -2,29 +2,11 @@
 
 #include "ImGuiModule.h"
 
-#include "UnrealImGuiLogDevice.h"
-#include "UnrealImGuiPropertyDetails.h"
-#include "Misc/CoreDelegates.h"
-
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGuiModule::StartupModule()
 {
-	FCoreDelegates::OnPostEngineInit.AddLambda([]
-	{
-		UnrealImGui::UnrealPropertyCustomizeFactory::InitialDefaultCustomizer();
-	});
-	if (ensure(GLog))
-	{
-		GLog->AddOutputDevice(&UnrealImGui::GUnrealImGuiOutputDevice);
-		FCoreDelegates::OnPreExit.AddLambda([]
-		{
-			if (GLog)
-			{
-				GLog->RemoveOutputDevice(&UnrealImGui::GUnrealImGuiOutputDevice);
-			}
-		});
-	}
+
 }
 
 

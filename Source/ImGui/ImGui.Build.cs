@@ -20,10 +20,7 @@ public class ImGui : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
         {
 	        "Projects",
-			"EngineSettings",
 			"Slate",
-			"Navmesh",
-			"NavigationSystem",
 			"DeveloperSettings",
 			"RenderCore",
 			"RHI",
@@ -37,8 +34,7 @@ public class ImGui : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {
 			Path.Combine(ModuleDirectory, "ImGuiLibrary/Public"),
 			Path.Combine(ModuleDirectory, "ImPlotLibrary/Public"),
-			Path.Combine(ModuleDirectory, "UnrealContext/Public"),
-			Path.Combine(ModuleDirectory, "UnrealWidget/Public"),
+			Path.Combine(ModuleDirectory, "UnrealCore/Public"),
 			Path.Combine(ModuleDirectory, "WidgetsLibrary/Public"),
 		});
 

@@ -3,8 +3,6 @@
 #include "ImGui_Editor.h"
 
 #include "Editor.h"
-#include "ImGuiWorldDebuggerBase.h"
-#include "ImGuiWorldDebuggerViewportPanel.h"
 #include "ImGui_WS_Manager.h"
 #include "Selection.h"
 #include "ToolMenus.h"
@@ -17,8 +15,6 @@
 
 void FImGui_EditorModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-
 	if (GIsEditor == false || IsRunningCommandlet())
 	{
 		return;
@@ -77,42 +73,6 @@ void FImGui_EditorModule::StartupModule()
 			]
 		], LOCTEXT("IMGUI_Label", "IMGUI")));
 
-	SelectObjectEventHandle = USelection::SelectObjectEvent.AddLambda([](UObject* Object)
-	{
-		if (Object->IsA<AActor>())
-		{
-			TArray<AActor*> SelectedActors;
-			for (FSelectionIterator It = GEditor->GetSelectedActorIterator(); It; ++It)
-			{
-				if (AActor* Actor = Cast<AActor>(*It))
-				{
-					SelectedActors.Add(Actor);
-				}
-			}
-			UImGuiWorldDebuggerViewportActorExtent::WhenEditorSelectionChanged(SelectedActors);
-		}
-	});
-	SelectNoneEventHandle = USelection::SelectNoneEvent.AddLambda([]()
-	{
-		UImGuiWorldDebuggerViewportActorExtent::WhenEditorSelectionChanged(TArray<AActor*>{});
-	});
-
-	UImGuiWorldDebuggerViewportActorExtent::EditorSelectActors.BindLambda([](UWorld* World, const TSet<TWeakObjectPtr<AActor>>& SelectedMetaEntities)
-	{
-		USelection* SelectedActors = GEditor->GetSelectedActors();
-		SelectedActors->BeginBatchSelectOperation();
-		GEditor->SelectNone(false, true, true);
-		for (const TWeakObjectPtr<AActor>& ActorPtr : SelectedMetaEntities)
-		{
-			if (AActor* Actor = ActorPtr.Get())
-			{
-				GEditor->SelectActor(Actor, true, false, true);
-			}
-		}
-		SelectedActors->EndBatchSelectOperation(false);
-		GEditor->NoteSelectionChange();
-	});
-
 	static TWeakPtr<SNotificationItem> NotificationPtr;
 	if (GetDefault<UEditorPerformanceSettings>()->bThrottleCPUWhenNotForeground)
 	{
@@ -154,11 +114,7 @@ void FImGui_EditorModule::StartupModule()
 
 void FImGui_EditorModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
 
-	USelection::SelectObjectEvent.Remove(SelectObjectEventHandle);
-	USelection::SelectNoneEvent.Remove(SelectNoneEventHandle);
 }
 
 #undef LOCTEXT_NAMESPACE
