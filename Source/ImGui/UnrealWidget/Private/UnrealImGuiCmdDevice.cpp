@@ -18,6 +18,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Misc/DefaultValueHelper.h"
 #include "Misc/PackageName.h"
+#include "Misc/Paths.h"
 #include "Stats/StatsData.h"
 #include "UObject/UObjectIterator.h"
 

@@ -894,8 +894,9 @@ bool UImGui_WS_Manager::IsSettingsEnable()
 	{
 #if WITH_EDITOR
 		return Settings->bEditorEnableImGui_WS;
-#endif
+#else
 		return Settings->bServerEnableImGui_WS;
+#endif
 	}
 	else if (GIsClient)
 	{

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UnrealImGuiViewportBase.h"
 #include "UnrealImGuiViewportExtent.h"
+#include "Templates/SubclassOf.h"
 #include "ImGuiWorldDebuggerViewportPanel.generated.h"
 
 class UImGuiWorldDebuggerDrawerBase;

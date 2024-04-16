@@ -22,13 +22,17 @@ public class ImGui : ModuleRules
 	        "Projects",
 			"EngineSettings",
 			"Slate",
-			"DesktopPlatform",
 			"Navmesh",
 			"NavigationSystem",
 			"DeveloperSettings",
 			"RenderCore",
 			"RHI",
 		});
+
+		if (Target.Platform.IsInGroup(UnrealPlatformGroup.Desktop))
+		{
+			PrivateDependencyModuleNames.Add("DesktopPlatform");
+		}
 		
 		PublicIncludePaths.AddRange(new string[] {
 			Path.Combine(ModuleDirectory, "ImGuiLibrary/Public"),

@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "UnrealImGuiPropertyDetails.h"
+#include "AssetRegistry/AssetData.h"
 
 class AActor;
-struct FAssetData;
 
 namespace UnrealImGui
 {

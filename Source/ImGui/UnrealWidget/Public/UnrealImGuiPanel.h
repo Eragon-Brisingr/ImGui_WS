@@ -13,9 +13,9 @@ struct FImGuiDefaultPanelState
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Settings)
 	bool bOpen{ false };
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Settings)
 	bool bEnableDock{ true };
 };
 
@@ -37,7 +37,7 @@ struct FImGuiDefaultDockLayout : public FImGuiDefaultPanelState
 		, DockId(DockId)
 	{}
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Settings)
 	int32 DockId = 0;
 };
 
