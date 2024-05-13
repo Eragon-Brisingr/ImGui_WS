@@ -49,7 +49,7 @@ You can set the port number through Config or the command line
     > [/Script/ImGui_WS.ImGui_WS_Settings]  
     GamePort=8890  
     ServerPort=8891  
-    ServerPort=8892  
+    EditorPort=8892  
 
 3. Startup parameter configuration -ExecCmds="ImGui.WS.Port 8890"
 
