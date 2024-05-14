@@ -51,7 +51,7 @@ ImGui_WS插件提供了虚幻调试信息远程网页显示的能力，支持打
     > [/Script/ImGui_WS.ImGui_WS_Settings]  
     GamePort=8890  
     ServerPort=8891  
-    ServerPort=8892  
+    EditorPort=8892  
 
 3. 启动参数配置 -ExecCmds="ImGui.WS.Port 8890"
 
