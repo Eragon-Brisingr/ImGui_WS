@@ -37,7 +37,7 @@ public:
 	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) {}
 
 	UPROPERTY(Transient)
-	TArray<UUnrealImGuiViewportExtentBase*> Extents;
+	TArray<TObjectPtr<UUnrealImGuiViewportExtentBase>> Extents;
 
 	UUnrealImGuiViewportExtentBase* FindExtent(const TSubclassOf<UUnrealImGuiViewportExtentBase>& ExtentType) const;
 	template<typename T>
@@ -47,6 +47,8 @@ public:
 		return (T*)FindExtent(T::StaticClass());
 	}
 
+	void ResetSelection();
+	
 	struct FPassDrawer
 	{
 		UUnrealImGuiViewportExtentBase* Extent;
@@ -59,7 +61,7 @@ public:
 	float ZoomFactor = 5.f;
 	float MinZoomFactor = 0.f;
 	float MaxZoomFactor = 10.f;
-	float CurrentZoom;
+	float CurrentZoom = 1.f;
 	UPROPERTY(Config)
 	FVector2D ViewLocation = { 0.f, 0.f };
 	FVector2D CurrentViewLocation;

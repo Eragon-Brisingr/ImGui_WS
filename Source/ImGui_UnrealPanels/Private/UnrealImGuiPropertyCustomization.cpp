@@ -217,13 +217,13 @@ namespace UnrealImGui
 		}
 	}
 
-	bool FObjectPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FObjectPropertyBaseCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		if (IUnrealPropertyCustomization::IsVisible(Filter, Property, Containers, Offset, IsIdentical))
 		{
 			return true;
 		}
-		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
+		const FObjectPropertyBase* ObjectProperty = CastFieldChecked<FObjectPropertyBase>(Property);
 		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference) == false)
 		{
 			return false;
@@ -263,9 +263,9 @@ namespace UnrealImGui
 		return false;
 	}
 
-	bool FObjectPropertyCustomization::HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	bool FObjectPropertyBaseCustomization::HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
+		const FObjectPropertyBase* ObjectProperty = CastFieldChecked<FObjectPropertyBase>(Property);
 		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference) == false)
 		{
 			return false;
@@ -280,12 +280,12 @@ namespace UnrealImGui
 		return true;
 	}
 
-	void FObjectPropertyCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	void FObjectPropertyBaseCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
+		const FObjectPropertyBase* ObjectProperty = CastFieldChecked<FObjectPropertyBase>(Property);
 		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference))
 		{
-			const UObject* FirstValue = ObjectProperty->GetPropertyValue(Containers[0] + Offset);
+			const UObject* FirstValue = ObjectProperty->GetObjectPropertyValue(Containers[0] + Offset);
 
 			static FUTF8String FilterString;
 			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
@@ -298,7 +298,7 @@ namespace UnrealImGui
 				{
 					for (uint8* Container : Containers)
 					{
-						ObjectProperty->SetPropertyValue(Container + Offset, nullptr);
+						ObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 					}
 					NotifyPostPropertyValueChanged(Property);
 				}
@@ -354,7 +354,7 @@ namespace UnrealImGui
 										uint8* Container = Containers[ContainerIdx];
 										UObject* Outer = InnerValue::GOuters[ContainerIdx];
 										check(Outer);
-										ObjectProperty->SetPropertyValue(Container + Offset, NewObject<UObject>(Outer, Class));
+										ObjectProperty->SetObjectPropertyValue(Container + Offset, NewObject<UObject>(Outer, Class));
 									}
 									NotifyPostPropertyValueChanged(Property);
 								}
@@ -387,7 +387,7 @@ namespace UnrealImGui
 		{
 			const uint8* FirstValuePtr = Containers[0] + Offset;
 			FName ObjectName = NAME_None;
-			const UObject* FirstValue = IsIdentical ? ObjectProperty->GetPropertyValue(FirstValuePtr) : nullptr;
+			const UObject* FirstValue = IsIdentical ? ObjectProperty->GetObjectPropertyValue(FirstValuePtr) : nullptr;
 			if (IsIdentical)
 			{
 				if (IsValid(FirstValue))
@@ -416,7 +416,7 @@ namespace UnrealImGui
 				{
 					for (uint8* Container : Containers)
 					{
-						ObjectProperty->SetPropertyValue(Container + Offset, nullptr);
+						ObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 					}
 					NotifyPostPropertyValueChanged(Property);
 				}
@@ -455,7 +455,7 @@ namespace UnrealImGui
 							{
 								for (uint8* Container : Containers)
 								{
-									ObjectProperty->SetPropertyValue(Container + Offset, Asset.GetAsset());
+									ObjectProperty->SetObjectPropertyValue(Container + Offset, Asset.GetAsset());
 								}
 								NotifyPostPropertyValueChanged(Property);
 							}
@@ -493,9 +493,9 @@ namespace UnrealImGui
 		}
 	}
 
-	void FObjectPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+	void FObjectPropertyBaseCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		const FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(Property);
+		const FObjectPropertyBase* ObjectProperty = CastFieldChecked<FObjectPropertyBase>(Property);
 		check(ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference));
 
 		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);

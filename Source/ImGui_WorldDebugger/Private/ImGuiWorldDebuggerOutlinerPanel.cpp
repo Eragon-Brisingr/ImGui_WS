@@ -5,9 +5,11 @@
 
 #include "EngineUtils.h"
 #include "imgui.h"
+#include "ImGuiEx.h"
 #include "ImGuiWorldDebuggerLayout.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
+#include "UnrealImGuiString.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
@@ -67,7 +69,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Unregister(UObject* Owner, UUnrealImGuiPa
 
 void UImGuiWorldDebuggerOutlinerPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
-	const UImGuiWorldDebuggerViewportPanel* Viewport = Builder->FindPanel<UImGuiWorldDebuggerViewportPanel>();
+	UImGuiWorldDebuggerViewportPanel* Viewport = Builder->FindPanel<UImGuiWorldDebuggerViewportPanel>();
 	if (Viewport == nullptr)
 	{
 		return;
@@ -86,15 +88,10 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(UObject* Owner, UUnrealImGuiPanelBui
 
 	ImGui::Text("Filter:");
 	ImGui::SameLine();
-	TArray<ANSICHAR, TInlineAllocator<256>> FilterStringArray;
+	UnrealImGui::FUTF8String UTF8String{ FilterString };
+	if (ImGui::InputText("##FilterInput", UTF8String))
 	{
-		const auto StringPoint = FTCHARToUTF8(*FilterString);
-		FilterStringArray.SetNumZeroed(FMath::Max(256, StringPoint.Length() + 128));
-		FMemory::Memcpy(FilterStringArray.GetData(), StringPoint.Get(), StringPoint.Length() + 1);
-	}
-	if (ImGui::InputText("##FilterInput", FilterStringArray.GetData(), FilterStringArray.Num()))
-	{
-		FilterString = UTF8_TO_TCHAR(FilterStringArray.GetData());
+		FilterString = UTF8String.ToString();
 		RefreshDisplayActors();
 	}
 
@@ -145,8 +142,17 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(UObject* Owner, UUnrealImGuiPanelBui
 					{
 						if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), ViewportExtent->SelectedActors.Contains(Actor)))
 						{
-							ViewportExtent->SetSelectedEntities({ Actor });
-							ViewportExtent->FocusActor(Actor);
+							if (!ImGui::GetIO().KeyCtrl)
+							{
+								Viewport->ResetSelection();
+								ViewportExtent->SetSelectedEntities({ Actor });
+								ViewportExtent->FocusActor(Actor);
+							}
+							else
+							{
+								ViewportExtent->SelectedActors.Add(Actor);
+								ViewportExtent->SetSelectedEntities(MoveTemp(ViewportExtent->SelectedActors));
+							}
 						}
 						if (ImGui::BeginItemTooltip())
 						{
@@ -246,7 +252,7 @@ bool UImGuiWorldDebuggerOutlinerPanel::CanActorDisplay(const AActor* Actor) cons
 		return true;
 	}
 	
-	if (Actor->GetName().Contains(FilterString))
+	if (Actor->GetName().ToLower().Contains(FilterString.ToLower()))
 	{
 		return true;
 	}

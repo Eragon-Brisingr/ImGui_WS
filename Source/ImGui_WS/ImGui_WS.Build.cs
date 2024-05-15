@@ -29,7 +29,6 @@ public class ImGui_WS : ModuleRules
 	        "Incppect",
 		});
 
-		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/...*.ttf"), StagedFileType.NonUFS);
 		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/HTML/...*.html"), StagedFileType.NonUFS);
 		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources/HTML/...*.js"), StagedFileType.NonUFS);
 	}

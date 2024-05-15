@@ -30,8 +30,6 @@ var imgui_ws = {
     attribute_location_uv: null,
     attribute_location_color: null,
 
-    device_pixel_ratio: window.device_pixel_ratio || 1,
-
     tex_map_id: {},
     tex_map_rev: {},
     tex_map_abuf: {},
@@ -112,8 +110,8 @@ var imgui_ws = {
         }, true);
 
         let onpointermove = (event) => {
-            this.io.mouse_x = event.offsetX * this.device_pixel_ratio;
-            this.io.mouse_y = event.offsetY * this.device_pixel_ratio;
+            this.io.mouse_x = event.offsetX * window.devicePixelRatio;
+            this.io.mouse_y = event.offsetY * window.devicePixelRatio;
 
             incppect.send(EventType.MouseMove + this.io.mouse_x + ' ' + this.io.mouse_y);
 
@@ -125,8 +123,8 @@ var imgui_ws = {
         this.canvas.addEventListener('mousemove', onpointermove);
 
         let onpointerdown = (event) => {
-            this.io.mouse_x = event.offsetX * this.device_pixel_ratio;
-            this.io.mouse_y = event.offsetY * this.device_pixel_ratio;
+            this.io.mouse_x = event.offsetX * window.devicePixelRatio;
+            this.io.mouse_y = event.offsetY * window.devicePixelRatio;
 
             incppect.send(EventType.MouseDown + event.button + ' ' + this.io.mouse_x + ' ' + this.io.mouse_y);
         };

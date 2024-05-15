@@ -6,9 +6,6 @@
 #include "ImGuiWorldDebuggerPanel.h"
 #include "ImGuiWorldDebuggerOutlinerPanel.generated.h"
 
-/**
- * 
-*/
 UCLASS()
 class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerOutlinerPanel : public UImGuiWorldDebuggerPanelBase
 {

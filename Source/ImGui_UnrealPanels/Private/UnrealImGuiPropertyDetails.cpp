@@ -247,6 +247,7 @@ namespace UnrealImGui
 		AddPropertyCustomizer(FBoolProperty::StaticClass(), MakeShared<FBoolPropertyCustomization>());
 		AddPropertyCustomizer(FNumericProperty::StaticClass(), MakeShared<FNumericPropertyCustomization>());
 		AddPropertyCustomizer(FObjectProperty::StaticClass(), MakeShared<FObjectPropertyCustomization>());
+		AddPropertyCustomizer(FWeakObjectProperty::StaticClass(), MakeShared<FWeakObjectPropertyCustomization>());
 		AddPropertyCustomizer(FSoftObjectProperty::StaticClass(), MakeShared<FSoftObjectPropertyCustomization>());
 		AddPropertyCustomizer(FClassProperty::StaticClass(), MakeShared<FClassPropertyCustomization>());
 		AddPropertyCustomizer(FSoftClassProperty::StaticClass(), MakeShared<FSoftClassPropertyCustomization>());
@@ -359,7 +360,8 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 	if (ImGui::BeginItemTooltip())
 	{
 #if WITH_EDITOR
-		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Property->GetToolTipText().ToString()));
+		const FText ToolTipText = Property->GetToolTipText();
+		ImGui::TextUnformatted(TCHAR_TO_UTF8(ToolTipText.IsEmpty() ? *Property->GetDisplayNameText().ToString() : *Property->GetToolTipText().ToString()));
 #else
 		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Property->GetName()));
 #endif
@@ -577,6 +579,15 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 	}
 }
 
+UnrealImGui::FDetailTableContextGuard::FDetailTableContextGuard(const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged)
+	: GFilterGuard{ InnerValue::GFilter, Filter }
+	, DepthGuard{InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1 }
+	, GPostPropertyValueChangedGuard{ GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged }
+	, GFilterCacheMapGuard{ InnerValue::FilterCacheMap, InnerValue::FilterCacheMap }
+{}
+
+UnrealImGui::FDetailTableContextGuard::~FDetailTableContextGuard() {}
+
 DECLARE_CYCLE_STAT(TEXT("ImGui_DrawDetailTable"), STAT_ImGui_DrawDetailTable, STATGROUP_ImGui);
 
 void UnrealImGui::DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged)
@@ -584,10 +595,7 @@ void UnrealImGui::DrawDetailTable(const char* str_id, const UStruct* TopStruct, 
 	SCOPE_CYCLE_COUNTER(STAT_ImGui_DrawDetailTable);
 	if (ImGui::BeginTable(str_id, 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 	{
-		TGuardValue GFilterGuard{ InnerValue::GFilter, Filter };
-		TGuardValue DepthGuard{InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1 };
-		TGuardValue GPostPropertyValueChangedGuard{ GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged };
-		TGuardValue GFilterCacheMapGuard{ InnerValue::FilterCacheMap, InnerValue::FilterCacheMap };
+		FDetailTableContextGuard DetailTableContextGuard{ Filter, PostPropertyValueChanged };
 
 		DrawDefaultStructDetails(TopStruct, Instances, 0);
 
@@ -600,14 +608,11 @@ void UnrealImGui::DrawDetailTable(const char* str_id, const UClass* TopClass, co
 	SCOPE_CYCLE_COUNTER(STAT_ImGui_DrawDetailTable);
 	if (ImGui::BeginTable(str_id, 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 	{
-		TGuardValue GFilterGuard{ InnerValue::GFilter, Filter };
 		TGuardValue GOutersGuard{ InnerValue::GOuters, reinterpret_cast<const FObjectArray&>(Instances) };
-		TGuardValue DepthGuard{ InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1 };
-		TGuardValue GPostPropertyValueChangedGuard{ GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged };
-		TGuardValue GFilterCacheMapGuard{ InnerValue::FilterCacheMap, InnerValue::FilterCacheMap };
 
-		const TSharedPtr<IUnrealDetailsCustomization> Customizer = UnrealPropertyCustomizeFactory::FindDetailsCustomizer(TopClass);
-		if (Customizer)
+		FDetailTableContextGuard DetailTableContextGuard{ Filter, PostPropertyValueChanged };
+
+		if (const TSharedPtr<IUnrealDetailsCustomization> Customizer = UnrealPropertyCustomizeFactory::FindDetailsCustomizer(TopClass))
 		{
 			Customizer->CreateClassDetails(TopClass, Instances, 0);
 		}

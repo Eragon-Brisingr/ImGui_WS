@@ -41,7 +41,7 @@ public:
 	}
 
 	// Editor
-	// 启动参数添加 -ExecCmds="ImGui.WS.Enable 1" 可控制是否启用
+	// Launch command line add -ExecCmds="ImGui.WS.Enable 1" can enable ImGuiWS
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (DisplayName = "Editor Enable ImGui WS"))
 	bool bEditorEnableImGui_WS = true;
 	// ImGui-WS Web Port, Only Valid When Pre Game Start. Set In
@@ -64,6 +64,12 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	int32 GamePort = 8890;
 
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	FString FontName = TEXT("zpix, 12px");
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	FString FontFileName = TEXT("zpix.ttf");
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	float FontSize = 12.f;
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	EImGuiFontGlyphRanges FontGlyphRanges = EImGuiFontGlyphRanges::ChineseFull;
 

@@ -20,6 +20,7 @@ public class ImGui : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
         {
 	        "Projects",
+	        "ApplicationCore",
 			"Slate",
 			"DeveloperSettings",
 			"RenderCore",
@@ -43,5 +44,15 @@ public class ImGui : ModuleRules
 			"IMGUI_USER_CONFIG=\"ImGuiConfig.h\"",
 			"IMPLOT_API=IMGUI_API",
 		});
+
+		string FontFileName;
+		{
+			ConfigHierarchy Config = ConfigCache.ReadHierarchy(ConfigHierarchyType.Game, Target.ProjectFile != null ? Target.ProjectFile.Directory : null, Target.Platform);
+			if (!Config.GetString("/Script/ImGui.ImGuiSettings", "FontFileName", out FontFileName))
+			{
+				FontFileName = "zpix.ttf";
+			}
+		}
+		RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Resources", FontFileName), StagedFileType.NonUFS);
 	}
 }

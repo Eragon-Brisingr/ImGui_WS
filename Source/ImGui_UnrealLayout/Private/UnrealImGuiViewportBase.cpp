@@ -539,3 +539,11 @@ UUnrealImGuiViewportExtentBase* UUnrealImGuiViewportBase::FindExtent(const TSubc
 	}
 	return nullptr;
 }
+
+void UUnrealImGuiViewportBase::ResetSelection()
+{
+	for (UUnrealImGuiViewportExtentBase* Extent : Extents)
+	{
+		Extent->ResetSelection();
+	}
+}

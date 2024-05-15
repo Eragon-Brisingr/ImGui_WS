@@ -36,9 +36,9 @@ namespace UnrealImGui
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FObjectPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_UNREALPANELS_API FObjectPropertyBaseCustomization : public IUnrealPropertyCustomization
 	{
-		FObjectPropertyCustomization()
+		FObjectPropertyBaseCustomization()
 		{
 			bOverrideHasChildProperties = true;
 		}
@@ -54,6 +54,10 @@ namespace UnrealImGui
 		mutable TWeakObjectPtr<UClass> CachedInstancedClass;
 		mutable TArray<TWeakObjectPtr<UClass>> CachedClassList;
 	};
+
+	struct IMGUI_UNREALPANELS_API FObjectPropertyCustomization : public FObjectPropertyBaseCustomization {};
+
+	struct IMGUI_UNREALPANELS_API FWeakObjectPropertyCustomization : public FObjectPropertyBaseCustomization {};
 
 	struct IMGUI_UNREALPANELS_API FSoftObjectPropertyCustomization : public IUnrealPropertyCustomization
 	{

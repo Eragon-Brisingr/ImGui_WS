@@ -10,7 +10,7 @@
         right: 34px;
         border-radius: 16px;
     }
-    
+
     .menu-content {
         display: none;
         padding: 8px;
@@ -55,10 +55,10 @@
         <button id="take_control_btn">take control</button>
         <br>
         Update freq: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms"
-            onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
+                            onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
         <output id="update_freq_ms_out">16</output>[ms]<br>
         <div id="client-info"></div>
-    </div>    
+    </div>
 </div>
 
 <script>
@@ -71,8 +71,9 @@
 
         // sync control viewport size
         let resizeCanvas = () => {
-            canvas_main.width = window.innerWidth;
-            canvas_main.height = window.innerHeight;
+            let devicePixelRatio = window.devicePixelRatio;
+            canvas_main.width = window.innerWidth * devicePixelRatio;
+            canvas_main.height = window.innerHeight * devicePixelRatio;
             incppect.send(EventType.Resize + canvas_main.width + ' ' + canvas_main.height);
         }
         window.addEventListener('resize', resizeCanvas, false);
@@ -259,11 +260,11 @@
 </style>
 
 <body class="container">
-    <canvas id="canvas_main" class="canvas" tabindex="0">
-        Your browser does not support the HTML5 canvas tag.
-    </canvas>
-    <input id="virtual_input" class="virtual-input" type="text" />
-    <div class="message" id="messageDev"></div>
+<canvas id="canvas_main" class="canvas" tabindex="0">
+    Your browser does not support the HTML5 canvas tag.
+</canvas>
+<input id="virtual_input" class="virtual-input" type="text" />
+<div class="message" id="messageDev"></div>
 </body>
 
 </html>

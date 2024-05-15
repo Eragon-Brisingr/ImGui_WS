@@ -246,6 +246,18 @@ namespace UnrealImGui
 	IMGUI_UNREALPANELS_API void DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 	IMGUI_UNREALPANELS_API void DrawDefaultClassDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);
 
+	struct IMGUI_UNREALPANELS_API FDetailTableContextGuard
+	{
+		[[nodiscard]]
+		FDetailTableContextGuard(const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged);
+		~FDetailTableContextGuard();
+		
+		TGuardValue<const FDetailsFilter*> GFilterGuard;
+		TGuardValue<int32> DepthGuard;
+		TGuardValue<FPostPropertyValueChanged> GPostPropertyValueChangedGuard;
+		TGuardValue<TMap<InnerValue::FFilterCacheKey, bool>> GFilterCacheMapGuard;
+	};
+	
 	IMGUI_UNREALPANELS_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 	IMGUI_UNREALPANELS_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 

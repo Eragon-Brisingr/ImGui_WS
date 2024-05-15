@@ -4,8 +4,10 @@
 #include "ImGuiFontAtlas.h"
 
 #include "imgui.h"
-#include "imgui_notify.h"
 #include "ImGuiSettings.h"
+#include "imgui_notify.h"
+#include "UnrealImGuiString.h"
+#include "HAL/PlatformApplicationMisc.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/FileHelper.h"
 
@@ -13,7 +15,8 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 {
 	static ImFontAtlas DefaultFontAtlas = []
 	{
-		constexpr float DPIScale = 1.f;
+		const float DPIScale = FPlatformApplicationMisc::GetDPIScaleFactorAtPoint(0, 0);
+		
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT(UE_PLUGIN_NAME));
 		const FString PluginResourcesPath = Plugin->GetBaseDir() / TEXT("Resources");
 
@@ -54,17 +57,16 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 			ensure(false);
 			FontConfig.GlyphRanges = FontAtlas.GetGlyphRangesDefault();
 		}
-		FPlatformString::Strcpy(FontConfig.Name, sizeof(FontConfig.Name), "zpix, 12px");
-		const FString ChineseFontPath = PluginResourcesPath / TEXT("zpix.ttf");
+		const FString FontPath = PluginResourcesPath / Settings->FontFileName;
 
 		TArray<uint8> Bin;
-		ensure(FFileHelper::LoadFileToArray(Bin, *ChineseFontPath));
-		constexpr char FontName[] = "zpix, 12px";
-		FCStringAnsi::Strcpy(FontConfig.Name, sizeof(FontName), FontName);
-		FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), 12.0f * DPIScale, &FontConfig);
+		ensure(FFileHelper::LoadFileToArray(Bin, *FontPath));
+		FUTF8String FontName{ Settings->FontName };
+		FCStringAnsi::Strcpy(FontConfig.Name, FontName.Len() + 1, FontName.GetData());
+		FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), Settings->FontSize * DPIScale, &FontConfig);
 
 		// Initialize notify
-		ImGui::MergeIconsWithLatestFont(FontAtlas, 12.f * DPIScale, false);
+		ImGui::MergeIconsWithLatestFont(FontAtlas, Settings->FontSize * DPIScale, false);
 
 		// build font
 		FontAtlas.Build();
