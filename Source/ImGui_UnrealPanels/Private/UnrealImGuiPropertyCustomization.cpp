@@ -1309,18 +1309,23 @@ namespace UnrealImGui
 			return;
 		}
 
-		TArray<FScriptSetHelper> Helpers;
+		TArray<FScriptSetHelper, TInlineAllocator<ArrayInlineAllocateSize>> Helpers;
+		Helpers.Reserve(Containers.Num());
+		TArray<FScriptSetHelper::FIterator, TInlineAllocator<ArrayInlineAllocateSize>> Iterators;
+		Iterators.Reserve(Containers.Num());
 		for (const uint8* Container : Containers)
 		{
 			Helpers.Emplace(FScriptSetHelper(SetProperty, Container + Offset));
+			Iterators.Emplace(Helpers.Last().CreateIterator());
 		}
 		FPtrArray SetRawPtr;
 		SetRawPtr.SetNum(Containers.Num());
+
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
 			for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
 			{
-				SetRawPtr[Idx] = Helpers[Idx].GetElementPtr(ElemIdx);
+				SetRawPtr[Idx] = Helpers[Idx].GetElementPtr(Iterators[Idx]);
 			}
 			TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ElemIdx);
 
@@ -1329,7 +1334,7 @@ namespace UnrealImGui
 			{
 				const FString ElementName = FString::Printf(TEXT("%d##%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
 				CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, IsIdentical), IsShowChildren, &ElementName);
-			}, [ElemIdx, &Helpers](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical)
+			}, [ElemIdx, &Helpers, &Iterators](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical)
 			{
 				ImGui::SameLine();
 
@@ -1343,15 +1348,20 @@ namespace UnrealImGui
 				{
 					if (ImGui::MenuItem("Delete"))
 					{
-						for (FScriptSetHelper& Helper : Helpers)
+						for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
 						{
-							Helper.RemoveAt(ElemIdx);
+							Helpers[Idx].RemoveAt(Iterators[Idx].GetInternalIndex());
 						}
 						NotifyPostPropertyValueChanged(Property);
 					}
 					ImGui::EndPopup();
 				}
 			});
+
+			for (auto& It : Iterators)
+			{
+				++It;
+			}
 		}
 	}
 
@@ -1481,22 +1491,28 @@ namespace UnrealImGui
 			return;
 		}
 
-		TArray<FScriptMapHelper> Helpers;
+		TArray<FScriptMapHelper, TInlineAllocator<ArrayInlineAllocateSize>> Helpers;
+		Helpers.Reserve(Containers.Num());
+		TArray<FScriptMapHelper::FIterator, TInlineAllocator<ArrayInlineAllocateSize>> Iterators;
+		Iterators.Reserve(Containers.Num());
 		for (const uint8* Container : Containers)
 		{
 			Helpers.Emplace(FScriptMapHelper(MapProperty, Container + Offset));
+			Iterators.Emplace(Helpers.Last().CreateIterator());
 		}
 
 		FPtrArray KeyRawPtr;
 		KeyRawPtr.SetNum(Containers.Num());
 		FPtrArray ValueRawPtr;
 		ValueRawPtr.SetNum(Containers.Num());
+		
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
 			for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
 			{
-				KeyRawPtr[Idx] = Helpers[Idx].GetKeyPtr(ElemIdx);
-				ValueRawPtr[Idx] = Helpers[Idx].GetValuePtr(ElemIdx);
+				const auto& It = Iterators[Idx];
+				KeyRawPtr[Idx] = Helpers[Idx].GetKeyPtr(It);
+				ValueRawPtr[Idx] = Helpers[Idx].GetValuePtr(It);
 			}
 			TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ElemIdx);
 
@@ -1574,9 +1590,9 @@ namespace UnrealImGui
 				{
 					if (ImGui::MenuItem("Delete"))
 					{
-						for (FScriptMapHelper& Helper : Helpers)
+						for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
 						{
-							Helper.RemoveAt(ElemIdx);
+							Helpers[Idx].RemoveAt(Iterators[Idx].GetInternalIndex());
 						}
 						NotifyPostPropertyValueChanged(Property);
 					}
@@ -1594,6 +1610,10 @@ namespace UnrealImGui
 					}
 					ImGui::TreePop();
 				}
+			}
+			for (auto& It : Iterators)
+			{
+				++It;
 			}
 
 			ImGui::NextColumn();
