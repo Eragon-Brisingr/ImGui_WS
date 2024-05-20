@@ -8,15 +8,24 @@
 
 class UUnrealImGuiPanelBuilder;
 
+USTRUCT()
+struct IMGUI_UNREALLAYOUT_API FUnrealImGuiLayoutManager
+{
+	GENERATED_BODY()
+	
+	UPROPERTY()
+	TArray<TObjectPtr<UUnrealImGuiPanelBuilder>> PanelBuilders;
+	
+	static FUnrealImGuiLayoutManager* Get(const UObject* WorldContextObject);
+};
+
 UCLASS()
 class IMGUI_UNREALLAYOUT_API UUnrealImGuiLayoutSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 public:
-	static UUnrealImGuiLayoutSubsystem* Get(const UObject* WorldContextObject);
-
 	bool DoesSupportWorldType(const EWorldType::Type WorldType) const override { return WorldType == EWorldType::Game || WorldType == EWorldType::PIE; }
 
 	UPROPERTY()
-	TArray<TObjectPtr<UUnrealImGuiPanelBuilder>> PanelBuilders;
+	FUnrealImGuiLayoutManager Context;
 };

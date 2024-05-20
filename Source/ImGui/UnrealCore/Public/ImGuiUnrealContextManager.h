@@ -22,6 +22,8 @@ struct IMGUI_API FImGuiUnrealEditorContext : public FImGuiUnrealContext
 {
 	GENERATED_BODY()
 public:
+	TFunction<void(float)> EditorDrawer;
+	TFunction<void()> InvokeCreateDebugger;
 	bool bAlwaysDrawDefaultLayout = false;
 };
 
@@ -55,9 +57,7 @@ public:
 	const TArray<UImGuiUnrealContextWorldSubsystem*>& GetWorldSubsystems() const { return WorldSubsystems; }
 	static constexpr int32 EditorContextIndex = INDEX_NONE;
 
-#if WITH_EDITOR
-	TFunction<void(float)> EditorDrawer;
-#endif
+	void DrawContextContent(int32& ContextIndex);
 private:
 #if WITH_EDITORONLY_DATA
 	UPROPERTY()

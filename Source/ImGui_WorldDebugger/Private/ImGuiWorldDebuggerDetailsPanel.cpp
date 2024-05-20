@@ -9,15 +9,13 @@
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiPropertyDetails.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 UImGuiWorldDebuggerDetailsPanel::UImGuiWorldDebuggerDetailsPanel()
 	: bDisplayAllProperties(false)
 	, bEnableEditVisibleProperty(false)
 {
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
-	Title = LOCTEXT("Details", "Details");
-	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
+	Title = TEXT("Details");
+	Categories = { TEXT("Viewport") };
 	DefaultDockSpace =
 	{
 		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Details }
@@ -77,5 +75,3 @@ void UImGuiWorldDebuggerDetailsPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuil
 		}
 	}
 }
-
-#undef LOCTEXT_NAMESPACE

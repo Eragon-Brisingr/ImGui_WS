@@ -25,7 +25,7 @@ public:
 	void ApplyPanelDockSettings(const UUnrealImGuiPanelBuilder& LayoutBuilder, const TMap<int32, uint32>& DockIdMap, const int32 DefaultDockId);
 	void CreateDockSpace(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder);
 
-	FText LayoutName;
+	FName LayoutName;
 protected:
 	TMap<void*, uint32> DockSpaceIdMap;
 

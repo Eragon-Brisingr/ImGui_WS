@@ -59,6 +59,11 @@
 			"Name": "ImGui_WorldDebugger",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_UnrealPanelsEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	]
 }

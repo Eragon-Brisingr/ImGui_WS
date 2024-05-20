@@ -5,13 +5,11 @@
 
 #include "imgui.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 UUnrealImGuiLogPanel::UUnrealImGuiLogPanel()
 {
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
-	Title = LOCTEXT("Log", "Log");
-	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
+	Title = TEXT("Log");
+	Categories = { TEXT("Viewport") };
 	DefaultState = { true, true };
 }
 
@@ -30,5 +28,3 @@ void UUnrealImGuiLogPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builde
 	LogDevice.Draw(this);
 	CmdDevice.Draw(this);
 }
-
-#undef LOCTEXT_NAMESPACE

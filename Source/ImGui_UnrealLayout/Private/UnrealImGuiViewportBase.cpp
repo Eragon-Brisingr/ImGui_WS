@@ -70,9 +70,9 @@ void UUnrealImGuiViewportBase::Register(UObject* Owner, UUnrealImGuiPanelBuilder
 			}
 
 			UUnrealImGuiViewportExtentBase* Extent = NewObject<UUnrealImGuiViewportExtentBase>(this, Class, Class->GetFName(), RF_Transient);
-			if (Extent->ExtentName.IsEmpty())
+			if (Extent->ExtentName == NAME_None)
 			{
-				Extent->ExtentName = FText::FromName(Class->GetFName());
+				Extent->ExtentName = Class->GetFName();
 			}
 			Extents.Add(Extent);
 		}

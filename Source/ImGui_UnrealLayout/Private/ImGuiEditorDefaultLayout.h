@@ -30,7 +30,7 @@ public:
 
 	UImGuiEditorDefaultLayout()
 	{
-		LayoutName = FText::FromString(TEXT("Default"));
+		LayoutName = TEXT("Default");
 	}
 
 	void LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder) override;

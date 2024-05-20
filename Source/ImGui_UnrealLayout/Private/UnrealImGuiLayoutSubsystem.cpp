@@ -5,12 +5,35 @@
 
 #include "Engine/World.h"
 
-UUnrealImGuiLayoutSubsystem* UUnrealImGuiLayoutSubsystem::Get(const UObject* WorldContextObject)
+FUnrealImGuiLayoutManager* FUnrealImGuiLayoutManager::Get(const UObject* WorldContextObject)
 {
 	UWorld* World = WorldContextObject->GetWorld();
 	if (World == nullptr)
 	{
 		return nullptr;
 	}
-	return World->GetSubsystem<UUnrealImGuiLayoutSubsystem>();
+#if WITH_EDITOR
+	if (World->WorldType == EWorldType::Editor)
+	{
+		struct FEditorManager : FGCObject
+		{
+			FUnrealImGuiLayoutManager Context;
+			void AddReferencedObjects(FReferenceCollector& Collector) override
+			{
+				Collector.AddPropertyReferencesWithStructARO(FUnrealImGuiLayoutManager::StaticStruct(), &Context);
+			}
+			FString GetReferencerName() const override
+			{
+				return TEXT("UnrealImGuiLayoutEditorManager");
+			}
+		};
+		static FEditorManager Context;
+		return &Context.Context;
+	}
+#endif
+	if (UUnrealImGuiLayoutSubsystem* Subsystem = World->GetSubsystem<UUnrealImGuiLayoutSubsystem>())
+	{
+		return &Subsystem->Context;
+	}
+	return nullptr;
 }

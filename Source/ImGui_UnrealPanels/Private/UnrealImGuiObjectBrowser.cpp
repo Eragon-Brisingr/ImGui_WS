@@ -12,15 +12,13 @@
 #include "UnrealImGuiString.h"
 #include "UObject/Package.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
 	: bDisplayAllProperties(true)
 	, bEnableEditVisibleProperty(false)
 {
 	DefaultState = { false, true };
-	Title = LOCTEXT("Object Browser", "Object Browser");
-	Categories = { LOCTEXT("ToolsCategory", "Tools") };
+	Title = TEXT("Object Browser");
+	Categories = { TEXT("Tools") };
 }
 
 void UUnrealImGuiObjectBrowserPanel::Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
@@ -217,5 +215,3 @@ void UUnrealImGuiObjectBrowserPanel::WhenImGuiContextDestroyed(ImGuiContext* Con
 {
 	DockSpaceIdMap.Remove(Context);
 }
-
-#undef LOCTEXT_NAMESPACE

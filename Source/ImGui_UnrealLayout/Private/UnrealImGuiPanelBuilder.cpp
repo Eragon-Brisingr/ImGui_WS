@@ -24,9 +24,9 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		return;
 	}
 
-	if (UUnrealImGuiLayoutSubsystem* LayoutSubsystem = UUnrealImGuiLayoutSubsystem::Get(this))
+	if (FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(this))
 	{
-		LayoutSubsystem->PanelBuilders.Add(this);
+		LayoutManager->PanelBuilders.Add(this);
 	}
 
 	// 只对继承树叶节点的类型生效
@@ -50,9 +50,9 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	static auto CreatePanel = [](UUnrealImGuiPanelBuilder* Builder, const UClass* Class)
 	{
 		UUnrealImGuiPanelBase* Panel = NewObject<UUnrealImGuiPanelBase>(Builder, Class, Class->GetFName(), RF_Transient);
-		if (Panel->Title.IsEmpty())
+		if (Panel->Title == NAME_None)
 		{
-			Panel->Title = FText::FromName(Panel->GetClass()->GetFName());
+			Panel->Title = Panel->GetClass()->GetFName();
 		}
 		return Panel;
 	};
@@ -74,7 +74,6 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		Panel->Register(Owner, Builder);
 	};
 
-	TSet<const UClass*> VisitedLayoutClasses;
 	{
 		TArray<UClass*> LayoutClasses;
 		GetDerivedClasses(UUnrealImGuiLayoutBase::StaticClass(), LayoutClasses);
@@ -86,13 +85,6 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
-			bool bIsAlreadyInSet;
-			VisitedLayoutClasses.Add(Class, &bIsAlreadyInSet);
-			if (bIsAlreadyInSet)
-			{
-				continue;
-			}
-
 			const UUnrealImGuiLayoutBase* CDO = Class->GetDefaultObject<UUnrealImGuiLayoutBase>();
 			if (CDO->ShouldCreateLayout(Owner) == false)
 			{
@@ -100,9 +92,9 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 			}
 
 			UUnrealImGuiLayoutBase* Layout = NewObject<UUnrealImGuiLayoutBase>(this, Class, Class->GetFName(), RF_Transient);
-			if (Layout->LayoutName.IsEmpty())
+			if (Layout->LayoutName == NAME_None)
 			{
-				Layout->LayoutName = FText::FromName(Layout->GetClass()->GetFName());
+				Layout->LayoutName = Layout->GetClass()->GetFName();
 			}
 			const int32 Idx = Layouts.Add(Layout);
 			if (ActiveLayoutClass == Class)
@@ -119,21 +111,19 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	auto UpdateCategoryPanels = [this](UUnrealImGuiPanelBase* Panel)
 	{
 		FCategoryPanels* Container = &CategoryPanels;
-		for (const FText& Category : Panel->Categories)
+		for (const FName& Category : Panel->Categories)
 		{
-			const FName CategoryName = *Category.ToString();
-			if (const auto ContainerPtr = Container->Children.Find(CategoryName))
+			if (const auto ContainerPtr = Container->Children.Find(Category))
 			{
 				Container = ContainerPtr->Get();
 			}
 			else
 			{
-				Container = Container->Children.Emplace(CategoryName, MakeUnique<FCategoryPanels>(Category)).Get();
+				Container = Container->Children.Emplace(Category, MakeUnique<FCategoryPanels>(Category)).Get();
 			}
 		}
 		Container->Panels.Add(Panel);
 	};
-	TSet<const UClass*> VisitedPanelClasses;
 	{
 		TArray<UClass*> PanelClasses;
 		GetDerivedClasses(UUnrealImGuiPanelBase::StaticClass(), PanelClasses);
@@ -141,13 +131,6 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		for (const UClass* Class : PanelClasses)
 		{
 			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
-			{
-				continue;
-			}
-
-			bool bIsAlreadyInSet;
-			VisitedPanelClasses.Add(Class, &bIsAlreadyInSet);
-			if (bIsAlreadyInSet)
 			{
 				continue;
 			}
@@ -244,9 +227,9 @@ void UUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 		Panel->Unregister(Owner, this);
 	}
 
-	if (UUnrealImGuiLayoutSubsystem* LayoutSubsystem = UUnrealImGuiLayoutSubsystem::Get(this))
+	if (FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(this))
 	{
-		LayoutSubsystem->PanelBuilders.Remove(this);
+		LayoutManager->PanelBuilders.Remove(this);
 	}
 }
 

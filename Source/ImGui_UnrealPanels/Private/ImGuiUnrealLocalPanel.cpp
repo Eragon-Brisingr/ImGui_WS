@@ -595,7 +595,7 @@ void OpenLocalWindow(UWorld* World)
 						[
 							SNew(STextBlock)
 							.TextStyle(&GetTextBlockStyles().Large)
-							.Text(Panel->Title)
+							.Text(FText::FromName(Panel->Title))
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
@@ -724,8 +724,8 @@ void OpenLocalWindow(UWorld* World)
 					})
 					.OnImGuiTick_Lambda([this, ContextIndex](float DeltaSeconds)
 					{
-						UUnrealImGuiLayoutSubsystem* LayoutSubsystem = World->GetSubsystem<UUnrealImGuiLayoutSubsystem>();
-						if (LayoutSubsystem == nullptr)
+						FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(World);
+						if (LayoutManager == nullptr)
 						{
 							return;
 						}
@@ -759,17 +759,21 @@ void OpenLocalWindow(UWorld* World)
 								}
 								if (ImGui::FItemTooltip Tooltip{})
 								{
-									FText CategoryPath;
-									for (const FText& Category : Panel->Categories)
+									FString CategoryPath;
+									for (const FName& Category : Panel->Categories)
 									{
-										CategoryPath = FText::Format(LOCTEXT("PanelCheckBoxTooltipCategoryAppend", "{0} {1}"), CategoryPath, Category);
+										CategoryPath += TEXT(",") + Category.ToString();
 									}
-									ImGui::TextUnformatted(TCHAR_TO_UTF8(*FText::Format(LOCTEXT("PanelCheckBoxTooltip", "Class: {0}\nCategoryPath:{1}"), FText::FromString(Panel->GetClass()->GetPathName()), CategoryPath).ToString()));
+									if (CategoryPath.Len() > 0)
+									{
+										CategoryPath.RemoveAt(CategoryPath.Len() - 1);
+									}
+									ImGui::TextUnformatted(TCHAR_TO_UTF8(*FText::Format(LOCTEXT("PanelCheckBoxTooltip", "Class: {0}\nCategoryPath:{1}"), FText::FromString(Panel->GetClass()->GetPathName()), FText::FromString(CategoryPath)).ToString()));
 								}
 							};
 							if (ImGui::FMenuBar MenuBar{})
 							{
-								for (UUnrealImGuiPanelBuilder* Builder : LayoutSubsystem->PanelBuilders)
+								for (UUnrealImGuiPanelBuilder* Builder : LayoutManager->PanelBuilders)
 								{
 									struct FLocal
 									{
@@ -891,7 +895,7 @@ void OpenLocalWindow(UWorld* World)
 										const auto& RecentlyPanel = Overlay->Config->RecentlyPanels[Idx];
 										UUnrealImGuiPanelBuilder* Builder = nullptr;
 										UUnrealImGuiPanelBase* Panel = nullptr;
-										for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutSubsystem->PanelBuilders)
+										for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
 										{
 											const int32 PanelIdx = PanelBuilder->Panels.IndexOfByPredicate([&](const UUnrealImGuiPanelBase* E){ return E->GetClass() == RecentlyPanel; });
 											if (PanelIdx != INDEX_NONE)
@@ -927,7 +931,7 @@ void OpenLocalWindow(UWorld* World)
 									if (FilterString.Len() == 0)
 									{
 										int32 PanelNum = 0;
-										for (const UUnrealImGuiPanelBuilder* Builder : LayoutSubsystem->PanelBuilders)
+										for (const UUnrealImGuiPanelBuilder* Builder : LayoutManager->PanelBuilders)
 										{
 											PanelNum += Builder->Panels.Num();
 										}
@@ -940,7 +944,7 @@ void OpenLocalWindow(UWorld* World)
 												ImGui::PushID(Idx);
 												UUnrealImGuiPanelBuilder* Builder = nullptr;
 												int32 PanelIdx = Idx;
-												for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutSubsystem->PanelBuilders)
+												for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
 												{
 													if (PanelIdx < PanelBuilder->Panels.Num())
 													{
@@ -958,7 +962,7 @@ void OpenLocalWindow(UWorld* World)
 									{
 										TArray<UUnrealImGuiPanelBase*> FilteredPanels;
 										const FString TestString = FilterString.ToString().ToLower();
-										for (const UUnrealImGuiPanelBuilder* Builder : LayoutSubsystem->PanelBuilders)
+										for (const UUnrealImGuiPanelBuilder* Builder : LayoutManager->PanelBuilders)
 										{
 											for (UUnrealImGuiPanelBase* Panel : Builder->Panels)
 											{
@@ -988,7 +992,7 @@ void OpenLocalWindow(UWorld* World)
 							}
 
 							ImGui::Text("Category Panel"); ImGui::SameLine(); ImGui::Separator();
-							for (UUnrealImGuiPanelBuilder* Builder : LayoutSubsystem->PanelBuilders)
+							for (UUnrealImGuiPanelBuilder* Builder : LayoutManager->PanelBuilders)
 							{
 								struct FLocal
 								{

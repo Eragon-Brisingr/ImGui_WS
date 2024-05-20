@@ -14,12 +14,10 @@
 #include "GameFramework/PlayerController.h"
 #include "UObject/UObjectIterator.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 {
-	Title = LOCTEXT("Viewport", "Viewport");
-	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
+	Title = TEXT("Viewport");
+	Categories = { TEXT("Viewport") };
 	DefaultDockSpace =
 	{
 		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Viewport }
@@ -33,7 +31,7 @@ bool UImGuiWorldDebuggerViewportPanel::ShouldCreatePanel(UObject* Owner) const
 
 UImGuiWorldDebuggerViewportActorExtent::UImGuiWorldDebuggerViewportActorExtent()
 {
-	ExtentName = LOCTEXT("ViewportActorExtent", "Actor");
+	ExtentName = TEXT("Actor");
 	Priority = 1;
 }
 
@@ -509,8 +507,12 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UI
 			}
 		}
 	}
+	if (FilteredSelectedActors.Num() == 0)
+	{
+		return;
+	}
 
-	const AActor* FirstActor = FilteredSelectedActors.Num() >= 1 ? FilteredSelectedActors[0] : nullptr;
+	const AActor* FirstActor = FilteredSelectedActors[0];
 	if (FilteredSelectedActors.Num() == 1)
 	{
 		ImGui::Text("Actor Name: %s", TCHAR_TO_UTF8(*FirstActor->GetName()));
@@ -555,5 +557,3 @@ void UImGuiWorldDebuggerViewportActorExtent::FocusActor(AActor* Actor)
 	SelectedActors.Reset();
 	SelectedActors.Add(Actor);
 }
-
-#undef LOCTEXT_NAMESPACE

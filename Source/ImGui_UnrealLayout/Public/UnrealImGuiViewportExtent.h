@@ -21,7 +21,7 @@ public:
 	{}
 
 	int32 Priority = 0;
-	FText ExtentName;
+	FName ExtentName;
 
 	UPROPERTY(Config)
 	uint8 bEnable : 1;

@@ -8,14 +8,12 @@
 #include "Engine/Engine.h"
 #include "Stats/StatsData.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 UUnrealImGuiStatPanel::UUnrealImGuiStatPanel()
 {
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
 	DefaultState = { false, true };
-	Title = LOCTEXT("Stat", "Stat");
-	Categories = { LOCTEXT("ToolsCategory", "Tools") };
+	Title = TEXT("Stat");
+	Categories = { TEXT("Tools") };
 }
 
 void UUnrealImGuiStatPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
@@ -337,5 +335,3 @@ void UUnrealImGuiStatPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Build
 	ImGui::Text("Stat Not Enable");
 #endif
 }
-
-#undef LOCTEXT_NAMESPACE

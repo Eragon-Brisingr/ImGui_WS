@@ -11,13 +11,11 @@
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiString.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 UImGuiWorldDebuggerOutlinerPanel::UImGuiWorldDebuggerOutlinerPanel()
 	: bInvokeRefreshSortOrder(false)
 {
-	Title = LOCTEXT("Outliner", "Outliner");
-	Categories = { LOCTEXT("ViewportCategory", "Viewport") };
+	Title = TEXT("Outliner");
+	Categories = { TEXT("Viewport") };
 	DefaultDockSpace =
 	{
 		{ UImGuiWorldDebuggerDefaultLayout::StaticClass()->GetFName(), UImGuiWorldDebuggerDefaultLayout::EDockId::Outliner }
@@ -259,5 +257,3 @@ bool UImGuiWorldDebuggerOutlinerPanel::CanActorDisplay(const AActor* Actor) cons
 
 	return false;
 }
-
-#undef LOCTEXT_NAMESPACE

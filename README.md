@@ -260,7 +260,7 @@ public:
 UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 {
 	// Set layout name
-	LayoutName = LOCTEXT("Default", "Default");
+	LayoutName = TEXT("Default");
 }
 
 void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
@@ -306,7 +306,7 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 	// Declares that the menu bar needs to be displayed
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
 	// Set panel name
-	Title = LOCTEXT("Viewport", "Viewport");
+	Title = TEXT("Viewport");
 	// The default position in the ImGuiWorldDebuggerDefaultLayout layout is Viewport
 	DefaultDockSpace =
 	{

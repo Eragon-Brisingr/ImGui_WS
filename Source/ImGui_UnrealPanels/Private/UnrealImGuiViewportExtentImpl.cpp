@@ -11,11 +11,9 @@
 #include "NavMesh/RecastNavMesh.h"
 #include "WorldPartition/WorldPartitionRuntimeSpatialHash.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 UUnrealImGuiViewportWorldPartitionExtent::UUnrealImGuiViewportWorldPartitionExtent()
 {
-	ExtentName = LOCTEXT("WorldPartitionExtent", "World Partition");
+	ExtentName = TEXT("World Partition");
 	Priority = -90;
 }
 
@@ -105,7 +103,7 @@ void UUnrealImGuiViewportWorldPartitionExtent::DrawViewportContent(UObject* Owne
 
 UUnrealImGuiViewportNavMeshExtent::UUnrealImGuiViewportNavMeshExtent()
 {
-	ExtentName = LOCTEXT("NavMeshExtent", "Nav Mesh");
+	ExtentName = TEXT("Nav Mesh");
 	Priority = -100;
 }
 
@@ -216,5 +214,3 @@ void UUnrealImGuiViewportNavMeshExtent::DrawViewportContent(UObject* Owner, cons
 		}
 	}
 }
-
-#undef LOCTEXT_NAMESPACE

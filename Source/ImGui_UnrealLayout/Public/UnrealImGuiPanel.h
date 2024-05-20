@@ -52,9 +52,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"), Category = Settings)
 	int32 ImGuiWindowFlags;
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
-	FText Title;
+	FName Title;
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
-	TArray<FText> Categories;
+	TArray<FName> Categories;
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	FImGuiDefaultPanelState DefaultState{ false, true };
 	// Key为类型名

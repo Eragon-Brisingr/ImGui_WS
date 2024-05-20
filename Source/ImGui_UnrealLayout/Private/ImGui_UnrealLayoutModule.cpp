@@ -1,5 +1,6 @@
 ﻿#include "ImGui_UnrealLayoutModule.h"
 
+#include "ImGuiDelegates.h"
 #include "ImGuiEditorDefaultLayout.h"
 #include "ImGuiUnrealContextManager.h"
 #include "Engine/Engine.h"
@@ -10,27 +11,29 @@
 void FImGui_UnrealLayoutModule::StartupModule()
 {
 #if WITH_EDITOR
-    FCoreDelegates::OnPostEngineInit.AddLambda([]
+    FCoreDelegates::OnPostEngineInit.AddLambda([this]
     {
         UImGuiUnrealContextManager* Manager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
         if (Manager == nullptr)
         {
             return;
         }
-        if (Manager->EditorDrawer)
+        FImGuiUnrealEditorContext* EditorContext = Manager->GetImGuiEditorContext();
+        if (EditorContext == nullptr)
         {
             return;
         }
-        Manager->EditorDrawer = [](float DeltaSeconds)
+        if (EditorContext->EditorDrawer)
         {
-            static UImGuiEditorDefaultDebugger* DefaultDebugger = []
-            {
-                UImGuiEditorDefaultDebugger* Debugger = NewObject<UImGuiEditorDefaultDebugger>();
-                Debugger->AddToRoot();
-                Debugger->Register();
-                return Debugger;
-            }();
-            DefaultDebugger->Draw(DeltaSeconds);
+            return;
+        }
+        EditorContext->InvokeCreateDebugger = [this]
+        {
+            GetEditorDebugger();
+        };
+        EditorContext->EditorDrawer = [this](float DeltaSeconds)
+        {
+            GetEditorDebugger()->Draw(DeltaSeconds);
         };
     });
 #endif
@@ -40,6 +43,21 @@ void FImGui_UnrealLayoutModule::ShutdownModule()
 {
 
 }
+
+#if WITH_EDITOR
+UImGuiEditorDefaultDebugger* FImGui_UnrealLayoutModule::GetEditorDebugger()
+{
+    if (UImGuiEditorDefaultDebugger* Debugger = DefaultEditorDebugger.Get())
+    {
+        return Debugger;
+    }
+    UImGuiEditorDefaultDebugger* Debugger = NewObject<UImGuiEditorDefaultDebugger>();
+    Debugger->AddToRoot();
+    Debugger->Register();
+    DefaultEditorDebugger = Debugger;
+    return Debugger;
+}
+#endif
 
 #undef LOCTEXT_NAMESPACE
     

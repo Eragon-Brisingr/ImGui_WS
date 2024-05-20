@@ -7,8 +7,6 @@
 #include "ImGuiWorldDebuggerBase.h"
 #include "imgui_internal.h"
 
-#define LOCTEXT_NAMESPACE "ImGui_WS"
-
 bool UImGuiWorldDebuggerLayoutBase::ShouldCreateLayout(UObject* Owner) const
 {
 	return Owner && Owner->IsA<AImGuiWorldDebuggerBase>();
@@ -16,7 +14,7 @@ bool UImGuiWorldDebuggerLayoutBase::ShouldCreateLayout(UObject* Owner) const
 
 UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 {
-	LayoutName = LOCTEXT("Default", "Default");
+	LayoutName = TEXT("Default");
 }
 
 void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
@@ -40,5 +38,3 @@ void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const U
 
 	ImGui::DockBuilderFinish(DockId);
 }
-
-#undef LOCTEXT_NAMESPACE

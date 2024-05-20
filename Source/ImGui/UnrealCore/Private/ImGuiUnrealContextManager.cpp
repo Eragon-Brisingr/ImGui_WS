@@ -77,46 +77,7 @@ void UImGuiUnrealContextManager::DrawViewport(int32& ContextIndex, float DeltaSe
 	{
 		if (ImGui::BeginMenu("ImGui_WS"))
 		{
-#if WITH_EDITOR
-			if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("Editor"))), ContextIndex == EditorContextIndex || ContextIndex >= WorldSubsystems.Num()))
-			{
-				ContextIndex = EditorContextIndex;
-			}
-			if (WorldSubsystems.Num() > 0)
-			{
-				ImGui::Separator();
-			}
-#endif
-			for (int32 Idx = 0; Idx < WorldSubsystems.Num(); ++Idx)
-			{
-				const UWorld* World = WorldSubsystems[Idx]->GetWorld();
-				FString WorldDesc;
-				switch(World->GetNetMode())
-				{
-				case NM_Client:
-#if WITH_EDITOR
-					WorldDesc = FString::Printf(TEXT("Client %d"), World->GetOutermost()->GetPIEInstanceID() - 1);
-#else
-					WorldDesc = FString::Printf(TEXT("Client %d"), Idx);
-#endif
-					break;
-				case NM_DedicatedServer:
-					WorldDesc = TEXT("DedicatedServer");
-					break;
-				case NM_ListenServer:
-					WorldDesc = TEXT("Server");
-					break;
-				case NM_Standalone:
-					WorldDesc = TEXT("Standalone");
-				default:
-					break;
-				}
-				if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("%d. %s"), Idx, *WorldDesc)), Idx == ContextIndex))
-				{
-					ContextIndex = Idx;
-				}
-			}
-
+			DrawContextContent(ContextIndex);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -128,9 +89,9 @@ void UImGuiUnrealContextManager::DrawViewport(int32& ContextIndex, float DeltaSe
 		const FImGuiUnrealEditorContext& DrawContext = EditorContext;
 		if (DrawContext.bAlwaysDrawDefaultLayout || DrawContext.OnDraw.IsBound() == false)
 		{
-			if (GWorld && EditorDrawer)
+			if (GWorld && DrawContext.EditorDrawer)
 			{
-				EditorDrawer(DeltaSeconds);
+				DrawContext.EditorDrawer(DeltaSeconds);
 			}
 		}
 		DrawContext.OnDraw.Broadcast(DeltaSeconds);
@@ -150,5 +111,48 @@ void UImGuiUnrealContextManager::DrawViewport(int32& ContextIndex, float DeltaSe
 		ImGui::RenderNotifications();
 		ImGui::PopStyleVar();
 		ImGui::PopStyleColor();
+	}
+}
+
+void UImGuiUnrealContextManager::DrawContextContent(int32& ContextIndex)
+{
+#if WITH_EDITOR
+	if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("Editor"))), ContextIndex == EditorContextIndex || ContextIndex >= WorldSubsystems.Num()))
+	{
+		ContextIndex = EditorContextIndex;
+	}
+	if (WorldSubsystems.Num() > 0)
+	{
+		ImGui::Separator();
+	}
+#endif
+	for (int32 Idx = 0; Idx < WorldSubsystems.Num(); ++Idx)
+	{
+		const UWorld* World = WorldSubsystems[Idx]->GetWorld();
+		FString WorldDesc;
+		switch(World->GetNetMode())
+		{
+		case NM_Client:
+#if WITH_EDITOR
+			WorldDesc = FString::Printf(TEXT("Client %d"), World->GetOutermost()->GetPIEInstanceID() - 1);
+#else
+			WorldDesc = FString::Printf(TEXT("Client %d"), Idx);
+#endif
+			break;
+		case NM_DedicatedServer:
+			WorldDesc = TEXT("DedicatedServer");
+			break;
+		case NM_ListenServer:
+			WorldDesc = TEXT("Server");
+			break;
+		case NM_Standalone:
+			WorldDesc = TEXT("Standalone");
+		default:
+			break;
+		}
+		if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("%d. %s"), Idx, *WorldDesc)), Idx == ContextIndex))
+		{
+			ContextIndex = Idx;
+		}
 	}
 }

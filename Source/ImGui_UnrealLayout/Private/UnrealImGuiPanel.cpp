@@ -12,7 +12,7 @@ UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
 	, bIsOpen{ false }
 	, LocalOpenCounter{ 0 }
 {
-	Categories.Add(NSLOCTEXT("ImGui_WS", "MiscCategory", "Misc"));
+	Categories.Add(TEXT("Misc"));
 }
 
 void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)

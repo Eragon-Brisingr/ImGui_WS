@@ -262,7 +262,7 @@ public:
 UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()
 {
 	// 设置布局名
-	LayoutName = LOCTEXT("Default", "Default");
+	LayoutName = TEXT("Default");
 }
 
 void UImGuiWorldDebuggerDefaultLayout::LoadDefaultLayout(UObject* Owner, const UUnrealImGuiPanelBuilder& LayoutBuilder)
@@ -308,7 +308,7 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 	// 声明需要显示菜单栏
 	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
 	// 面板命名
-	Title = LOCTEXT("Viewport", "Viewport");
+	Title = TEXT("Viewport");
 	// 默认在ImGuiWorldDebuggerDefaultLayout布局中的位置为Viewport
 	DefaultDockSpace =
 	{
