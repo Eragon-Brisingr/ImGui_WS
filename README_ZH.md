@@ -327,6 +327,10 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
   * 重写DrawViewportContent实现Viewport中元素的绘制
   * 重写ShouldCreateExtent声明该拓展支持的面板（可选）
 
+## 编辑器中的内联面板
+
+菜单`Tools - ImGui Panels`可打开单独的ImGui面板
+
 ## 冒泡消息提示
 
 [imgui-notify](https://github.com/patrickcjk/imgui-notify)

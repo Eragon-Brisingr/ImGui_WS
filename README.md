@@ -325,6 +325,10 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
   * Implement DrawViewportContent draw viewport content element
   * Implement ShouldCreateExtent to declare support viewport type (optional)
 
+## Editor inline single panel
+
+Menu `Tools - ImGui Panels` can open single ImGui Panel
+
 ## Bubbling message prompt
 
 [imgui-notify](https://github.com/patrickcjk/imgui-notify)
