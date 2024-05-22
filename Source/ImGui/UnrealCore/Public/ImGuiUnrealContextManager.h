@@ -58,6 +58,8 @@ public:
 	static constexpr int32 EditorContextIndex = INDEX_NONE;
 
 	void DrawContextContent(int32& ContextIndex);
+	UWorld* GetContextIndexWorld(int32 ContextIndex) const;
+
 private:
 #if WITH_EDITORONLY_DATA
 	UPROPERTY()

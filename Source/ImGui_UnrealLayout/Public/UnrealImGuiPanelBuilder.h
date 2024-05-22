@@ -28,6 +28,7 @@ public:
 	void DrawPanelStateMenu(UObject* Owner);
 	void DrawLayoutStateMenu(UObject* Owner);
 
+	UFUNCTION(BlueprintCallable, Category = ImGui, meta = (DeterminesOutputType = PanelType))
 	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const;
 	template<typename T>
 	T* FindPanel() const

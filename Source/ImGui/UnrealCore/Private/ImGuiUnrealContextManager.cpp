@@ -156,3 +156,8 @@ void UImGuiUnrealContextManager::DrawContextContent(int32& ContextIndex)
 		}
 	}
 }
+
+UWorld* UImGuiUnrealContextManager::GetContextIndexWorld(int32 ContextIndex) const
+{
+	return WorldSubsystems.IsValidIndex(ContextIndex) ? WorldSubsystems[ContextIndex]->GetWorld() : GWorld;
+}

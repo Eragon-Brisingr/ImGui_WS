@@ -40,14 +40,14 @@ void FImGui_WorldDebuggerModule::StartupModule()
 		UImGuiWorldDebuggerViewportActorExtent::WhenEditorSelectionChanged(TArray<AActor*>{});
 	});
 
-	UImGuiWorldDebuggerViewportActorExtent::EditorSelectActors.BindLambda([](UWorld* World, const TSet<TWeakObjectPtr<AActor>>& SelectedMetaEntities)
+	UImGuiWorldDebuggerViewportActorExtent::EditorSelectActors.BindLambda([](UWorld* World, const TSet<TObjectPtr<AActor>>& SelectedMetaEntities)
 	{
 		USelection* SelectedActors = GEditor->GetSelectedActors();
 		SelectedActors->BeginBatchSelectOperation();
 		GEditor->SelectNone(false, true, true);
-		for (const TWeakObjectPtr<AActor>& ActorPtr : SelectedMetaEntities)
+		for (AActor* Actor : SelectedMetaEntities)
 		{
-			if (AActor* Actor = ActorPtr.Get())
+			if (Actor)
 			{
 				GEditor->SelectActor(Actor, true, false, true);
 			}

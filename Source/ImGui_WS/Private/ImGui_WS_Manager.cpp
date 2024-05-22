@@ -535,10 +535,10 @@ public:
 	FVSync VSync;
 	FState State;
 
-	bool IsTickableWhenPaused() const { return true; }
-	bool IsTickableInEditor() const { return true; }
-	UWorld* GetTickableGameObjectWorld() const { return GWorld; }
+	bool IsTickableWhenPaused() const override { return true; }
+	bool IsTickableInEditor() const override { return true; }
 	TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UImGui_WS_Manager_FDrawer, STATGROUP_Tickables); }
+	UWorld* GetTickableGameObjectWorld() const override { return ContextManager.GetContextIndexWorld(Manager.DrawContextIndex); }
 
 	struct FImGuiData : FNoncopyable
 	{

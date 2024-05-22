@@ -22,20 +22,20 @@ class IMGUI_API UImGui : public UBlueprintFunctionLibrary
 private:
 	static bool CheckImGuiContextThrowError();
 public:
-	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, Name = "NSLOCTEXT(\"WS\", \"BP_DefaultTitle\", \"Untitle\")", DisplayName = "Window", AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool Begin(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, Name = "Untitle", DisplayName = "Window", AdvancedDisplay = 1), BlueprintInternalUseOnly)
+	static bool Begin(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::Begin(TCHAR_TO_UTF8(*Name.ToString()), nullptr, Flags);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, Name = "NSLOCTEXT(\"WS\", \"BP_DefaultTitle\", \"Untitle\")", DisplayName = "Window (Open State)", AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool BeginWithOpenState(FText Name, UPARAM(Ref)bool& OpenState, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, Name = "Untitle", DisplayName = "Window (Open State)", AdvancedDisplay = 2), BlueprintInternalUseOnly)
+	static bool BeginWithOpenState(FName Name, UPARAM(Ref)bool& OpenState, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::Begin(TCHAR_TO_UTF8(*Name.ToString()), &OpenState, Flags);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, Name = "NSLOCTEXT(\"WS\", \"BP_DefaultTitle\", \"Untitle\")", DisplayName = "Window (Full Viewport)", AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool BeginFullViewport(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, Name = "Untitle", DisplayName = "Window (Full Viewport)", AdvancedDisplay = 1), BlueprintInternalUseOnly)
+	static bool BeginFullViewport(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		static constexpr auto SinglePanelFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
@@ -51,7 +51,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Child Windows", meta = (ImGuiScopeExit = EndChild, ImGuiAlwaysExit, DisplayName = "Child Window", AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool BeginChild(FText Name, FVector2D Size, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiChildFlags"))int32 ChildFlags, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 WindowFlags)
+	static bool BeginChild(FName Name, FVector2D Size = FVector2D::ZeroVector, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiChildFlags"))int32 ChildFlags = 0, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 WindowFlags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginChild(TCHAR_TO_UTF8(*Name.ToString()), ImVec2{ Size }, ChildFlags, WindowFlags);
@@ -197,25 +197,25 @@ public:
 		ImGui::SetWindowFontScale(Scale);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Window manipulation", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static void SetWindowPosByName(FText Name, const FVector2D& Pos, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
+	static void SetWindowPosByName(FName Name, const FVector2D& Pos, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetWindowPos(TCHAR_TO_UTF8(*Name.ToString()), ImVec2{ Pos }, Cond);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Window manipulation", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetWindowSizeByName(FText Name, const FVector2D& Size, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
+	static void SetWindowSizeByName(FName Name, const FVector2D& Size, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetWindowSize(TCHAR_TO_UTF8(*Name.ToString()), ImVec2{ Size }, Cond);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Window manipulation", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetWindowCollapsedByName(FText Name, bool Collapsed, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
+	static void SetWindowCollapsedByName(FName Name, bool Collapsed, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetWindowCollapsed(TCHAR_TO_UTF8(*Name.ToString()), Collapsed, Cond);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Window manipulation", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetWindowFocusByName(FText Name)
+	static void SetWindowFocusByName(FName Name)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetWindowFocus(TCHAR_TO_UTF8(*Name.ToString()));
@@ -560,7 +560,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|ID stack", meta = (ImGuiScopeExit = PopID, DisplayName = "Set Id"), BlueprintInternalUseOnly)
-	static void PushID(FText Name)
+	static void PushID(FName Name)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		return ImGui::PushID(TCHAR_TO_UTF8(*Name.ToString()));
@@ -578,102 +578,102 @@ public:
 		ImGui::PopID();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|ID stack", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static FImGuiId GetID(FText Name)
+	static FImGuiId GetID(FName Name)
 	{
 		if (!CheckImGuiContextThrowError()) { return {}; }
 		return ImGui::GetID(TCHAR_TO_UTF8(*Name.ToString()));
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void Text(FText Text)
+	static void Text(const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextUnformatted(TCHAR_TO_UTF8(*Text));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void TextColored(FLinearColor Color, FText Text)
+	static void TextColored(FLinearColor Color, const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::TextColored(ImVec4{ Color }, "%s", TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextColored(ImVec4{ Color }, "%s", TCHAR_TO_UTF8(*Text));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void TextDisabled(FText Text)
+	static void TextDisabled(const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::TextDisabled("%s", TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextDisabled("%s", TCHAR_TO_UTF8(*Text));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void TextWrapped(FText Text)
+	static void TextWrapped(const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::TextWrapped("%s", TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::TextWrapped("%s", TCHAR_TO_UTF8(*Text));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void LabelText(FText Label, FText Text)
+	static void LabelText(FName Label, const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::LabelText(TCHAR_TO_UTF8(*Label.ToString()), "%s", TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::LabelText(TCHAR_TO_UTF8(*Label.ToString()), "%s", TCHAR_TO_UTF8(*Text));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void BulletText(FText Text)
+	static void BulletText(const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::BulletText("%s", TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::BulletText("%s", TCHAR_TO_UTF8(*Text));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Text", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SeparatorText(FText Text)
+	static void SeparatorText(const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::SeparatorText(TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::SeparatorText(TCHAR_TO_UTF8(*Text));
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiTrigger, AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool Button(FText Label, FVector2D Size)
+	static bool Button(FName Label, FVector2D Size = FVector2D::ZeroVector)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::Button(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size });
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool SmallButton(FText Label)
+	static bool SmallButton(FName Label)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SmallButton(TCHAR_TO_UTF8(*Label.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool ArrowButton(FText Label, EImGuiDir Dir)
+	static bool ArrowButton(FName Label, EImGuiDir Dir)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::ArrowButton(TCHAR_TO_UTF8(*Label.ToString()), (ImGuiDir)Dir);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool InvisibleButton(FText Label, FVector2D Size)
+	static bool InvisibleButton(FName Label, FVector2D Size)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InvisibleButton(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size });
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool CheckBox(FText Label, UPARAM(Ref)bool& Value)
+	static bool CheckBox(FName Label, UPARAM(Ref)bool& Value)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::Checkbox(TCHAR_TO_UTF8(*Label.ToString()), &Value);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool CheckboxFlags(FText Label, UPARAM(Ref)int32& Flags, int32 FlagsValue)
+	static bool CheckboxFlags(FName Label, UPARAM(Ref)int32& Flags, int32 FlagsValue)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::CheckboxFlags(TCHAR_TO_UTF8(*Label.ToString()), &Flags, FlagsValue);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool RadioButton(FText Label, bool bActive)
+	static bool RadioButton(FName Label, bool bActive)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::RadioButton(TCHAR_TO_UTF8(*Label.ToString()), bActive);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiFunction, SizeArg = "(X=-1, Y=0)", AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static void ProgressBar(float Fraction, FVector2D SizeArg, FText Overlay)
+	static void ProgressBar(float Fraction, FVector2D SizeArg, FString Overlay)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::ProgressBar(Fraction, ImVec2{ SizeArg }, TCHAR_TO_UTF8(*Overlay.ToString()));
+		ImGui::ProgressBar(Fraction, ImVec2{ SizeArg }, TCHAR_TO_UTF8(*Overlay));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Main", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void Bullet()
@@ -715,7 +715,7 @@ public:
 		ImGui::Image(Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool TextureButton(FText Label, const FImGuiTextureHandle& Handle, FVector2D ImageSize, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
+	static bool TextureButton(FName Label, const FImGuiTextureHandle& Handle, FVector2D ImageSize, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::ImageButton(TCHAR_TO_UTF8(*Label.ToString()), Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
@@ -729,7 +729,7 @@ public:
 		ImGui::Image(Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Images", meta = (ImGuiTrigger, AdvancedDisplay = 3), BlueprintInternalUseOnly)
-	static bool ImageButton(FText Label, UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
+	static bool ImageButton(FName Label, UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture((UnrealImGui::ETextureFormat)Format, Texture);
@@ -737,7 +737,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Combo Box (Dropdown)", meta = (ImGuiScopeExit = EndCombo, DisplayName = "Combo (Scope)", AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool BeginCombo(FText Label, FText PreviewValue, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiComboFlags"))int32 Flags = 0)
+	static bool BeginCombo(FName Label, FName PreviewValue, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiComboFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginCombo(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*PreviewValue.ToString()), (ImGuiComboFlags)Flags);
@@ -749,17 +749,17 @@ public:
 		ImGui::EndCombo();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Combo Box (Dropdown)", meta = (ImGuiTrigger, AdvancedDisplay = 3), BlueprintInternalUseOnly)
-	static bool Combo(FText Label, UPARAM(Ref)int32& CurrentItem, const TArray<FText>& Items, int32 PopupMaxHeightInItems = -1)
+	static bool Combo(FName Label, UPARAM(Ref)int32& CurrentItem, const TArray<FName>& Items, int32 PopupMaxHeightInItems = -1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		struct FUserData
 		{
-			const TArray<FText>& Items;
+			const TArray<FName>& Items;
 		};
 		FUserData UserData{ Items };
 		return ImGui::Combo(TCHAR_TO_UTF8(*Label.ToString()), &CurrentItem, [](void* UserData, int32 Idx)
 		{
-			const TArray<FText>& Items = static_cast<FUserData*>(UserData)->Items;
+			const TArray<FName>& Items = static_cast<FUserData*>(UserData)->Items;
 			static UnrealImGui::FUTF8String String;
 			String = Items[Idx].ToString();
 			return *String;
@@ -767,225 +767,225 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragFloat(FText Label, UPARAM(Ref)float& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragFloat(FName Label, UPARAM(Ref)float& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragFloat(TCHAR_TO_UTF8(*Label.ToString()), &Value, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragFloat2(FText Label, UPARAM(Ref)FVector2f& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragFloat2(FName Label, UPARAM(Ref)FVector2f& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragFloat2(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragFloat3(FText Label, UPARAM(Ref)FVector3f& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragFloat3(FName Label, UPARAM(Ref)FVector3f& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragFloat3(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragFloat4(FText Label, UPARAM(Ref)FVector4f& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragFloat4(FName Label, UPARAM(Ref)FVector4f& Value, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragFloat4(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragFloatRange2(FText Label, UPARAM(Ref)float& CurrentMin, UPARAM(Ref)float& CurrentMax, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString FormatMin = TEXT("%.3f"), FString FormatMax = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragFloatRange2(FName Label, UPARAM(Ref)float& CurrentMin, UPARAM(Ref)float& CurrentMax, float Speed = 1.0f, float Min = 0.0f, float Max = 0.0f, FString FormatMin = TEXT("%.3f"), FString FormatMax = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragFloatRange2(TCHAR_TO_UTF8(*Label.ToString()), &CurrentMin, &CurrentMax, Speed, Min, Max, TCHAR_TO_UTF8(*FormatMin), TCHAR_TO_UTF8(*FormatMax), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragInt(FText Label, UPARAM(Ref)int32& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragInt(FName Label, UPARAM(Ref)int32& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragInt(TCHAR_TO_UTF8(*Label.ToString()), &Value, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragInt2(FText Label, UPARAM(Ref)FIntPoint& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragInt2(FName Label, UPARAM(Ref)FIntPoint& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragInt2(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragInt3(FText Label, UPARAM(Ref)FIntVector& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragInt3(FName Label, UPARAM(Ref)FIntVector& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragInt3(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragInt4(FText Label, UPARAM(Ref)FIntVector4& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragInt4(FName Label, UPARAM(Ref)FIntVector4& Value, float Speed = 1.0f, int32 Min = 0, int32 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragInt4(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Speed, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragIntRange2(FText Label, UPARAM(Ref)int32& CurrentMin, UPARAM(Ref)int32& CurrentMax, float Speed = 1.0f, int Min = 0, int Max = 0, FString FormatMin = TEXT("%d"), FString FormatMax = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragIntRange2(FName Label, UPARAM(Ref)int32& CurrentMin, UPARAM(Ref)int32& CurrentMax, float Speed = 1.0f, int Min = 0, int Max = 0, FString FormatMin = TEXT("%d"), FString FormatMax = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragIntRange2(TCHAR_TO_UTF8(*Label.ToString()), &CurrentMin, &CurrentMax, Speed, Min, Max, TCHAR_TO_UTF8(*FormatMin), TCHAR_TO_UTF8(*FormatMax), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragDouble(FText Label, UPARAM(Ref)double& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragDouble(FName Label, UPARAM(Ref)double& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, Speed, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragVector2(FText Label, UPARAM(Ref)FVector2D& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragVector2(FName Label, UPARAM(Ref)FVector2D& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, 2, Speed, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragVector3(FText Label, UPARAM(Ref)FVector& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragVector3(FName Label, UPARAM(Ref)FVector& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, 3, Speed, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragVector4(FText Label, UPARAM(Ref)FVector4& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragVector4(FName Label, UPARAM(Ref)FVector4& Value, float Speed = 1.0f, double Min = 0.0f, double Max = 0.0f, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, 4, Speed, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragByte(FText Label, UPARAM(Ref)uint8& Value, float Speed = 1.0f, uint8 Min = 0, uint8 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragByte(FName Label, UPARAM(Ref)uint8& Value, float Speed = 1.0f, uint8 Min = 0, uint8 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_U8, &Value, Speed, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool DragInt64(FText Label, UPARAM(Ref)int64& Value, float Speed = 1.0f, int64 Min = 0, int64 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool DragInt64(FName Label, UPARAM(Ref)int64& Value, float Speed = 1.0f, int64 Min = 0, int64 Max = 0, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::DragScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_S64, &Value, Speed, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderFloat(FText Label, UPARAM(Ref)float& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderFloat(FName Label, UPARAM(Ref)float& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderFloat(TCHAR_TO_UTF8(*Label.ToString()), &Value, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderFloat2(FText Label, UPARAM(Ref)FVector2f& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderFloat2(FName Label, UPARAM(Ref)FVector2f& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderFloat2(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderFloat3(FText Label, UPARAM(Ref)FVector3f& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderFloat3(FName Label, UPARAM(Ref)FVector3f& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderFloat3(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderFloat4(FText Label, UPARAM(Ref)FVector4f& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderFloat4(FName Label, UPARAM(Ref)FVector4f& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderFloat4(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderAngle(FText Label, UPARAM(Ref)float& Rad, float DegreesMin = -360.0f, float DegreesMax = +360.0f, FString Format = TEXT("%.0f deg"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderAngle(FName Label, UPARAM(Ref)float& Rad, float DegreesMin = -360.0f, float DegreesMax = +360.0f, FString Format = TEXT("%.0f deg"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderAngle(TCHAR_TO_UTF8(*Label.ToString()), &Rad, DegreesMin, DegreesMax, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderInt(FText Label, UPARAM(Ref)int32& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderInt(FName Label, UPARAM(Ref)int32& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderInt(TCHAR_TO_UTF8(*Label.ToString()), &Value, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderInt2(FText Label, UPARAM(Ref)FIntPoint& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderInt2(FName Label, UPARAM(Ref)FIntPoint& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderInt2(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderInt3(FText Label, UPARAM(Ref)FIntVector& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderInt3(FName Label, UPARAM(Ref)FIntVector& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderInt3(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderInt4(FText Label, UPARAM(Ref)FIntVector4& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderInt4(FName Label, UPARAM(Ref)FIntVector4& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderInt4(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderDouble(FText Label, UPARAM(Ref)double& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderDouble(FName Label, UPARAM(Ref)double& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderVector2(FText Label, UPARAM(Ref)FVector2D& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderVector2(FName Label, UPARAM(Ref)FVector2D& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, 2, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderVector3(FText Label, UPARAM(Ref)FVector& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderVector3(FName Label, UPARAM(Ref)FVector& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, 3, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderVector4(FText Label, UPARAM(Ref)FVector4& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderVector4(FName Label, UPARAM(Ref)FVector4& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value, 4, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderByte(FText Label, UPARAM(Ref)uint8& Value, uint8 Min, uint8 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderByte(FName Label, UPARAM(Ref)uint8& Value, uint8 Min, uint8 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_U8, &Value, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool SliderInt64(FText Label, UPARAM(Ref)int64& Value, int64 Min, int64 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool SliderInt64(FName Label, UPARAM(Ref)int64& Value, int64 Min, int64 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::SliderScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_S64, &Value, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 4), BlueprintInternalUseOnly)
-	static bool VSliderFloat(FText Label, FVector2D Size, UPARAM(Ref)float& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool VSliderFloat(FName Label, FVector2D Size, UPARAM(Ref)float& Value, float Min, float Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::VSliderFloat(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size }, &Value, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 5), BlueprintInternalUseOnly)
-	static bool VSliderInt(FText Label, FVector2D Size, UPARAM(Ref)int32& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool VSliderInt(FName Label, FVector2D Size, UPARAM(Ref)int32& Value, int32 Min, int32 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::VSliderInt(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size }, &Value, Min, Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Regular Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 5), BlueprintInternalUseOnly)
-	static bool VSliderDouble(FText Label, FVector2D Size, UPARAM(Ref)double& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool VSliderDouble(FName Label, FVector2D Size, UPARAM(Ref)double& Value, double Min, double Max, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::VSliderScalar(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size }, ImGuiDataType_Double, &Value, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 5), BlueprintInternalUseOnly)
-	static bool VSliderByte(FText Label, FVector2D Size, UPARAM(Ref)uint8& Value, uint8 Min, uint8 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool VSliderByte(FName Label, FVector2D Size, UPARAM(Ref)uint8& Value, uint8 Min, uint8 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::VSliderScalar(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size }, ImGuiDataType_U8, &Value, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Drag Sliders", meta = (ImGuiTrigger, AdvancedDisplay = 5), BlueprintInternalUseOnly)
-	static bool VSliderInt64(FText Label, FVector2D Size, UPARAM(Ref)int64& Value, int64 Min, int64 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
+	static bool VSliderInt64(FName Label, FVector2D Size, UPARAM(Ref)int64& Value, int64 Min, int64 Max, FString Format = TEXT("%d"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSliderFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::VSliderScalar(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size }, ImGuiDataType_S64, &Value, &Min, &Max, TCHAR_TO_UTF8(*Format), Flags);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputText(FText Label, UPARAM(Ref)FString& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputText(FName Label, UPARAM(Ref)FString& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		UnrealImGui::FUTF8String UTF8String{ Value };
@@ -997,7 +997,7 @@ public:
 		return Ret;
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputTextMultiline(FText Label, UPARAM(Ref)FString& Value, FVector2f Size, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputTextMultiline(FName Label, UPARAM(Ref)FString& Value, FVector2f Size, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		UnrealImGui::FUTF8String UTF8String{ Value };
@@ -1009,11 +1009,11 @@ public:
 		return Ret;
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputTextWithHint(FText Label, FText Hint, UPARAM(Ref)FString& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputTextWithHint(FName Label, const FString& Hint, UPARAM(Ref)FString& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		UnrealImGui::FUTF8String UTF8String{ Value };
-		const bool Ret = ImGui::InputTextWithHint(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Hint.ToString()), UTF8String, Flags);
+		const bool Ret = ImGui::InputTextWithHint(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Hint), UTF8String, Flags);
 		if (Ret)
 		{
 			Value = UTF8String.ToString();
@@ -1021,98 +1021,98 @@ public:
 		return Ret;
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputFloat(FText Label, UPARAM(Ref)float& Value, float Step = 0.f, float StepFast = 0.f, FString Format = TEXT("%.3"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputFloat(FName Label, UPARAM(Ref)float& Value, float Step = 0.f, float StepFast = 0.f, FString Format = TEXT("%.3"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputFloat(TCHAR_TO_UTF8(*Label.ToString()), &Value, Step, StepFast, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputVector2f(FText Label, UPARAM(Ref)FVector2f& Value, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputVector2f(FName Label, UPARAM(Ref)FVector2f& Value, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputFloat2(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputVector3f(FText Label, UPARAM(Ref)FVector3f& Value, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputVector3f(FName Label, UPARAM(Ref)FVector3f& Value, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputFloat3(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputFloat4(FText Label, UPARAM(Ref)FVector4f& Value, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputFloat4(FName Label, UPARAM(Ref)FVector4f& Value, FString Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputFloat4(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputInt(FText Label, UPARAM(Ref)int32& Value, int32 Step = 1, int32 StepFast = 100, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputInt(FName Label, UPARAM(Ref)int32& Value, int32 Step = 1, int32 StepFast = 100, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputInt(TCHAR_TO_UTF8(*Label.ToString()), &Value, Step, StepFast, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputInt2(FText Label, UPARAM(Ref)FIntPoint& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputInt2(FName Label, UPARAM(Ref)FIntPoint& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputInt2(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputInt3(FText Label, UPARAM(Ref)FIntVector& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputInt3(FName Label, UPARAM(Ref)FIntVector& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputInt3(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputInt4(FText Label, UPARAM(Ref)FIntVector4& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputInt4(FName Label, UPARAM(Ref)FIntVector4& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputInt4(TCHAR_TO_UTF8(*Label.ToString()), &Value.X, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputDouble(FText Label, UPARAM(Ref)double& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputDouble(FName Label, UPARAM(Ref)double& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputDouble(TCHAR_TO_UTF8(*Label.ToString()), &Value, Step, StepFast, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputVector2(FText Label, UPARAM(Ref)FVector2D& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputVector2(FName Label, UPARAM(Ref)FVector2D& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value.X, 2, Step > 0 ? &Step : nullptr, StepFast > 0 ? &StepFast : nullptr, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputVector3(FText Label, UPARAM(Ref)FVector& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputVector3(FName Label, UPARAM(Ref)FVector& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value.X, 3, Step > 0 ? &Step : nullptr, StepFast > 0 ? &StepFast : nullptr, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputVector4(FText Label, UPARAM(Ref)FVector4& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputVector4(FName Label, UPARAM(Ref)FVector4& Value, double Step = 0.f, double StepFast = 0.f, FString Format = TEXT("%.6f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputScalarN(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_Double, &Value.X, 4, Step > 0 ? &Step : nullptr, StepFast > 0 ? &StepFast : nullptr, TCHAR_TO_UTF8(*Format), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputByte(FText Label, UPARAM(Ref)uint8& Value, uint8 Step = 1, uint8 StepFast = 10, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputByte(FName Label, UPARAM(Ref)uint8& Value, uint8 Step = 1, uint8 StepFast = 10, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_U8, &Value, Step > 0 ? &Step : nullptr, StepFast > 0 ? &StepFast : nullptr, nullptr, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool InputInt64(FText Label, UPARAM(Ref)int64& Value, int64 Step = 1, int64 StepFast = 100, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
+	static bool InputInt64(FName Label, UPARAM(Ref)int64& Value, int64 Step = 1, int64 StepFast = 100, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::InputScalar(TCHAR_TO_UTF8(*Label.ToString()), ImGuiDataType_S64, &Value, Step > 0 ? &Step : nullptr, StepFast > 0 ? &StepFast : nullptr, nullptr, Flags);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Color Editor", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool LinearColorEdit(FText Label, UPARAM(Ref)FLinearColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
+	static bool LinearColorEdit(FName Label, UPARAM(Ref)FLinearColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::ColorEdit4(TCHAR_TO_UTF8(*Label.ToString()), &Value.R, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Color Editor", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool ColorEdit(FText Label, UPARAM(Ref)FColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
+	static bool ColorEdit(FName Label, UPARAM(Ref)FColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		FLinearColor V = Value;
@@ -1124,13 +1124,13 @@ public:
 		return Ret;
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Color Editor", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool LinearColorPicker(FText Label, UPARAM(Ref)FLinearColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
+	static bool LinearColorPicker(FName Label, UPARAM(Ref)FLinearColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::ColorPicker4(TCHAR_TO_UTF8(*Label.ToString()), &Value.R, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Color Editor", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool ColorPicker(FText Label, UPARAM(Ref)FColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
+	static bool ColorPicker(FName Label, UPARAM(Ref)FColor& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		FLinearColor V = Value;
@@ -1142,7 +1142,7 @@ public:
 		return Ret;
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Color Editor", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool ColorButton(FText Label, FLinearColor Color, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0, FVector2D Size = FVector2D::ZeroVector)
+	static bool ColorButton(FName Label, FLinearColor Color, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiColorEditFlags"))int32 Flags = 0, FVector2D Size = FVector2D::ZeroVector)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::ColorButton(TCHAR_TO_UTF8(*Label.ToString()), ImVec4{ Color }, Flags);
@@ -1155,19 +1155,19 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiScopeExit = TreePop, DisplayName = "Tree Node"), BlueprintInternalUseOnly)
-	static bool TreeNode(FText Label)
+	static bool TreeNode(FName Label)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::TreeNode(TCHAR_TO_UTF8(*Label.ToString()));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiScopeExit = TreePop, DisplayName = "Tree Node Ex"), BlueprintInternalUseOnly)
-	static bool TreeNodeEx(FText Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
+	static bool TreeNodeEx(FName Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::TreeNodeEx(TCHAR_TO_UTF8(*Label.ToString()), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiScopeExit = TreePop, DisplayName = "Tree Id Scope"), BlueprintInternalUseOnly)
-	static void TreePush(FText Label)
+	static void TreePush(FName Label)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::TreePush(TCHAR_TO_UTF8(*Label.ToString()));
@@ -1185,13 +1185,13 @@ public:
 		return ImGui::GetTreeNodeToLabelSpacing();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static bool CollapsingHeaderRegular(FText Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
+	static bool CollapsingHeaderRegular(FName Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::CollapsingHeader(TCHAR_TO_UTF8(*Label.ToString()), nullptr, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static bool CollapsingHeader(FText Label, UPARAM(Ref)bool& Visible, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
+	static bool CollapsingHeader(FName Label, UPARAM(Ref)bool& Visible, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::CollapsingHeader(TCHAR_TO_UTF8(*Label.ToString()), &Visible, Flags);
@@ -1204,14 +1204,14 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Selectables", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool Selectable(FText Label, bool bActive, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSelectableFlags"))int32 Flags = 0, FVector2D Size = FVector2D::ZeroVector)
+	static bool Selectable(FName Label, bool bActive, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiSelectableFlags"))int32 Flags = 0, FVector2D Size = FVector2D::ZeroVector)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::Selectable(TCHAR_TO_UTF8(*Label.ToString()), bActive, Flags, ImVec2{ Size });
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|List Boxes", meta = (ImGuiScopeExit = EndListBox, DisplayName = "List Box Scope"), BlueprintInternalUseOnly)
-	static bool BeginListBox(FText Label, const FVector2D& Size = FVector2D::ZeroVector)
+	static bool BeginListBox(FName Label, const FVector2D& Size = FVector2D::ZeroVector)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginListBox(TCHAR_TO_UTF8(*Label.ToString()), ImVec2{ Size });
@@ -1223,17 +1223,17 @@ public:
 		ImGui::EndListBox();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|List Boxes", meta = (ImGuiFunction, AdvancedDisplay = 3), BlueprintInternalUseOnly)
-	static bool ListBox(FText Label, UPARAM(Ref)int32& CurrentItem, const TArray<FText>& Items, int HeightInItems = -1)
+	static bool ListBox(FName Label, UPARAM(Ref)int32& CurrentItem, const TArray<FName>& Items, int HeightInItems = -1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		struct FUserData
 		{
-			const TArray<FText>& Items;
+			const TArray<FName>& Items;
 		};
 		FUserData UserData{ Items };
 		return ImGui::ListBox(TCHAR_TO_UTF8(*Label.ToString()), &CurrentItem, [](void* UserData, int32 Idx)->const char*
 		{
-			const TArray<FText>& Items = static_cast<FUserData*>(UserData)->Items;
+			const TArray<FName>& Items = static_cast<FUserData*>(UserData)->Items;
 			static UnrealImGui::FUTF8String String;
 			String = Items[Idx].ToString();
 			return *String;
@@ -1241,19 +1241,19 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Value", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void ValueBool(FText Prefix, bool Value)
+	static void ValueBool(FName Prefix, bool Value)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::Value(TCHAR_TO_UTF8(*Prefix.ToString()), Value);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Value", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void ValueInt(FText Prefix, int32 Value)
+	static void ValueInt(FName Prefix, int32 Value)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::Value(TCHAR_TO_UTF8(*Prefix.ToString()), Value);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Value", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void ValueFloat(FText Prefix, float Value, FString Format = TEXT(""))
+	static void ValueFloat(FName Prefix, float Value, FString Format = TEXT(""))
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::Value(TCHAR_TO_UTF8(*Prefix.ToString()), Value, Format.Len() > 0 ? TCHAR_TO_UTF8(*Format) : nullptr);
@@ -1284,7 +1284,7 @@ public:
 		ImGui::EndMainMenuBar();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Menus", meta=(ImGuiScopeExit = EndMenu, DisplayName = "Menu", AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool BeginMenu(FText Label, bool Enabled = true)
+	static bool BeginMenu(FName Label, bool Enabled = true)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginMenu(TCHAR_TO_UTF8(*Label.ToString()), Enabled);
@@ -1296,7 +1296,7 @@ public:
 		return ImGui::EndMenu();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Menus", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool MenuItem(FText Label, FString Shortcut, bool Selected, bool Enabled = true)
+	static bool MenuItem(FName Label, FString Shortcut, bool Selected, bool Enabled = true)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::MenuItem(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Shortcut), Selected, Enabled);
@@ -1315,10 +1315,10 @@ public:
 		return ImGui::EndTooltip();
 	}
 	UFUNCTION(Blueprintable, Category="ImGui|Tooltip", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetTooltip(FText Text)
+	static void SetTooltip(const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::SetTooltip("%s", TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::SetTooltip("%s", TCHAR_TO_UTF8(*Text));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Tooltip", meta=(ImGuiScopeExit = EndTooltip, DisplayName = "Tooltip"), BlueprintInternalUseOnly)
 	static bool BeginItemTooltip()
@@ -1327,26 +1327,26 @@ public:
 		return ImGui::BeginItemTooltip();
 	}
 	UFUNCTION(Blueprintable, Category="ImGui|Tooltip", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetItemTooltip(FText Text)
+	static void SetItemTooltip(const FString& Text)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::SetItemTooltip("%s", TCHAR_TO_UTF8(*Text.ToString()));
+		ImGui::SetItemTooltip("%s", TCHAR_TO_UTF8(*Text));
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta=(ImGuiScopeExit = EndPopup, DisplayName = "Popup", AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool BeginPopup(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
+	static bool BeginPopup(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginPopup(TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta=(ImGuiScopeExit = EndPopup, DisplayName = "Popup Modal", AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool BeginPopupModal(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
+	static bool BeginPopupModal(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginPopupModal(TCHAR_TO_UTF8(*Name.ToString()), nullptr, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta=(ImGuiScopeExit = EndPopup, DisplayName = "Popup Modal (Open State)", AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool BeginPopupModalOpenState(FText Name, bool& Open, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
+	static bool BeginPopupModalOpenState(FName Name, bool& Open, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginPopupModal(TCHAR_TO_UTF8(*Name.ToString()), &Open, Flags);
@@ -1358,13 +1358,13 @@ public:
 		ImGui::EndPopup();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiFunction, AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static void OpenPopup(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 0)
+	static void OpenPopup(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::OpenPopup(TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiFunction, AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static void OpenPopupOnItemClick(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
+	static void OpenPopupOnItemClick(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::OpenPopupOnItemClick(TCHAR_TO_UTF8(*Name.ToString()), Flags);
@@ -1376,32 +1376,32 @@ public:
 		ImGui::CloseCurrentPopup();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "PopupContextItem"), BlueprintInternalUseOnly)
-	static bool BeginPopupContextItem(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
+	static bool BeginPopupContextItem(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::BeginPopupContextItem(Name.IsEmpty() ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
+		return ImGui::BeginPopupContextItem(Name == NAME_None ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "PopupContextWindow"), BlueprintInternalUseOnly)
-	static bool BeginPopupContextWindow(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
+	static bool BeginPopupContextWindow(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::BeginPopupContextWindow(Name.IsEmpty() ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
+		return ImGui::BeginPopupContextWindow(Name == NAME_None ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "PopupContextVoid"), BlueprintInternalUseOnly)
-	static bool BeginPopupContextVoid(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
+	static bool BeginPopupContextVoid(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::BeginPopupContextVoid(Name.IsEmpty() ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
+		return ImGui::BeginPopupContextVoid(Name == NAME_None ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Popups", meta = (ImGuiFunction, AdvancedDisplay = 1), BlueprintInternalUseOnly)
-	static bool IsPopupOpen(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 0)
+	static bool IsPopupOpen(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::IsPopupOpen(TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Tables", meta = (ImGuiScopeExit = EndTable, AdvancedDisplay = 2, DisplayName = "Table"), BlueprintInternalUseOnly)
-	static bool BeginTable(FText Name, int32 Column, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTableFlags"))int32 Flags = 0, FVector2D OuterSize = FVector2D::ZeroVector, float InnerWidth = 0.0f)
+	static bool BeginTable(FName Name, int32 Column, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTableFlags"))int32 Flags = 0, FVector2D OuterSize = FVector2D::ZeroVector, float InnerWidth = 0.0f)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginTable(TCHAR_TO_UTF8(*Name.ToString()), Column, Flags, ImVec2{ OuterSize }, InnerWidth);
@@ -1431,7 +1431,7 @@ public:
 		return ImGui::TableSetColumnIndex(ColumnN);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Tables", meta = (ImGuiFunction, AdvancedDisplay = 1, Flag = 0, InitWidthOrWeight = 0, UserId = "(Id=0)"), BlueprintInternalUseOnly)
-	static void TableSetupColumn(FText Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTableColumnFlags"))int32 Flags, float InitWidthOrWeight, FImGuiId UserId)
+	static void TableSetupColumn(FName Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTableColumnFlags"))int32 Flags, float InitWidthOrWeight, FImGuiId UserId)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::TableSetupColumn(TCHAR_TO_UTF8(*Label.ToString()), Flags, InitWidthOrWeight, UserId);
@@ -1443,7 +1443,7 @@ public:
 		ImGui::TableSetupScrollFreeze(Columns, Rows);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Tables", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void TableHeader(FText Label)
+	static void TableHeader(FName Label)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::TableHeader(TCHAR_TO_UTF8(*Label.ToString()));
@@ -1479,10 +1479,10 @@ public:
 		return ImGui::TableGetRowIndex();
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Widgets|Tables", meta = (ImGuiFunction, AdvancedDisplay = 0), BlueprintInternalUseOnly)
-	static FText TableGetColumnName(int32 ColumnN = -1)
+	static FName TableGetColumnName(int32 ColumnN = -1)
 	{
 		if (!CheckImGuiContextThrowError()) { return {}; }
-		return FText::FromString(UTF8_TO_TCHAR(ImGui::TableGetColumnName(ColumnN)));
+		return UTF8_TO_TCHAR(ImGui::TableGetColumnName(ColumnN));
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Widgets|Tables", meta = (ImGuiFunction, AdvancedDisplay = 0), BlueprintInternalUseOnly)
 	static int32 TableGetColumnFlags(int32 ColumnN = -1)
@@ -1503,10 +1503,10 @@ public:
 		ImGui::TableSetBgColor(Target, IM_COL32(Color.R, Color.G, Color.B, Color.A), ColumnN);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Tables", meta = (ImGuiFunction, AdvancedDisplay = 0), BlueprintInternalUseOnly)
-	static void Columns(int32 Count = 1, FText Id = FText::GetEmpty(), bool Border = true)
+	static void Columns(int32 Count = 1, FName Id = NAME_None, bool Border = true)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::Columns(Count, Id.IsEmpty() ? nullptr : TCHAR_TO_UTF8(*Id.ToString()), Border);
+		ImGui::Columns(Count, Id == NAME_None ? nullptr : TCHAR_TO_UTF8(*Id.ToString()), Border);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Tables", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void NextColumn()
@@ -1552,7 +1552,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Tab Bars", meta = (ImGuiScopeExit = EndTabBar, AdvancedDisplay = 1, DisplayName = "Tab Bar"), BlueprintInternalUseOnly)
-	static bool BeginTabBar(FText Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabBarFlags"))int32 Flags = 0)
+	static bool BeginTabBar(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabBarFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginTabBar(TCHAR_TO_UTF8(*Name.ToString()), Flags);
@@ -1564,13 +1564,13 @@ public:
 		ImGui::EndTabBar();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Tab Bars", meta = (ImGuiScopeExit = EndTabItem, AdvancedDisplay = 1, DisplayName = "Tab Item"), BlueprintInternalUseOnly)
-	static bool BeginTabItem(FText Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabItemFlags"))int32 Flags = 0)
+	static bool BeginTabItem(FName Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabItemFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginTabItem(TCHAR_TO_UTF8(*Label.ToString()), nullptr, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Tab Bars", meta = (ImGuiScopeExit = EndTabItem, AdvancedDisplay = 1, DisplayName = "Tab Item (Open State)"), BlueprintInternalUseOnly)
-	static bool BeginTabItemOpenState(FText Label, bool& IsOpen, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabItemFlags"))int32 Flags = 0)
+	static bool BeginTabItemOpenState(FName Label, bool& IsOpen, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabItemFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginTabItem(TCHAR_TO_UTF8(*Label.ToString()), &IsOpen, Flags);
@@ -1582,13 +1582,13 @@ public:
 		ImGui::EndTabItem();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Tab Bars", meta = (ImGuiTrigger), BlueprintInternalUseOnly)
-	static bool TabItemButton(FText Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabItemFlags"))int32 Flags = 0)
+	static bool TabItemButton(FName Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTabItemFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::TabItemButton(TCHAR_TO_UTF8(*Label.ToString()), Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Tab Bars", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetTabItemClosed(FText Label)
+	static void SetTabItemClosed(FName Label)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetTabItemClosed(TCHAR_TO_UTF8(*Label.ToString()));
@@ -1774,10 +1774,10 @@ public:
 		return ImGui::GetKeyPressedAmount(UnrealImGui::ConvertKey(Key), RepeatDelay, Rate);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static FText GetKeyName(FKey Key)
+	static FName GetKeyName(FKey Key)
 	{
 		if (!CheckImGuiContextThrowError()) { return {}; }
-		return FText::FromString(UTF8_TO_TCHAR(ImGui::GetKeyName(UnrealImGui::ConvertKey(Key))));
+		return UTF8_TO_TCHAR(ImGui::GetKeyName(UnrealImGui::ConvertKey(Key)));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void SetNextFrameWantCaptureKeyboard(bool WantCaptureKeyboard)

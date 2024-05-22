@@ -39,6 +39,7 @@ public:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UUnrealImGuiViewportExtentBase>> Extents;
 
+	UFUNCTION(BlueprintCallable, Category = ImGui, meta = (DeterminesOutputType = ExtentType))
 	UUnrealImGuiViewportExtentBase* FindExtent(const TSubclassOf<UUnrealImGuiViewportExtentBase>& ExtentType) const;
 	template<typename T>
 	T* FindExtent() const

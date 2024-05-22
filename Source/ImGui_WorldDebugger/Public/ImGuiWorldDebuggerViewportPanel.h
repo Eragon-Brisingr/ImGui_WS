@@ -36,11 +36,12 @@ public:
 	void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) override;
 	void DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel) override;
 
-	UPROPERTY(Transient)
-	TSet<TWeakObjectPtr<AActor>> SelectedActors;
-	void SetSelectedEntities(const TSet<TWeakObjectPtr<AActor>>& NewSelectedActors);
+	UPROPERTY(Transient, BlueprintReadOnly, Category = Viewport)
+	TSet<TObjectPtr<AActor>> SelectedActors;
+	void SetSelectedEntities(const TSet<TObjectPtr<AActor>>& NewSelectedActors);
 	void ResetSelection() override { SelectedActors.Reset(); }
 
+	UFUNCTION(Blueprintable, Category = Viewport)
 	AActor* GetFirstSelectActor() const;
 	void FocusActor(AActor* Actor);
 	void FocusActors(const TArray<AActor*>& Actors);
@@ -64,7 +65,7 @@ private:
 	friend class FImGui_WorldDebuggerModule;
 	static void WhenEditorSelectionChanged(const TArray<AActor*>& SelectedActors);
 
-	DECLARE_DELEGATE_TwoParams(FEditorSelectActors, UWorld* World, const TSet<TWeakObjectPtr<AActor>>& SelectedActors);
+	DECLARE_DELEGATE_TwoParams(FEditorSelectActors, UWorld* World, const TSet<TObjectPtr<AActor>>& SelectedActors);
 	static FEditorSelectActors EditorSelectActors;
 #endif
 };

@@ -40,7 +40,7 @@ bool UImGuiWorldDebuggerViewportActorExtent::ShouldCreateExtent(UObject* Owner, 
 	return Viewport && Viewport->IsA<UImGuiWorldDebuggerViewportPanel>();
 }
 
-void UImGuiWorldDebuggerViewportActorExtent::SetSelectedEntities(const TSet<TWeakObjectPtr<AActor>>& NewSelectedActors)
+void UImGuiWorldDebuggerViewportActorExtent::SetSelectedEntities(const TSet<TObjectPtr<AActor>>& NewSelectedActors)
 {
 	SelectedActors = NewSelectedActors;
 #if WITH_EDITOR
@@ -449,9 +449,9 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner,
 				DrawActor(Actor, Drawer, false);
 			}
 		}
-		for (const TWeakObjectPtr<AActor>& ActorPtr : TSet<TWeakObjectPtr<AActor>>(SelectedActors))
+		for (AActor* Actor : TSet<TObjectPtr<AActor>>(SelectedActors))
 		{
-			if (AActor* Actor = ActorPtr.Get())
+			if (Actor)
 			{
 				if (const TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawableActors.Find(Actor))
 				{
@@ -466,13 +466,13 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner,
 	{
 		// 清理无效的Actor
 		{
-			TArray<TWeakObjectPtr<AActor>> SelectedWorldActorsArray = SelectedActors.Array();
-			SelectedWorldActorsArray.RemoveAll([](const TWeakObjectPtr<AActor>& E) { return E.IsValid() == false; });
-			SelectedActors = TSet<TWeakObjectPtr<AActor>>{ SelectedWorldActorsArray };
+			TArray<TObjectPtr<AActor>> SelectedWorldActorsArray = SelectedActors.Array();
+			SelectedWorldActorsArray.RemoveAll([](const AActor* E) { return E == nullptr; });
+			SelectedActors = TSet<TObjectPtr<AActor>>{ SelectedWorldActorsArray };
 		}
 
 		SelectedActors.Add(TopSelectedActor);
-		SelectedActors.Sort([&](const TWeakObjectPtr<AActor>& LHS, const TWeakObjectPtr<AActor>& RHS)
+		SelectedActors.Sort([&](const TObjectPtr<AActor>& LHS, const TObjectPtr<AActor>& RHS)
 		{
 			const FVector2D LHS_Location = FVector2D(LHS->GetActorLocation());
 			const FVector2D RHS_Location = FVector2D(RHS->GetActorLocation());
@@ -484,7 +484,7 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner,
 	// 编辑器下同步选择
 	if (ViewportContext.bIsSelectDragging == false)
 	{
-		static TSet<TWeakObjectPtr<AActor>> PreSelectedActors;
+		static TSet<TObjectPtr<AActor>> PreSelectedActors;
 		if (PreSelectedActors.Num() != SelectedActors.Num() || PreSelectedActors.Difference(SelectedActors).Num() > 0 || SelectedActors.Difference(PreSelectedActors).Num() > 0)
 		{
 			EditorSelectActors.ExecuteIfBound(World, SelectedActors);
@@ -499,9 +499,9 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UI
 	UnrealImGui::TObjectArray<AActor> FilteredSelectedActors;
 	{
 		FilteredSelectedActors.Reset(SelectedActors.Num());
-		for (const TWeakObjectPtr<AActor>& ActorPtr : SelectedActors)
+		for (AActor* Actor : SelectedActors)
 		{
-			if (AActor* Actor = ActorPtr.Get())
+			if (Actor)
 			{
 				FilteredSelectedActors.Add(Actor);
 			}
@@ -537,9 +537,9 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UI
 
 AActor* UImGuiWorldDebuggerViewportActorExtent::GetFirstSelectActor() const
 {
-	for (const TWeakObjectPtr<AActor>& ActorPtr : SelectedActors)
+	for (AActor* Actor : SelectedActors)
 	{
-		if (AActor* Actor = ActorPtr.Get())
+		if (Actor)
 		{
 			return Actor;
 		}

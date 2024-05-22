@@ -32,6 +32,16 @@ void FImGui_UnrealPanelsEditorModule::StartupModule()
 		{
 			RefreshGroupMenu();
 		});
+		if (UImGuiSettings* ImGuiSettings = GetMutableDefault<UImGuiSettings>())
+		{
+			OnPostEditChangePropertyHandle = ImGuiSettings->OnPostEditChangeProperty.AddLambda([this](UImGuiSettings*, FPropertyChangedEvent& Event)
+			{
+				if (Event.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UImGuiSettings, BlueprintPanels))
+				{
+					RefreshGroupMenu();
+				}
+			});
+		}
 	}
 }
 
@@ -42,6 +52,13 @@ void FImGui_UnrealPanelsEditorModule::ShutdownModule()
 	if (FLevelEditorModule* LevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>(TEXT("LevelEditor")))
 	{
 		LevelEditorModule->OnTabManagerChanged().Remove(OnTabManagerChangedHandle);
+	}
+	if (!IsEngineExitRequested())
+	{
+		if (UImGuiSettings* ImGuiSettings = GetMutableDefault<UImGuiSettings>())
+		{
+			ImGuiSettings->OnPostEditChangeProperty.Remove(OnPostEditChangePropertyHandle);
+		}
 	}
 }
 
@@ -135,6 +152,10 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 		{
 			continue;
 		}
+		if (BlueprintPanel.IsNull())
+		{
+			continue;
+		}
 		UpdateCategoryPanels(*BlueprintPanel.GetAssetName(), { FName{ TEXT("Unload") } }, reinterpret_cast<const TSoftClassPtr<UUnrealImGuiPanelBase>&>(BlueprintPanel));
 	}
 
@@ -182,9 +203,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 						}
 						return;
 					}
-
-					const auto& WorldSubsystems = ContextManager->GetWorldSubsystems();
-					UWorld* World = WorldSubsystems.IsValidIndex(ContextIndex) ? WorldSubsystems[ContextIndex]->GetWorld() : GWorld;
+					UWorld* World = ContextManager->GetContextIndexWorld(ContextIndex);
 					
 					UUnrealImGuiPanelBase* Panel = DrawPanel.Get();
 					if (Panel == nullptr || Panel->GetWorld() != World)
@@ -268,34 +287,35 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 			for (const auto& Panel : Panels.Panels)
 			{
 				FName RegistrationName = *FString::Printf(TEXT("%s_ImGuiPanel"), *Panel.Class.ToString());
-				if (!TabManager->HasTabSpawner(RegistrationName))
+				if (TabManager->HasTabSpawner(RegistrationName))
 				{
-					TabManager->RegisterTabSpawner(RegistrationName, FOnSpawnTab::CreateLambda([Class = Panel.Class](const FSpawnTabArgs&)
-					{
-						TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab);
-
-						UImGuiUnrealContextManager* Manager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
-						if (Manager == nullptr)
-						{
-							return SpawnedTab;
-						}
-						FImGuiUnrealEditorContext* EditorContext = Manager->GetImGuiEditorContext();
-						if (EditorContext == nullptr)
-						{
-							return SpawnedTab;
-						}
-						if (EditorContext->InvokeCreateDebugger)
-						{
-							EditorContext->InvokeCreateDebugger();
-						}
-						
-						SpawnedTab->SetContent(SNew(SImGuiPanelContent, Class));
-						return SpawnedTab;
-					}))
-					.SetDisplayName(FText::FromName(Panel.Name))
-					.SetGroup(Group)
-					.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("WidgetReflector.TabIcon")));
+					TabManager->UnregisterTabSpawner(RegistrationName);
 				}
+				TabManager->RegisterTabSpawner(RegistrationName, FOnSpawnTab::CreateLambda([Class = Panel.Class](const FSpawnTabArgs&)
+				{
+					TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab);
+
+					UImGuiUnrealContextManager* Manager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
+					if (Manager == nullptr)
+					{
+						return SpawnedTab;
+					}
+					FImGuiUnrealEditorContext* EditorContext = Manager->GetImGuiEditorContext();
+					if (EditorContext == nullptr)
+					{
+						return SpawnedTab;
+					}
+					if (EditorContext->InvokeCreateDebugger)
+					{
+						EditorContext->InvokeCreateDebugger();
+					}
+										
+					SpawnedTab->SetContent(SNew(SImGuiPanelContent, Class));
+					return SpawnedTab;
+				}))
+				.SetDisplayName(FText::FromName(Panel.Name))
+				.SetGroup(Group)
+				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("WidgetReflector.TabIcon")));
 			}
 		}
 	};

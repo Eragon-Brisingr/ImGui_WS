@@ -16,4 +16,5 @@ private:
     TSharedPtr<FWorkspaceItem> ImGuiPanelsGroup;
 
     FDelegateHandle OnTabManagerChangedHandle;
+    FDelegateHandle OnPostEditChangePropertyHandle;
 };

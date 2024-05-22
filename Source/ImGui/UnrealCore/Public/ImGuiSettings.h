@@ -78,4 +78,16 @@ public:
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.UnrealImGuiPanelBase"))
 	TArray<TSoftClassPtr<UObject>> BlueprintPanels;
+
+#if WITH_EDITOR
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPostEditChangeProperty, UImGuiSettings*, FPropertyChangedEvent&);
+	FOnPostEditChangeProperty OnPostEditChangeProperty;
+	
+	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override
+	{
+		Super::PostEditChangeProperty(PropertyChangedEvent);
+
+		OnPostEditChangeProperty.Broadcast(this, PropertyChangedEvent);
+	}
+#endif
 };
