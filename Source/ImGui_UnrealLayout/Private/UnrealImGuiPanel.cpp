@@ -16,10 +16,10 @@ UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
 
 void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
 {
-	UUnrealImGuiPanelBase* Default = GetDefaultObject();
-	if (Default->bIsOpen != bOpen)
+	UUnrealImGuiPanelBase* ConfigObject = GetConfigObject();
+	if (ConfigObject->bIsOpen != bOpen)
 	{
-		Default->bIsOpen = bOpen;
+		ConfigObject->bIsOpen = bOpen;
 		if (LocalOpenCounter == 0)
 		{
 			UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
@@ -37,7 +37,7 @@ void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
 
 void UUnrealImGuiPanelBase::LocalPanelOpened()
 {
-	if (LocalOpenCounter == 0 && GetDefaultObject()->bIsOpen == false)
+	if (LocalOpenCounter == 0 && GetConfigObject()->bIsOpen == false)
 	{
 		UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
 		WhenOpen(Builder->GetOuter(), Builder);
@@ -48,11 +48,23 @@ void UUnrealImGuiPanelBase::LocalPanelOpened()
 void UUnrealImGuiPanelBase::LocalPanelClosed()
 {
 	LocalOpenCounter -= 1;
-	if (LocalOpenCounter == 0 && GetDefaultObject()->bIsOpen == false)
+	if (LocalOpenCounter == 0 && GetConfigObject()->bIsOpen == false)
 	{
 		UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
 		WhenClose(Builder->GetOuter(), Builder);
 	}
+}
+
+UUnrealImGuiPanelBase* UUnrealImGuiPanelBase::GetConfigObject() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (World->IsGameWorld())
+		{
+			return GetClass()->GetDefaultObject<UUnrealImGuiPanelBase>();
+		}
+	}
+	return const_cast<UUnrealImGuiPanelBase*>(this);
 }
 
 UUnrealImGuiPanelBase::FScriptExecutionGuard::FScriptExecutionGuard(const UUnrealImGuiPanelBase* Panel)
@@ -69,24 +81,24 @@ UUnrealImGuiPanelBase::FScriptExecutionGuard::FScriptExecutionGuard(const UUnrea
 
 void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
-	UUnrealImGuiPanelBase* Default = GetDefaultObject();
-	if (Default->bIsOpen == false)
+	UUnrealImGuiPanelBase* ConfigObject = GetConfigObject();
+	if (ConfigObject->bIsOpen == false)
 	{
 		return;
 	}
 	
-	bool IsOpen = Default->bIsOpen;
+	bool IsOpen = ConfigObject->bIsOpen;
 	const FString WindowName = GetLayoutPanelName(Layout->GetName());
 	if (ImGui::Begin(TCHAR_TO_UTF8(*WindowName), &IsOpen, ImGuiWindowFlags))
 	{
 		Draw(Owner, Builder, DeltaSeconds);
 	}
 	ImGui::End();
-	if (Default->bIsOpen != IsOpen)
+	if (ConfigObject->bIsOpen != IsOpen)
 	{
-		GetDefaultObject()->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
+		ConfigObject->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
 		SetOpenState(IsOpen);
-		GetDefaultObject()->SaveConfig();
+		ConfigObject->SaveConfig();
 	}
 }
 

@@ -61,14 +61,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	TMap<FName, FImGuiDefaultDockLayout> DefaultDockSpace;
 
-	bool IsOpen() const { return GetDefaultObject()->bIsOpen; }
+	bool IsOpen() const { return GetConfigObject()->bIsOpen; }
 	void SetOpenState(bool bOpen);
 	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s_%s"), *Title.ToString(), *GetClass()->GetName(), *LayoutName); }
 
 	void LocalPanelOpened();
 	void LocalPanelClosed();
 	
-	UUnrealImGuiPanelBase* GetDefaultObject() const { return GetClass()->GetDefaultObject<UUnrealImGuiPanelBase>(); }
+	UUnrealImGuiPanelBase* GetConfigObject() const;
+
 private:
 	friend class UUnrealImGuiPanelBuilder;
 	friend class UUnrealImGuiLayoutBase;
