@@ -44,7 +44,7 @@ void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& Actio
 	}
 
 	const static FName MD_ImGuiScopeExit = TEXT("ImGuiScopeExit");
-	for (TFieldIterator<UFunction> It{ UImGui::StaticClass() }; It; ++It)
+	for (TFieldIterator<UFunction> It{ UImGuiLibrary::StaticClass() }; It; ++It)
 	{
 		const UFunction* Function = *It;
 		const FString ScopeExitFuncName = Function->GetMetaData(MD_ImGuiScopeExit);
@@ -54,7 +54,7 @@ void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& Actio
 		}
 		ensure(Function->HasMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
 
-		const UFunction* ExitFunction = UImGui::StaticClass()->FindFunctionByName(*ScopeExitFuncName);
+		const UFunction* ExitFunction = UImGuiLibrary::StaticClass()->FindFunctionByName(*ScopeExitFuncName);
 		if (!ensure(ExitFunction))
 		{
 			continue;

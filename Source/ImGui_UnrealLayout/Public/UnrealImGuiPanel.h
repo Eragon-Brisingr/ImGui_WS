@@ -61,31 +61,38 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	TMap<FName, FImGuiDefaultDockLayout> DefaultDockSpace;
 
-	bool IsOpen() const { return bIsOpen; }
+	bool IsOpen() const { return GetDefaultObject()->bIsOpen; }
 	void SetOpenState(bool bOpen);
 	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s_%s"), *Title.ToString(), *GetClass()->GetName(), *LayoutName); }
 
 	void LocalPanelOpened();
 	void LocalPanelClosed();
+	
+	UUnrealImGuiPanelBase* GetDefaultObject() const { return GetClass()->GetDefaultObject<UUnrealImGuiPanelBase>(); }
 private:
 	friend class UUnrealImGuiPanelBuilder;
 	friend class UUnrealImGuiLayoutBase;
 
-	UPROPERTY(Transient)
-	uint8 bIsOpen : 1;
-	uint8 LocalOpenCounter : 7;
+	uint8 bIsOpen : 1 { false };
+	uint8 LocalOpenCounter : 7 { 0 };
 	UPROPERTY(Config)
 	TMap<FName, bool> PanelOpenState;
 public:
-	virtual bool ShouldCreatePanel(UObject* Owner) const { FEditorScriptExecutionGuard EditorScriptExecutionGuard; return ReceiveShouldCreatePanel(Owner); }
-
-	virtual void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveRegister(Owner, Builder); }
-	virtual void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveUnregister(Owner, Builder); }
-
-	virtual void WhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveWhenOpen(Owner, Builder); }
-	virtual void WhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveWhenClose(Owner, Builder); }
+	struct FScriptExecutionGuard
+	{
+		FScriptExecutionGuard(const UUnrealImGuiPanelBase* Panel);
+		TOptional<FEditorScriptExecutionGuard> EditorScriptExecutionGuard;
+	};
 	
-	virtual void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) { FEditorScriptExecutionGuard EditorScriptExecutionGuard; ReveiveDraw(Owner, Builder, DeltaSeconds); }
+	virtual bool ShouldCreatePanel(UObject* Owner) const { FScriptExecutionGuard ScriptExecutionGuard{ this }; return ReceiveShouldCreatePanel(Owner); }
+
+	virtual void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveRegister(Owner, Builder); }
+	virtual void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveUnregister(Owner, Builder); }
+
+	virtual void WhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveWhenOpen(Owner, Builder); }
+	virtual void WhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveWhenClose(Owner, Builder); }
+	
+	virtual void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveDraw(Owner, Builder, DeltaSeconds); }
 	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
 protected:
 	UFUNCTION(BlueprintNativeEvent)

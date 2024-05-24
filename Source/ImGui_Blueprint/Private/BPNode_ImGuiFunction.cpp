@@ -25,7 +25,7 @@ void UBPNode_ImGuiFunction::GetMenuActions(FBlueprintActionDatabaseRegistrar& Ac
 	}
 
 	const static FName MD_ImGuiFunction = TEXT("ImGuiFunction");
-	for (TFieldIterator<UFunction> It{ UImGui::StaticClass() }; It; ++It)
+	for (TFieldIterator<UFunction> It{ UImGuiLibrary::StaticClass() }; It; ++It)
 	{
 		const UFunction* Function = *It;
 		if (Function->HasMetaData(MD_ImGuiFunction) == false)

@@ -31,13 +31,13 @@ void UUnrealImGuiLayoutBase::ApplyPanelDockSettings(const UUnrealImGuiPanelBuild
 		{
 			const FString PanelName = Panel->GetLayoutPanelName(GetName());
 			ImGui::DockBuilderDockWindow(TCHAR_TO_UTF8(*PanelName), *MappedDockId);
-			
-			Panel->PanelOpenState.Add(GetClass()->GetFName(), Panel->bIsOpen);
+
+			Panel->GetDefaultObject()->PanelOpenState.Add(GetClass()->GetFName(), Panel->IsOpen());
 			Panel->SetOpenState(DefaultPanelState.bOpen);
 		}
 		else
 		{
-			Panel->PanelOpenState.Add(GetClass()->GetFName(), Panel->bIsOpen);
+			Panel->GetDefaultObject()->PanelOpenState.Add(GetClass()->GetFName(), Panel->IsOpen());
 			Panel->SetOpenState(DefaultPanelState.bOpen);
 		}
 	}

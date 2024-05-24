@@ -6,7 +6,7 @@
 #include "imgui_internal.h"
 #include "Blueprint/BlueprintExceptionInfo.h"
 
-bool UImGui::CheckImGuiContextThrowError()
+bool UImGuiLibrary::CheckImGuiContextThrowError()
 {
 	if (ensure(ImGui::GetCurrentContext()))
 	{

@@ -130,13 +130,13 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		RemoveNotLeafClass(PanelClasses);
 		for (const UClass* Class : PanelClasses)
 		{
-			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
+			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists))
 			{
 				continue;
 			}
 
 #if WITH_EDITOR
-			if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
+			if (Class->GetName().StartsWith(TEXT("SKEL_")))
 			{
 				continue;
 			}
@@ -213,7 +213,7 @@ void UUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 	}
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
-		if (Panel->bIsOpen)
+		if (Panel->IsOpen())
 		{
 			Panel->SetOpenState(false);
 		}
@@ -247,6 +247,10 @@ void UUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 	Layout->CreateDockSpace(Owner, *this);
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
+		if (Panel == nullptr)
+		{
+			continue;
+		}
 		Panel->DrawWindow(Layout, Owner, this, DeltaSeconds);
 	}
 }
@@ -271,7 +275,7 @@ void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 		{
 			for (UUnrealImGuiPanelBase* Panel : Panels.Panels)
 			{
-				bool IsOpen = Panel->bIsOpen;
+				bool IsOpen = Panel->IsOpen();
 				if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
 				{
 					Panel->SetOpenState(IsOpen);
@@ -319,7 +323,7 @@ UUnrealImGuiPanelBase* UUnrealImGuiPanelBuilder::FindPanel(const TSubclassOf<UUn
 	{
 		if (Panel->IsA(PanelType))
 		{
-			return Panel->bIsOpen ? Panel : nullptr;
+			return Panel->IsOpen() ? Panel : nullptr;
 		}
 	}
 	return nullptr;
