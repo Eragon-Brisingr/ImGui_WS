@@ -55,16 +55,22 @@ void UUnrealImGuiPanelBase::LocalPanelClosed()
 	}
 }
 
-UUnrealImGuiPanelBase* UUnrealImGuiPanelBase::GetConfigObject() const
+void UUnrealImGuiPanelBase::SaveConfig()
+{
+	Super::SaveConfig(CPF_Config, nullptr, GConfig, false);
+}
+
+void UUnrealImGuiPanelBase::InitialConfigObject()
 {
 	if (UWorld* World = GetWorld())
 	{
 		if (World->IsGameWorld())
 		{
-			return GetClass()->GetDefaultObject<UUnrealImGuiPanelBase>();
+			ConfigObjectPrivate = GetClass()->GetDefaultObject<UUnrealImGuiPanelBase>();
+			return;
 		}
 	}
-	return const_cast<UUnrealImGuiPanelBase*>(this);
+	ConfigObjectPrivate = this;
 }
 
 UUnrealImGuiPanelBase::FScriptExecutionGuard::FScriptExecutionGuard(const UUnrealImGuiPanelBase* Panel)

@@ -59,6 +59,7 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 
 	static auto RegisterPanel = [](UObject* Owner, const UUnrealImGuiLayoutBase* Layout, UUnrealImGuiPanelBase* Panel, UUnrealImGuiPanelBuilder* Builder)
 	{
+		Panel->InitialConfigObject();
 		if (const bool* IsOpenPtr = Panel->GetConfigObject()->PanelOpenState.Find(Layout->GetClass()->GetFName()))
 		{
 			Panel->SetOpenState(*IsOpenPtr);

@@ -68,9 +68,11 @@ public:
 	void LocalPanelOpened();
 	void LocalPanelClosed();
 	
-	UUnrealImGuiPanelBase* GetConfigObject() const;
-
+	void SaveConfig();
 private:
+	void InitialConfigObject();
+	UUnrealImGuiPanelBase* GetConfigObject() const { return ConfigObjectPrivate; }
+
 	friend class UUnrealImGuiPanelBuilder;
 	friend class UUnrealImGuiLayoutBase;
 
@@ -78,6 +80,9 @@ private:
 	uint8 LocalOpenCounter : 7 { 0 };
 	UPROPERTY(Config)
 	TMap<FName, bool> PanelOpenState;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UUnrealImGuiPanelBase> ConfigObjectPrivate;
 public:
 	struct FScriptExecutionGuard
 	{
