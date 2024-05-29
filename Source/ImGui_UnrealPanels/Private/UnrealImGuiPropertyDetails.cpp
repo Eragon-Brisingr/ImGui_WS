@@ -193,9 +193,12 @@ namespace UnrealImGui
 
 	TSharedPtr<IUnrealStructCustomization> UnrealPropertyCustomizeFactory::FindPropertyCustomizer(const UStruct* Struct)
 	{
-		if (TSharedRef<IUnrealStructCustomization>* Customization = StructCustomizeMap.Find(Struct))
+		for (const UStruct* TestStruct = Struct; TestStruct; TestStruct = TestStruct->GetSuperStruct())
 		{
-			return *Customization;
+			if (TSharedRef<IUnrealStructCustomization>* Customization = StructCustomizeMap.Find(TestStruct))
+			{
+				return *Customization;
+			}
 		}
 		return nullptr;
 	}
@@ -576,6 +579,35 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 	}
 }
 
+void UnrealImGui::DrawStructCustomizationDetails(const TSharedPtr<IUnrealStructCustomization>& Customization, const UScriptStruct* TopStruct, const FPtrArray& Instances, int32 Offset)
+{
+	bool IsShowChildren = false;
+
+	FStructProperty DummyStructProperty{ EC_InternalUseOnlyConstructor, FStructProperty::StaticClass() };
+	DummyStructProperty.Owner = TopStruct;
+	DummyStructProperty.NamePrivate = TopStruct->GetFName();
+	DummyStructProperty.FlagsPrivate = RF_NoFlags;
+	DummyStructProperty.SetPropertyFlags(CPF_Edit);
+	DummyStructProperty.ArrayDim = 1;
+	DummyStructProperty.Struct = const_cast<UScriptStruct*>(TopStruct);
+
+	const bool IsIdentical = IsAllPropertiesIdentical(&DummyStructProperty, Instances, Offset);
+
+	ImGui::TableNextRow();
+	ImGui::TableSetColumnIndex(0);
+	ImGui::AlignTextToFramePadding();
+	Customization->CreateNameWidget(&DummyStructProperty, Instances, Offset, IsIdentical, IsShowChildren);
+	ImGui::TableSetColumnIndex(1);
+	ImGui::SetNextItemWidth(InnerValue::ValueRightBaseWidth - Customization->ValueAdditiveRightWidth);
+	Customization->CreateValueWidget(&DummyStructProperty, Instances, Offset, IsIdentical);
+
+	if (IsShowChildren)
+	{
+		Customization->CreateChildrenWidget(&DummyStructProperty, Instances, Offset, IsIdentical);
+		ImGui::TreePop();
+	}
+}
+
 UnrealImGui::FDetailTableContextGuard::FDetailTableContextGuard(const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged)
 	: GFilterGuard{ InnerValue::GFilter, Filter }
 	, GPostPropertyValueChangedGuard{ GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged }
@@ -593,7 +625,21 @@ void UnrealImGui::DrawDetailTable(const char* str_id, const UStruct* TopStruct, 
 	{
 		FDetailTableContextGuard DetailTableContextGuard{ Filter, PostPropertyValueChanged };
 
-		DrawDefaultStructDetails(TopStruct, Instances, 0);
+		if (const UScriptStruct* ScriptStruct = Cast<UScriptStruct>(TopStruct))
+		{
+			if (const TSharedPtr<IUnrealStructCustomization> Customizer = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ScriptStruct))
+			{
+				DrawStructCustomizationDetails(Customizer, ScriptStruct, Instances, 0);
+			}
+			else
+			{
+				DrawDefaultStructDetails(TopStruct, Instances, 0);
+			}
+		}
+		else
+		{
+			DrawDefaultStructDetails(TopStruct, Instances, 0);
+		}
 
 		ImGui::EndTable();
 	}

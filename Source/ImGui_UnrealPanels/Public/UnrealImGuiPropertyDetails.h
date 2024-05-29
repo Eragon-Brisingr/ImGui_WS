@@ -243,6 +243,8 @@ namespace UnrealImGui
 
 	IMGUI_UNREALPANELS_API void DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 	IMGUI_UNREALPANELS_API void DrawDefaultClassDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);
+	
+	IMGUI_UNREALPANELS_API void DrawStructCustomizationDetails(const TSharedPtr<IUnrealStructCustomization>& Customization, const UScriptStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 
 	struct IMGUI_UNREALPANELS_API FDetailTableContextGuard
 	{
