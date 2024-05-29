@@ -17,6 +17,9 @@
 
 #define LOCTEXT_NAMESPACE "ImGui_UnrealPanelsEditor"
 
+FImGui_UnrealPanelsEditorModule::FOnPrePanelDraw FImGui_UnrealPanelsEditorModule::OnPrePanelDraw;
+FImGui_UnrealPanelsEditorModule::FOnPostPanelDraw FImGui_UnrealPanelsEditorModule::OnPostPanelDraw;
+
 void FImGui_UnrealPanelsEditorModule::StartupModule()
 {
 	ImGuiPanelsGroup = WorkspaceMenu::GetMenuStructure().GetToolsCategory()->AddGroup(
@@ -246,7 +249,9 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					}
 					if (ImGui::FWindow Window{ "Panel", nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
 					{
+						OnPrePanelDraw.Broadcast(World);
 						Panel->Draw(World, Builder.Get(), DeltaSeconds);
+						OnPostPanelDraw.Broadcast(World);
 					}
 				});
 			ImGuiPanel->GetContext()->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
