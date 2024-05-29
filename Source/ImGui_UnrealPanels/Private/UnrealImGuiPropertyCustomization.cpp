@@ -144,7 +144,7 @@ namespace UnrealImGui
 		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const FBoolProperty* BoolProperty = CastFieldChecked<FBoolProperty>(Property);
 		bool FirstValue = BoolProperty->GetPropertyValue(FirstValuePtr);
-		if (ImGui::Checkbox(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), &FirstValue))
+		if (ImGui::Checkbox(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), &FirstValue))
 		{
 			for (uint8* Container : Containers)
 			{
@@ -158,7 +158,7 @@ namespace UnrealImGui
 	{
 		const FNumericProperty* NumericProperty = CastFieldChecked<FNumericProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
-		const FString PropertyLabelName = GetPropertyDefaultLabel(Property, IsIdentical);
+		const FString PropertyLabelName = GetPropertyValueLabel(Property, IsIdentical);
 		if (const UEnum* EnumDef = NumericProperty->GetIntPropertyEnum())
 		{
 			const int64 EnumValue = NumericProperty->GetSignedIntPropertyValue(FirstValuePtr);
@@ -180,6 +180,7 @@ namespace UnrealImGui
 							NumericProperty->SetIntPropertyValue(Container + Offset, CurrentEnumValue);
 						}
 						NotifyPostPropertyValueChanged(Property);
+						ImGui::CloseCurrentPopup();
 					}
 					if (IsSelected)
 					{
@@ -288,9 +289,10 @@ namespace UnrealImGui
 			const UObject* FirstValue = ObjectProperty->GetObjectPropertyValue(Containers[0] + Offset);
 
 			static FUTF8String FilterString;
-			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
-			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
+			ImGui::SetNextWindowSize({ -1, 400 });
+			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
 			{
+				ImGui::SetNextItemWidth(-1);
 				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
@@ -312,15 +314,16 @@ namespace UnrealImGui
 					const FString Filter = FilterString.ToString();
 					for (UClass* Class : AllClasses)
 					{
-						if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
+						if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists))
 						{
 							continue;
 						}
-						// Skip SKEL and REINST classes.
-						if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
+#if WITH_EDITOR
+						if (Class->GetName().StartsWith(TEXT("SKEL_")))
 						{
 							continue;
 						}
+#endif
 						if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
 						{
 							continue;
@@ -335,7 +338,7 @@ namespace UnrealImGui
 						return LHS->GetFName().FastLess(RHS->GetFName());
 					});
 				}
-				if (ImGui::BeginListBox("##Content"))
+				if (ImGui::BeginListBox("##Content", { -1, -1 }))
 				{
 					const UClass* FirstValueClass = FirstValue ? FirstValue->GetClass() : nullptr;
 					ImGuiListClipper ListClipper{};
@@ -357,6 +360,7 @@ namespace UnrealImGui
 										ObjectProperty->SetObjectPropertyValue(Container + Offset, NewObject<UObject>(Outer, Class));
 									}
 									NotifyPostPropertyValueChanged(Property);
+									ImGui::CloseCurrentPopup();
 								}
 								if (IsSelected)
 								{
@@ -406,9 +410,10 @@ namespace UnrealImGui
 				ObjectName = MultiValueName;
 			}
 			static FUTF8String FilterString;
-			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
-			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName.ToString())))
+			ImGui::SetNextWindowSize({ -1, 400 });
+			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName.ToString())))
 			{
+				ImGui::SetNextItemWidth(-1);
 				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
@@ -441,7 +446,7 @@ namespace UnrealImGui
 						return LHS.AssetName.FastLess(RHS.AssetName);
 					});
 				}
-				if (ImGui::BeginListBox("##Content"))
+				if (ImGui::BeginListBox("##Content", { -1, -1 }))
 				{
 					ImGuiListClipper ListClipper{};
 					ListClipper.Begin(CachedAssetList.Num());
@@ -458,6 +463,7 @@ namespace UnrealImGui
 									ObjectProperty->SetObjectPropertyValue(Container + Offset, Asset.GetAsset());
 								}
 								NotifyPostPropertyValueChanged(Property);
+								ImGui::CloseCurrentPopup();
 							}
 							if (IsSelected)
 							{
@@ -497,8 +503,6 @@ namespace UnrealImGui
 	{
 		const FObjectPropertyBase* ObjectProperty = CastFieldChecked<FObjectPropertyBase>(Property);
 		check(ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference));
-
-		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);
 
 		FObjectArray Instances;
 		for (const uint8* Container : Containers)
@@ -549,19 +553,20 @@ namespace UnrealImGui
 		if (ObjectClass->IsChildOf(AActor::StaticClass()))
 		{
 			static FUTF8String FilterString;
-			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
-			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
+			ImGui::SetNextWindowSize({ -1, 400 });
+			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
 			{
+				ImGui::SetNextItemWidth(-1);
 				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
-				if (ImGui::Selectable("Clear"))
 				{
 					for (uint8* Container : Containers)
 					{
 						SoftObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 					}
 					NotifyPostPropertyValueChanged(Property);
+					ImGui::CloseCurrentPopup();
 				}
 
 				if (CachedActorClass != SoftObjectProperty->PropertyClass || IsFiltered)
@@ -584,7 +589,7 @@ namespace UnrealImGui
 						CachedActorList.Add(Actor);
 					}
 				}
-				if (ImGui::BeginListBox("##Content"))
+				if (ImGui::BeginListBox("##Content", { -1, -1 }))
 				{
 					ImGuiListClipper ListClipper{};
 					ListClipper.Begin(CachedActorList.Num());
@@ -603,6 +608,7 @@ namespace UnrealImGui
 										SoftObjectProperty->SetPropertyValue(Container + Offset, NewValue);
 									}
 									NotifyPostPropertyValueChanged(Property);
+									ImGui::CloseCurrentPopup();
 								}
 								if (IsSelected)
 								{
@@ -638,9 +644,10 @@ namespace UnrealImGui
 		else
 		{
 			static FUTF8String FilterString;
-			ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
-			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
+			ImGui::SetNextWindowSize({ -1, 400 });
+			if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*ObjectName)))
 			{
+				ImGui::SetNextItemWidth(-1);
 				ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 				const bool IsFiltered = ImGui::IsItemEdited();
 				ImGui::Separator();
@@ -673,7 +680,7 @@ namespace UnrealImGui
 						return LHS.AssetName.FastLess(RHS.AssetName);
 					});
 				}
-				if (ImGui::BeginListBox("##Content"))
+				if (ImGui::BeginListBox("##Content", { -1, -1 }))
 				{
 					ImGuiListClipper ListClipper{};
 					ListClipper.Begin(CachedAssetList.Num());
@@ -691,6 +698,7 @@ namespace UnrealImGui
 									SoftObjectProperty->SetPropertyValue(Container + Offset, NewValue);
 								}
 								NotifyPostPropertyValueChanged(Property);
+								ImGui::CloseCurrentPopup();
 							}
 							if (IsSelected)
 							{
@@ -732,9 +740,10 @@ namespace UnrealImGui
 		const UObject* FirstValue = ClassProperty->GetPropertyValue(Containers[0] + Offset);
 
 		static FUTF8String FilterString;
-		ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
-		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
+		ImGui::SetNextWindowSize({ -1, 400 });
+		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue ? *FirstValue->GetName() : TEXT("Null"))))
 		{
+			ImGui::SetNextItemWidth(-1);
 			ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 			const bool IsFiltered = ImGui::IsItemEdited();
 			ImGui::Separator();
@@ -757,15 +766,16 @@ namespace UnrealImGui
 				const FString Filter = FilterString.ToString();
 				for (UClass* Class : AllClasses)
 				{
-					if (Class->HasAnyClassFlags(CLASS_Deprecated))
+					if (Class->HasAnyClassFlags(CLASS_Deprecated | CLASS_NewerVersionExists))
 					{
 						continue;
 					}
-					// Skip SKEL and REINST classes.
-					if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
+#if WITH_EDITOR
+					if (Class->GetName().StartsWith(TEXT("SKEL_")))
 					{
 						continue;
 					}
+#endif
 					if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
 					{
 						continue;
@@ -777,7 +787,7 @@ namespace UnrealImGui
 					return LHS->GetFName().FastLess(RHS->GetFName());
 				});
 			}
-			if (ImGui::BeginListBox("##Content"))
+			if (ImGui::BeginListBox("##Content", { -1, -1 }))
 			{
 				ImGuiListClipper ListClipper{};
 				ListClipper.Begin(CachedClassList.Num());
@@ -795,6 +805,7 @@ namespace UnrealImGui
 									ClassProperty->SetPropertyValue(Container + Offset, Class);
 								}
 								NotifyPostPropertyValueChanged(Property);
+								ImGui::CloseCurrentPopup();
 							}
 							if (IsSelected)
 							{
@@ -836,9 +847,10 @@ namespace UnrealImGui
 		const FSoftObjectPtr FirstValue = SoftClassProperty->GetPropertyValue(Containers[0] + Offset);
 	
 		static FUTF8String FilterString;
-		ImGui::SetNextWindowSizeConstraints({ -1.f, -1.f }, { -1.f, -1.f });
-		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue.IsNull() ? TEXT("Null") : *FirstValue.GetUniqueID().GetAssetName())))
+		ImGui::SetNextWindowSize({ -1, 400 });
+		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(FirstValue.IsNull() ? TEXT("Null") : *FirstValue.GetUniqueID().GetAssetName())))
 		{
+			ImGui::SetNextItemWidth(-1);
 			ImGui::InputTextWithHint("##Filter", "Filter", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 			const bool IsFiltered = ImGui::IsItemEdited();
 			ImGui::Separator();
@@ -861,15 +873,16 @@ namespace UnrealImGui
 				const FString Filter = FilterString.ToString();
 				for (UClass* Class : AllClasses)
 				{
-					if (Class->HasAnyClassFlags(CLASS_Deprecated))
+					if (Class->HasAnyClassFlags(CLASS_Deprecated | CLASS_NewerVersionExists))
 					{
 						continue;
 					}
-					// Skip SKEL and REINST classes.
-					if (Class->GetName().StartsWith(TEXT("SKEL_")) || Class->GetName().StartsWith(TEXT("REINST_")))
+#if WITH_EDITOR
+					if (Class->GetName().StartsWith(TEXT("SKEL_")))
 					{
 						continue;
 					}
+#endif
 					if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
 					{
 						continue;
@@ -881,7 +894,7 @@ namespace UnrealImGui
 					return LHS->GetFName().FastLess(RHS->GetFName());
 				});
 			}
-			if (ImGui::BeginListBox("##Content"))
+			if (ImGui::BeginListBox("##Content", { -1, -1 }))
 			{
 				ImGuiListClipper ListClipper{};
 				ListClipper.Begin(CachedClassList.Num());
@@ -900,6 +913,7 @@ namespace UnrealImGui
 									SoftClassProperty->SetPropertyValue(Container + Offset, NewValue);
 								}
 								NotifyPostPropertyValueChanged(Property);
+								ImGui::CloseCurrentPopup();
 							}
 							if (IsSelected)
 							{
@@ -943,7 +957,7 @@ namespace UnrealImGui
 		const auto StringPoint = FTCHARToUTF8(*FirstValue);
 		char Buff[512];
 		FMemory::Memcpy(&Buff, StringPoint.Get(), StringPoint.Length() + 1);
-		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), Buff, sizeof(Buff));
+		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), Buff, sizeof(Buff));
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
 			const FString ChangedValue = UTF8_TO_TCHAR(Buff);
@@ -959,7 +973,7 @@ namespace UnrealImGui
 	{
 		const FNameProperty* NameProperty = CastFieldChecked<FNameProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
-		const FString PropertyLabelName = GetPropertyDefaultLabel(Property, IsIdentical);
+		const FString PropertyLabelName = GetPropertyValueLabel(Property, IsIdentical);
 		const FName FirstValue = NameProperty->GetPropertyValue(FirstValuePtr);
 		const auto StringPoint = FTCHARToUTF8(*FirstValue.ToString());
 		char Buff[512];
@@ -984,7 +998,7 @@ namespace UnrealImGui
 		const auto StringPoint = FTCHARToUTF8(*FirstValue.ToString());
 		char Buff[512];
 		FMemory::Memcpy(&Buff, StringPoint.Get(), StringPoint.Length() + 1);
-		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), Buff, sizeof(Buff));
+		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), Buff, sizeof(Buff));
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
 			const FText ChangedValue = FText::FromString(UTF8_TO_TCHAR(Buff));
@@ -1006,7 +1020,7 @@ namespace UnrealImGui
 
 		FString EnumName = EnumDef->GetNameByValue(EnumValue).ToString();
 		EnumName.Split(TEXT("::"), nullptr, &EnumName);
-		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyDefaultLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*EnumName), ImGuiComboFlags_PopupAlignLeft))
+		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*EnumName), ImGuiComboFlags_PopupAlignLeft))
 		{
 			for (int32 Idx = 0; Idx < EnumDef->NumEnums() - 1; ++Idx)
 			{
@@ -1021,6 +1035,7 @@ namespace UnrealImGui
 						UnderlyingProperty->SetIntPropertyValue(Container + Offset, CurrentEnumValue);
 					}
 					NotifyPostPropertyValueChanged(Property);
+					ImGui::CloseCurrentPopup();
 				}
 				if (IsSelected)
 				{
@@ -1099,7 +1114,7 @@ namespace UnrealImGui
 			const int32 ArrayCount = FScriptArrayHelper(ArrayProperty, FirstValuePtr).Num();
 			ImGui::Text("%d Elements", ArrayCount);
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("+")))))
+			if (ImGui::Button("+"))
 			{
 				for (const uint8* Container : Containers)
 				{
@@ -1108,7 +1123,7 @@ namespace UnrealImGui
 				NotifyPostPropertyValueChanged(Property);
 			}
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
+			if (ImGui::Button("x"))
 			{
 				for (const uint8* Container : Containers)
 				{
@@ -1121,7 +1136,7 @@ namespace UnrealImGui
 		{
 			ImGui::Text("Different Elements *");
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
+			if (ImGui::Button("x"))
 			{
 				for (const uint8* Container : Containers)
 				{
@@ -1150,29 +1165,27 @@ namespace UnrealImGui
 		ArrayRawPtr.SetNum(Containers.Num());
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
+			ImGui::FIdScope IdScope{ ElemIdx };
 			for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
 			{
 				ArrayRawPtr[Idx] = Helpers[Idx].GetRawPtr(ElemIdx);
 			}
-			TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ElemIdx);
 
 			AddUnrealContainerPropertyInner(ArrayProperty->Inner, ArrayRawPtr, 0,
 				[ElemIdx, &PropertyCustomization](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren)
 			{
-				const FString ElementName = FString::Printf(TEXT("%d##%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
+				const FString ElementName = FString::FromInt(ElemIdx);
 				CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, IsIdentical), IsShowChildren, &ElementName);
 			}, [ElemIdx, &Helpers](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical)
 			{
 				ImGui::SameLine();
 
-				const FString ArrayPopupID =CreatePropertyLabel(Property, TEXT("unreal_array_popup"));
-				if (ImGui::ArrowButton(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT(">"))), ImGuiDir_Down))
+				const auto ArrayPopupName = "UnrealArrayPopup";
+				if (ImGui::ArrowButton(">", ImGuiDir_Down))
 				{
-					ImGui::OpenPopup(TCHAR_TO_UTF8(*ArrayPopupID));
+					ImGui::OpenPopup(ArrayPopupName);
 				}
-
-				ImGui::SameLine();
-				if (ImGui::BeginPopup(TCHAR_TO_UTF8(*ArrayPopupID)))
+				if (ImGui::BeginPopup(ArrayPopupName))
 				{
 					if (ImGui::Selectable("Insert"))
 					{
@@ -1264,7 +1277,7 @@ namespace UnrealImGui
 			const int32 SetCount = FScriptSetHelper(SetProperty, FirstValuePtr).Num();
 			ImGui::Text("%d Elements", SetCount);
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("+")))))
+			if (ImGui::Button("+"))
 			{
 				TArray<uint8> AddElem;
 				AddElem.SetNumUninitialized(SetProperty->ElementProp->ElementSize);
@@ -1276,7 +1289,7 @@ namespace UnrealImGui
 				NotifyPostPropertyValueChanged(Property);
 			}
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
+			if (ImGui::Button("x"))
 			{
 				for (const uint8* Container : Containers)
 				{
@@ -1289,7 +1302,7 @@ namespace UnrealImGui
 		{
 			ImGui::Text("Different Elements *");
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
+			if (ImGui::Button("x"))
 			{
 				for (const uint8* Container : Containers)
 				{
@@ -1323,28 +1336,27 @@ namespace UnrealImGui
 
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
+			ImGui::FIdScope IdScope{ ElemIdx };
 			for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
 			{
 				SetRawPtr[Idx] = Helpers[Idx].GetElementPtr(Iterators[Idx]);
 			}
-			TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ElemIdx);
 
 			AddUnrealContainerPropertyInner(SetProperty->ElementProp, SetRawPtr, 0,
 				[ElemIdx, &PropertyCustomization](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren)
 			{
-				const FString ElementName = FString::Printf(TEXT("%d##%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
+				const FString ElementName = FString::FromInt(ElemIdx);
 				CreateUnrealPropertyNameWidget(Property, Containers, Offset, IsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, IsIdentical), IsShowChildren, &ElementName);
 			}, [ElemIdx, &Helpers, &Iterators](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical)
 			{
 				ImGui::SameLine();
 
-				const FString SetPopupID = CreatePropertyLabel(Property, TEXT("unreal_set_popup"));
-				if (ImGui::ArrowButton(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT(">"))), ImGuiDir_Down))
+				const auto SetPopupName = "UnrealSetPopup";
+				if (ImGui::ArrowButton(">", ImGuiDir_Down))
 				{
-					ImGui::OpenPopup(TCHAR_TO_UTF8(*SetPopupID));
+					ImGui::OpenPopup(SetPopupName);
 				}
-				ImGui::SameLine();
-				if (ImGui::BeginPopup(TCHAR_TO_UTF8(*SetPopupID)))
+				if (ImGui::BeginPopup(SetPopupName))
 				{
 					if (ImGui::MenuItem("Delete"))
 					{
@@ -1438,7 +1450,7 @@ namespace UnrealImGui
 			const int32 MapCount = FScriptMapHelper(MapProperty, FirstValuePtr).Num();
 			ImGui::Text("%d Elements", MapCount);
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("+")))))
+			if (ImGui::Button("+"))
 			{
 				TArray<uint8> KeyElem;
 				KeyElem.SetNumUninitialized(MapProperty->KeyProp->ElementSize);
@@ -1457,7 +1469,7 @@ namespace UnrealImGui
 				NotifyPostPropertyValueChanged(Property);
 			}
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
+			if (ImGui::Button("x"))
 			{
 				for (const uint8* Container : Containers)
 				{
@@ -1470,7 +1482,7 @@ namespace UnrealImGui
 		{
 			ImGui::Text("Different Elements *");
 			ImGui::SameLine();
-			if (ImGui::Button(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT("x")))))
+			if (ImGui::Button("x"))
 			{
 				for (const uint8* Container : Containers)
 				{
@@ -1508,13 +1520,13 @@ namespace UnrealImGui
 		
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
+			ImGui::FIdScope IdScope{ ElemIdx };
 			for (int32 Idx = 0; Idx < Containers.Num(); ++Idx)
 			{
 				const auto& It = Iterators[Idx];
 				KeyRawPtr[Idx] = Helpers[Idx].GetKeyPtr(It);
 				ValueRawPtr[Idx] = Helpers[Idx].GetValuePtr(It);
 			}
-			TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ElemIdx);
 
 			TSharedPtr<IUnrealStructCustomization> Customization = nullptr;
 			if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
@@ -1535,7 +1547,7 @@ namespace UnrealImGui
 			const bool KeyHasChildProperties = KeyPropertyCustomization->HasChildProperties(MapProperty->KeyProp, KeyRawPtr, 0, IsIdentical);
 			const bool ValueHasChildProperties = ValuePropertyCustomization->HasChildProperties(MapProperty->ValueProp, ValueRawPtr, 0, IsIdentical);
 			{
-				const FString Name = FString::Printf(TEXT("%d##K%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
+				const FString Name = FString::FromInt(ElemIdx);
 				if (KeyHasChildProperties || ValueHasChildProperties)
 				{
 					IsShowChildren = ImGui::TreeNode(TCHAR_TO_UTF8(*Name));
@@ -1570,7 +1582,6 @@ namespace UnrealImGui
 			ImGui::TableSetColumnIndex(1);
 			ImGui::SetNextItemWidth(InnerValue::ContainerValueRightWidth - (Customization ? Customization->ValueAdditiveRightWidth : 0.f));
 			{
-				const FString Name = FString::Printf(TEXT("%d##V%s%d"), ElemIdx, *Property->GetName(), InnerValue::GPropertyDepth);
 				if (Customization)
 				{
 					Customization->CreateValueWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
@@ -1580,13 +1591,12 @@ namespace UnrealImGui
 					ValuePropertyCustomization->CreateValueWidget(MapProperty->ValueProp, ValueRawPtr, 0, ValueIsIdentical);
 				}
 				ImGui::SameLine();
-				const FString MapPopupID = CreatePropertyLabel(Property, TEXT("unreal_map_popup"));
-				if (ImGui::ArrowButton(TCHAR_TO_UTF8(*CreatePropertyLabel(Property, TEXT(">"))), ImGuiDir_Down))
+				const auto MapPopupName = "UnrealMapPopup";
+				if (ImGui::ArrowButton(">", ImGuiDir_Down))
 				{
-					ImGui::OpenPopup(TCHAR_TO_UTF8(*MapPopupID));
+					ImGui::OpenPopup(MapPopupName);
 				}
-				ImGui::SameLine();
-				if (ImGui::BeginPopup(TCHAR_TO_UTF8(*MapPopupID)))
+				if (ImGui::BeginPopup(MapPopupName))
 				{
 					if (ImGui::MenuItem("Delete"))
 					{
@@ -1659,7 +1669,6 @@ namespace UnrealImGui
 	void FStructPropertyCustomization::CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FStructProperty* StructProperty = CastFieldChecked<FStructProperty>(Property);
-		TGuardValue<int32> DepthGuard(InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1);
 		DrawDefaultStructDetails(StructProperty->Struct, Containers, Offset);
 	}
 }

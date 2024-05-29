@@ -56,8 +56,6 @@ namespace UnrealImGui
 		constexpr float ValueRightBaseWidth = -10.f;
 		constexpr float ContainerValueRightWidth = ValueRightBaseWidth - 30.f;
 
-		extern int32 GPropertyDepth;
-		extern int32 GImGuiContainerIndex;
 		extern FObjectArray GOuters;
 		extern const FDetailsFilter* GFilter;
 
@@ -253,7 +251,6 @@ namespace UnrealImGui
 		~FDetailTableContextGuard();
 		
 		TGuardValue<const FDetailsFilter*> GFilterGuard;
-		TGuardValue<int32> DepthGuard;
 		TGuardValue<FPostPropertyValueChanged> GPostPropertyValueChangedGuard;
 		TGuardValue<TMap<InnerValue::FFilterCacheKey, bool>> GFilterCacheMapGuard;
 	};
@@ -265,7 +262,6 @@ namespace UnrealImGui
 	IMGUI_UNREALPANELS_API const UStruct* GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct = nullptr);
 	
 	IMGUI_UNREALPANELS_API bool IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
-	IMGUI_UNREALPANELS_API FString GetPropertyDefaultLabel(const FProperty* Property, bool IsIdentical);
-	IMGUI_UNREALPANELS_API FString CreatePropertyLabel(const FProperty* Property, const FString& Name);
+	IMGUI_UNREALPANELS_API inline FString GetPropertyValueLabel(const FProperty* Property, bool IsIdentical) { return IsIdentical ? TEXT("##") + Property->GetName() : TEXT("*##") + Property->GetName(); }
 	IMGUI_UNREALPANELS_API void NotifyPostPropertyValueChanged(const FProperty* Property);
 }

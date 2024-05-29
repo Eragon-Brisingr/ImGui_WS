@@ -24,8 +24,6 @@ namespace UnrealImGui
 	
 	namespace InnerValue
 	{
-		int32 GPropertyDepth = -1;
-		int32 GImGuiContainerIndex = INDEX_NONE;
 		FObjectArray GOuters;
 		const FDetailsFilter* GFilter = nullptr;
 
@@ -229,7 +227,7 @@ namespace UnrealImGui
 		{
 			ComponentT Component[Length];
 			FMemory::Memcpy(&Component, Containers[0] + Offset, sizeof(ComponentT) * Length);
-			ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), DataType, Component, Length, nullptr, nullptr, Format);
+			ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyValueLabel(Property, IsIdentical)), DataType, Component, Length, nullptr, nullptr, Format);
 			if (ImGui::IsItemDeactivatedAfterEdit())
 			{
 				for (uint8* Container : Containers)
@@ -291,7 +289,7 @@ namespace UnrealImGui
 			{
 				FRotator Rotation = reinterpret_cast<FQuat*>(Containers[0] + Offset)->Rotator();
 				static_assert(std::is_same<FVector::FReal, double>::value);
-				ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), ImGuiDataType_Double, (double*)&Rotation, 3);
+				ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyValueLabel(Property, IsIdentical)), ImGuiDataType_Double, (double*)&Rotation, 3);
 				if (ImGui::IsItemDeactivatedAfterEdit())
 				{
 					const FQuat Quat = Rotation.Quaternion();
@@ -311,7 +309,7 @@ namespace UnrealImGui
 			{
 				FLinearColor Color = *reinterpret_cast<FLinearColor*>(Containers[0] + Offset);
 				static_assert(std::is_same<decltype(Color.A), float>::value);
-				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), (float*)&Color))
+				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyValueLabel(Property, IsIdentical)), (float*)&Color))
 				{
 					for (uint8* Container : Containers)
 					{
@@ -329,7 +327,7 @@ namespace UnrealImGui
 			{
 				FLinearColor Color = *reinterpret_cast<FColor*>(Containers[0] + Offset);
 				static_assert(std::is_same<decltype(Color.A), float>::value);
-				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyDefaultLabel(Property, IsIdentical)), (float*)&Color))
+				if (ImGui::ColorEdit4(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyValueLabel(Property, IsIdentical)), (float*)&Color))
 				{
 					for (uint8* Container : Containers)
 					{
@@ -347,7 +345,7 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 {
 	FPropertyEnableScope PropertyEnableScope;
 
-	const FString Name = FString::Printf(TEXT("%s##%d"), *(NameOverride ? *NameOverride : Property->GetName()), InnerValue::GPropertyDepth);
+	const FString& Name = NameOverride ? *NameOverride : Property->GetName();
 	if (HasChildProperties)
 	{
 		IsShowChildren = ImGui::TreeNode(TCHAR_TO_UTF8(*Name));
@@ -372,6 +370,7 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
 {
 	FPropertyDisableScope ImGuiDisableScope{ Property };
+	ImGui::FIdScope IdScope{ Property };
 	if (Property->ArrayDim == 1)
 	{
 		AddUnrealPropertyInner(Property, Containers, Offset + Property->GetOffset_ForInternal());
@@ -429,8 +428,7 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& 
 			for (int32 ArrayIndex = 0; ArrayIndex < Property->ArrayDim; ++ArrayIndex)
 			{
 				const int32 ElementOffset = Offset + Property->GetOffset_ForInternal() + Property->ElementSize * ArrayIndex;
-				
-				TGuardValue<int32> GImGuiContainerIndexGuard(InnerValue::GImGuiContainerIndex, ArrayIndex);
+				ImGui::FIdScope ArrayIdScope{ ArrayIndex };
 				
 				bool IsElementShowChildren = false;
 				const bool IsElementIdentical = IsAllPropertiesIdentical(Property, Containers, ElementOffset);
@@ -439,7 +437,7 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& 
 				ImGui::TableSetColumnIndex(0);
 				ImGui::AlignTextToFramePadding();
 				{
-					const FString ElementName = FString::Printf(TEXT("%d##%s%d"), ArrayIndex, *Property->GetName(), InnerValue::GPropertyDepth);
+					const FString ElementName = FString::FromInt(ArrayIndex);
 					CreateUnrealPropertyNameWidget(Property, Containers, ElementOffset, IsElementIdentical, PropertyCustomization->HasChildProperties(Property, Containers, ElementOffset, IsIdentical), IsElementShowChildren, &ElementName);
 				}
 				ImGui::TableSetColumnIndex(1);
@@ -549,8 +547,7 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 				ImGui::TableSetColumnIndex(0);
 				ImGui::AlignTextToFramePadding();
 
-				const FString CategoryName = FString::Printf(TEXT("%s##%d%d"), *DetailClass->GetName(), InnerValue::GPropertyDepth, InnerValue::GImGuiContainerIndex);
-				const bool IsShowChildren = ImGui::TreeNode(TCHAR_TO_UTF8(*CategoryName));
+				const bool IsShowChildren = ImGui::TreeNode(TCHAR_TO_UTF8(*DetailClass->GetName()));
 				if (ImGui::BeginItemTooltip())
 				{
 #if WITH_EDITOR
@@ -581,7 +578,6 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 
 UnrealImGui::FDetailTableContextGuard::FDetailTableContextGuard(const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged)
 	: GFilterGuard{ InnerValue::GFilter, Filter }
-	, DepthGuard{InnerValue::GPropertyDepth, InnerValue::GPropertyDepth + 1 }
 	, GPostPropertyValueChangedGuard{ GlobalValue::GPostPropertyValueChanged, PostPropertyValueChanged }
 	, GFilterCacheMapGuard{ InnerValue::FilterCacheMap, InnerValue::FilterCacheMap }
 {}
@@ -680,18 +676,6 @@ bool UnrealImGui::IsAllPropertiesIdentical(const FProperty* Property, const FPtr
 		}
 	}
 	return true;
-}
-
-FString UnrealImGui::GetPropertyDefaultLabel(const FProperty* Property, bool IsIdentical)
-{
-	return CreatePropertyLabel(Property, IsIdentical ? TEXT("") : TEXT("*"));
-}
-
-FString UnrealImGui::CreatePropertyLabel(const FProperty* Property, const FString& Name)
-{
-	// 利用FName的Index机制创建短ID
-	const uint32 ComparisonIndex = Property->GetFName().GetComparisonIndex().ToUnstableInt();
-	return FString::Printf(TEXT("%s##%u%d%d"), *Name, ComparisonIndex, InnerValue::GPropertyDepth + 1, InnerValue::GImGuiContainerIndex + 1);
 }
 
 void UnrealImGui::NotifyPostPropertyValueChanged(const FProperty* Property)
