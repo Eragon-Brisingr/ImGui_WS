@@ -3,7 +3,7 @@
 
 #include "UnrealImGuiViewportBase.h"
 
-#include "imgui.h"
+#include "ImGuiEx.h"
 #include "UnrealImGuiViewportExtent.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
@@ -157,7 +157,10 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 					continue;
 				}
 				bool bIsExtentConfigDirty = false;
-				Extent->DrawViewportMenu(Owner, bIsExtentConfigDirty);
+				{
+					ImGui::FIdScope IdScope{ Extent };
+					Extent->DrawViewportMenu(Owner, bIsExtentConfigDirty);
+				}
 				if (bIsExtentConfigDirty)
 				{
 					Extent->SaveConfig();
@@ -187,7 +190,10 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 				continue;
 			}
 			bool bIsExtentConfigDirty = false;
-			Extent->DrawMenu(Owner, bIsExtentConfigDirty);
+			{
+				ImGui::FIdScope IdScope{ Extent };
+				Extent->DrawMenu(Owner, bIsExtentConfigDirty);
+			}
 			if (bIsExtentConfigDirty)
 			{
 				Extent->SaveConfig();

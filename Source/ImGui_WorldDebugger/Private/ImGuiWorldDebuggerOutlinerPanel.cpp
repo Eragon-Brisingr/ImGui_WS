@@ -138,7 +138,8 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(UObject* Owner, UUnrealImGuiPanelBui
 					// OutlinerTableColumnID_Name
 					if (ImGui::TableNextColumn())
 					{
-						if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), ViewportExtent->SelectedActors.Contains(Actor)))
+						ImGui::FIdScope IdScope{ Actor };
+						if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetActorNameOrLabel()), ViewportExtent->SelectedActors.Contains(Actor)))
 						{
 							if (!ImGui::GetIO().KeyCtrl)
 							{
@@ -218,13 +219,13 @@ void UImGuiWorldDebuggerOutlinerPanel::RefreshSortOrder()
 			case OutlinerTableColumnID_Name:
 				if (LHS->GetFName() != RHS->GetFName())
 				{
-					return SortDirection == ImGuiSortDirection_Ascending ? LHS->GetName() < RHS->GetName() : LHS->GetName() > RHS->GetName();
+					return SortDirection == ImGuiSortDirection_Ascending ? LHS->GetActorNameOrLabel() < RHS->GetActorNameOrLabel() : LHS->GetActorNameOrLabel() > RHS->GetActorNameOrLabel();
 				}
 				break;
 			case OutlinerTableColumnID_Type:
 				if (LHS->GetClass() != RHS->GetClass())
 				{
-					return SortDirection == ImGuiSortDirection_Ascending ? LHS->GetClass()->GetClass()->GetName() < RHS->GetClass()->GetName() : LHS->GetClass()->GetName() > RHS->GetClass()->GetName();
+					return SortDirection == ImGuiSortDirection_Ascending ? LHS->GetClass()->GetName() < RHS->GetClass()->GetName() : LHS->GetClass()->GetName() > RHS->GetClass()->GetName();
 				}
 				break;
 			default:
@@ -232,23 +233,28 @@ void UImGuiWorldDebuggerOutlinerPanel::RefreshSortOrder()
 				break;
 			}
 		}
-		return LHS->GetName() < RHS->GetName();
+		return LHS->GetActorNameOrLabel() < RHS->GetActorNameOrLabel();
 	});
 }
 
 bool UImGuiWorldDebuggerOutlinerPanel::CanActorDisplay(const AActor* Actor) const
 {
+	if (FilterString.IsEmpty())
+	{
+		return true;
+	}
+	
 #if WITH_EDITOR
 	if (Actor->bIsEditorPreviewActor)
 	{
 		return false;
 	}
-#endif
 
-	if (FilterString.IsEmpty())
+	if (Actor->GetActorLabel(false).ToLower().Contains(FilterString.ToLower()))
 	{
 		return true;
 	}
+#endif
 	
 	if (Actor->GetName().ToLower().Contains(FilterString.ToLower()))
 	{

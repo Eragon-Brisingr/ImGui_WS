@@ -20,6 +20,8 @@ public:
 	int32 WorldPartitionGridIndex = 0;
 	UPROPERTY(Config)
 	int32 WorldPartitionGridLevelRange[2] = { 3, 4 };
+	UPROPERTY(Config)
+	float AlphaColorMultiplier = 0.02f;
 };
 
 UCLASS()
@@ -34,4 +36,6 @@ public:
 
 	UPROPERTY(Config)
 	int32 NavMeshAgentIndex = 0;
+	UPROPERTY(Config)
+	int32 MaxShowZoomFactor = 4;
 };

@@ -58,6 +58,8 @@ void UUnrealImGuiViewportWorldPartitionExtent::DrawViewportMenu(UObject* Owner, 
 					bIsConfigDirty |= true;
 				}
 			}
+			ImGui::Text("Alpha Color Multiplier");
+			ImGui::SliderFloat("##AlphaColorMultiplier", &AlphaColorMultiplier, 0.f, 1.f);
 			ImGui::EndMenu();
 		}
 	}
@@ -92,7 +94,9 @@ void UUnrealImGuiViewportWorldPartitionExtent::DrawViewportContent(UObject* Owne
 						const FVector Location = Cell->GetCellBounds().GetCenter();
 						const int32 CellExtent = Grid.CellSize * (1 << LevelIdx) / 2;
 						const FBox2D CellBox{ FVector2D(Location) - CellExtent, FVector2D(Location) + CellExtent };
-						ViewportContext.DrawRectFilled(CellBox, Cell->GetDebugColor(EWorldPartitionRuntimeCellVisualizeMode::StreamingStatus).ToFColor(true));
+						FLinearColor DebugColor = Cell->GetDebugColor(EWorldPartitionRuntimeCellVisualizeMode::StreamingStatus);
+						DebugColor.A *= AlphaColorMultiplier;
+						ViewportContext.DrawRectFilled(CellBox, DebugColor.ToFColor(true));
 					}
 				}
 			}
@@ -131,6 +135,9 @@ void UUnrealImGuiViewportNavMeshExtent::DrawViewportMenu(UObject* Owner, bool& b
 					bIsConfigDirty |= true;
 				}
 			}
+
+			ImGui::Text("Max Show Zoom Factor");
+			ImGui::SliderInt("##MaxShowZoomFactor", &MaxShowZoomFactor, 1, 10);
 			ImGui::EndMenu();
 		}
 	}
@@ -138,6 +145,11 @@ void UUnrealImGuiViewportNavMeshExtent::DrawViewportMenu(UObject* Owner, bool& b
 
 void UUnrealImGuiViewportNavMeshExtent::DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)
 {
+	if (ViewportContext.Viewport->ZoomFactor > MaxShowZoomFactor)
+	{
+		return;
+	}
+	
 	const UWorld* World = Owner->GetWorld();
 	const UNavigationSystemV1* NavigationSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
 	if (NavigationSystem && NavigationSystem->GetSupportedAgents().IsValidIndex(NavMeshAgentIndex))
