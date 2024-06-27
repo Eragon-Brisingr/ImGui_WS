@@ -293,13 +293,14 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 					ImGui::SameLine();
 				}
 				ImGui::Text("%s: %s: %s", TCHAR_TO_UTF8(*Log.Category.ToString()), *UnrealImGui::ToString(Log.Verbosity), *Log.LogString);
+				ImGui::PopStyleColor();
+
 				if (ImGui::BeginItemTooltip())
 				{
 					ImGui::Text("Time: %s", TCHAR_TO_UTF8(*Log.Time.ToString()));
 					ImGui::Text("Frame: %llu", Log.Frame);
 					ImGui::EndTooltip();
 				}
-				ImGui::PopStyleColor();
 
 				if (ImGui::IsItemHovered())
 				{
