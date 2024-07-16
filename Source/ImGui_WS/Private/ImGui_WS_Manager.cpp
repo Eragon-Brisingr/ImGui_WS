@@ -655,8 +655,10 @@ public:
 							static ImGui::FFileDialogState FileDialogState;
 							ImGui::ShowFileDialog("Select Save Record Directory", FileDialogState, SaveFilePath, nullptr, ImGui::FileDialogType::SelectFolder);
 
-							ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 110.f);
-							if (ImGui::Button("Start"))
+							constexpr auto StartText = "Start";
+							constexpr auto CancelText = "Cancel";
+							ImGui::SetCursorPosX(ImGui::GetWindowWidth() - (ImGui::CalcTextSize(StartText).x + ImGui::CalcTextSize(CancelText).x + ImGui::GetTextLineHeightWithSpacing() * 2.f));
+							if (ImGui::Button(StartText))
 							{
 								if (FPaths::DirectoryExists(GRecordSaveDirPathString.ToString()))
 								{
@@ -670,7 +672,7 @@ public:
 								}
 							}
 							ImGui::SameLine();
-							if (ImGui::Button("Cancel"))
+							if (ImGui::Button(CancelText))
 							{
 								ImGui::CloseCurrentPopup();
 							}
@@ -733,10 +735,15 @@ public:
 				// imgui-ws info
 				{
 					const ImVec2 WindowSize = ImGui::GetWindowSize();
-					constexpr float StopRecordButtonWidth = 140.f;
-					float TotalInfoWidth = 140.f;
+					const FString ConnectionTitleString = FString::Printf(TEXT("Connections: %d"), ImGuiWS.NumConnected());
+					float TotalInfoWidth = ImGui::CalcTextSize(TCHAR_TO_UTF8(*ConnectionTitleString)).x + ImGui::GetTextLineHeightWithSpacing();
+
+					FString RecordTitleString;
+					float StopRecordButtonWidth = 0.f;
 					if (RecordSession.IsValid())
 					{
+						RecordTitleString = FString::Printf(TEXT("Recording (%.0f MB)"), RecordSession->totalSize_bytes() / 1024.f / 1024.f);
+						StopRecordButtonWidth = ImGui::CalcTextSize(TCHAR_TO_UTF8(*RecordTitleString)).x + ImGui::GetTextLineHeightWithSpacing();
 						TotalInfoWidth += StopRecordButtonWidth;
 					}
 					ImGui::Indent(WindowSize.x - TotalInfoWidth);
@@ -744,7 +751,7 @@ public:
 					if (RecordSession.IsValid())
 					{
 						const ImGuiStyle& Style = ImGui::GetStyle();
-						if (ImGui::Button(TCHAR_TO_UTF8(*FString::Printf(TEXT("Recording (%.0f MB)###StopRecordButton"), RecordSession->totalSize_bytes() / 1024.f / 1024.f)), { StopRecordButtonWidth - Style.FramePadding.x * 2.f, 0.f }))
+						if (ImGui::Button(TCHAR_TO_UTF8(*(RecordTitleString + TEXT("###StopRecordButton"))), { StopRecordButtonWidth - Style.FramePadding.x * 2.f, 0.f }))
 						{
 							StopRecord();
 						}
@@ -759,7 +766,7 @@ public:
 					}
 
 					{
-						ImGui::Text("Connections: %d", ImGuiWS.NumConnected());
+						ImGui::TextUnformatted(TCHAR_TO_UTF8(*ConnectionTitleString));
 						if (ImGui::BeginItemTooltip())
 						{
 							ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

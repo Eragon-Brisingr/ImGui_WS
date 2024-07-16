@@ -15,13 +15,18 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 {
 	static ImFontAtlas DefaultFontAtlas = []
 	{
-		const float DPIScale = FPlatformApplicationMisc::GetDPIScaleFactorAtPoint(0, 0);
+		const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
+
+		float DPIScale = FPlatformApplicationMisc::GetDPIScaleFactorAtPoint(0, 0);
+		if (DPIScale == 1.f)
+		{
+			DPIScale = Settings->DefaultDPIScale;
+		}
 		
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT(UE_PLUGIN_NAME));
 		const FString PluginResourcesPath = Plugin->GetBaseDir() / TEXT("Resources");
 
 		ImFontAtlas FontAtlas;
-		const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
 		ImFontConfig FontConfig;
 		FontConfig.FontDataOwnedByAtlas = false;
 		switch (Settings->FontGlyphRanges)

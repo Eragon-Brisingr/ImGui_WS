@@ -74,6 +74,9 @@ public:
 	EImGuiFontGlyphRanges FontGlyphRanges = EImGuiFontGlyphRanges::ChineseFull;
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	float DefaultDPIScale = 1.5f;
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	float ServerTickInterval = 1 / 120.f;
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.UnrealImGuiPanelBase"))
