@@ -29,16 +29,27 @@ enum class EImGuiFontGlyphRanges : uint8
 	Vietnamese,
 };
 
+UCLASS(Config = EditorPerProjectUserSettings)
+class IMGUI_API UImGuiPerUserSettingsSettings : public UObject
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, Config, Category = PerUserSettings, meta = (ConfigRestartRequired = true))
+	bool bOverrideDPIScale = false;
+	UPROPERTY(EditAnywhere, Config, Category = PerUserSettings, meta = (ConfigRestartRequired = true, EditCondition = bOverrideDPIScale))
+	float DPIScale = 1.5f;
+
+#if WITH_EDITOR
+	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+};
+
 UCLASS(Config = Game, DefaultConfig, DisplayName = "ImGui WS")
 class IMGUI_API UImGuiSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 public:
-	UImGuiSettings()
-	{
-		CategoryName = TEXT("Plugins");
-		SectionName = TEXT("ImGui_WS_Settings");
-	}
+	UImGuiSettings();
 
 	// Editor
 	// Launch command line add -ExecCmds="ImGui.WS.Enable 1" can enable ImGuiWS
@@ -74,23 +85,18 @@ public:
 	EImGuiFontGlyphRanges FontGlyphRanges = EImGuiFontGlyphRanges::ChineseFull;
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
-	float DefaultDPIScale = 1.5f;
-
-	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	float ServerTickInterval = 1 / 120.f;
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.UnrealImGuiPanelBase"))
 	TArray<TSoftClassPtr<UObject>> BlueprintPanels;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = "ImGui WS", meta = (EditInline))
+	TObjectPtr<UImGuiPerUserSettingsSettings> PreUserSettings = nullptr;
+	
 #if WITH_EDITOR
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPostEditChangeProperty, UImGuiSettings*, FPropertyChangedEvent&);
 	FOnPostEditChangeProperty OnPostEditChangeProperty;
 	
-	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override
-	{
-		Super::PostEditChangeProperty(PropertyChangedEvent);
-
-		OnPostEditChangeProperty.Broadcast(this, PropertyChangedEvent);
-	}
+	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 };
