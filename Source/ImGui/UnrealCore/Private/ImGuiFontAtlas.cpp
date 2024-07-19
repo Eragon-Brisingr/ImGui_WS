@@ -18,11 +18,18 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 		const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
 		const UImGuiPerUserSettingsSettings* PreUserSettings = Settings->PreUserSettings;
 
-		const float DPIScale = PreUserSettings->bOverrideDPIScale || GIsServer ? PreUserSettings->DPIScale : FPlatformApplicationMisc::GetDPIScaleFactorAtPoint(0, 0);
+		const bool bIsDedicatedServer = !GIsClient && GIsServer;
+		const bool bOverrideDPIScale = PreUserSettings->bOverrideDPIScale || bIsDedicatedServer;
+		const float DPIScale = bOverrideDPIScale ? PreUserSettings->DPIScale : FPlatformApplicationMisc::GetDPIScaleFactorAtPoint(0, 0);
 #if WITH_EDITOR
-		if (GIsEditor && !PreUserSettings->bOverrideDPIScale)
+		if (GIsEditor && !bOverrideDPIScale)
 		{
-			GetMutableDefault<UImGuiPerUserSettingsSettings>()->DPIScale = DPIScale;
+			UImGuiPerUserSettingsSettings* PreUser = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+			if (PreUser->DPIScale != DPIScale)
+			{
+				PreUser->DPIScale = DPIScale;
+				PreUser->SaveConfig();
+			}
 		}
 #endif
 		
