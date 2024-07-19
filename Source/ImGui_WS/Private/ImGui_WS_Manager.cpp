@@ -181,6 +181,7 @@ public:
 
 	ImGuiContext* Context;
 	ImPlotContext* PlotContext;
+	decltype(ImGuiIO::SetClipboardTextFn) SetClipboardTextFn_DefaultImpl = nullptr;
 
 	FCriticalSection RecordCriticalSection;
 	TSharedPtr<ImGuiWS_Record::Session, ESPMode::ThreadSafe> RecordSession;
@@ -213,6 +214,7 @@ public:
 		ImGuiIO& IO = ImGui::GetIO();
 
 		IO.MouseDrawCursor = false;
+		SetClipboardTextFn_DefaultImpl = IO.SetClipboardTextFn;
 		IO.SetClipboardTextFn = [](void* user_data, const char* text)
 		{
 			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
@@ -398,7 +400,7 @@ public:
 		    }
 		}
 
-		void Update()
+		void Update(FImpl& Owner)
 		{
 			if (Clients.Contains(CurControlId) == false && Clients.Num() > 0)
 			{
@@ -515,7 +517,10 @@ public:
 		    			break;
 		    		case ImGuiWS::FEvent::PasteClipboard:
 		    			{
-		    				ImGui::SetClipboardText(Event.ClipboardText.c_str());
+		    				if (ensure(Owner.SetClipboardTextFn_DefaultImpl))
+		    				{
+		    					Owner.SetClipboardTextFn_DefaultImpl(Owner.Context, Event.ClipboardText.c_str());
+		    				}
 		    			}
 		    			break;
 		    		case ImGuiWS::FEvent::InputText:
@@ -611,7 +616,7 @@ public:
 			Events.Dequeue(Event);
 	        State.Handle(Event);
 		}
-	    State.Update();
+	    State.Update(*this);
 
 	    ImGuiIO& IO = ImGui::GetIO();
 	    IO.DeltaTime = VSync.Delta_S();

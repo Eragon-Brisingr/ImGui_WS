@@ -282,7 +282,7 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
                             break;
                         case FEvent::PasteClipboard:
                             {
-                                ss >> Event.ClipboardText;
+                        		Event.ClipboardText = { ++std::istreambuf_iterator<char>(ss), std::istreambuf_iterator<char>() };
                             }
                             break;
                         case FEvent::InputText:
