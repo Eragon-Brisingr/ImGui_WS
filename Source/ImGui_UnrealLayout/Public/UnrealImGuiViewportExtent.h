@@ -8,53 +8,14 @@
 #include "UnrealImGuiViewportExtent.generated.h"
 
 class UUnrealImGuiViewportBase;
-struct FUnrealImGuiViewportContext;
 class UImGuiWorldDebuggerDetailsPanel;
 
-UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig)
-class IMGUI_UNREALLAYOUT_API UUnrealImGuiViewportExtentBase : public UObject
-{
-	GENERATED_BODY()
-public:
-	UUnrealImGuiViewportExtentBase()
-		: bEnable(true)
-	{}
-
-	int32 Priority = 0;
-	FName ExtentName;
-
-	UPROPERTY(Config)
-	uint8 bEnable : 1;
-
-	virtual bool ShouldCreateExtent(UObject* Owner, UUnrealImGuiViewportBase* Viewport) const { return true; }
-	virtual void Register(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
-	virtual void Unregister(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
-	virtual void WhenEnable(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
-	virtual void WhenDisable(UObject* Owner, UUnrealImGuiViewportBase* Viewport) {}
-	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) {}
-	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) {}
-	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) {}
-	virtual void DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel) {}
-
-	struct FPassDrawer
-	{
-		int32 Priority = 0;
-		TFunction<void(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)> Drawer;
-	};
-	virtual TArray<FPassDrawer> GetPassDrawers(UObject* Owner, UUnrealImGuiViewportBase* Viewport) { return {}; }
-
-	virtual void ResetSelection() {}
-
-	virtual void WhenFilterStringChanged(UUnrealImGuiViewportBase* Viewport, const FString& FilterString) {}
-	virtual void DrawFilterTooltip(UUnrealImGuiViewportBase* Viewport) {}
-	virtual void DrawFilterPopup(UUnrealImGuiViewportBase* Viewport) {}
-	virtual void FocusEntitiesByFilter(UUnrealImGuiViewportBase* Viewport) {}
-
-	UUnrealImGuiViewportBase* GetViewport() const;
-};
-
+USTRUCT(BlueprintType, BlueprintInternalUseOnly)
 struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 {
+	GENERATED_BODY()
+
+	FUnrealImGuiViewportContext() = default;
 	FUnrealImGuiViewportContext(UUnrealImGuiViewportBase* Viewport, struct ImDrawList* DrawList, const FVector2D& ContentMin, const FVector2D& ContentSize, const FVector2D& ViewLocation, float Zoom, const FVector2D& MousePos, bool bIsContentHovered, bool bIsContentActive, bool bIsViewDragEnd, bool IsSelectDragging, const FVector2D& MouseClickedPos, float DeltaSeconds)
 		: Viewport(Viewport)
 		, DrawList(DrawList)
@@ -78,24 +39,39 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	{}
 
 	UUnrealImGuiViewportBase* Viewport;
-	struct ImDrawList* DrawList;
-	const FVector2D ContentMin;
-	const FVector2D ContentSize;
-	const FVector2D ViewLocation;
-	const float Zoom;
-	const FTransform2D WorldToScreenTransform;
-	const FTransform2D ScreenToWorldTransform;
-	const FBox2D ViewBounds;
-	const FVector2D MousePos;
-	const FVector2D MouseWorldPos;
-	const uint8 bIsContentHovered : 1;
-	const uint8 bIsContentActive : 1;
-	const uint8	bIsViewDragEnd : 1;
-	const uint8 bIsSelectDragging : 1;
-	const FBox2D SelectDragBounds;
-	const float DeltaSeconds;
+	ImDrawList* DrawList;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D ContentMin;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D ContentSize;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D ViewLocation;
+	UPROPERTY(BlueprintReadOnly)
+	float Zoom;
+	FTransform2D WorldToScreenTransform;
+	FTransform2D ScreenToWorldTransform;
+	UPROPERTY(BlueprintReadOnly)
+	FBox2D ViewBounds;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D MousePos;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D MouseWorldPos;
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsContentHovered : 1;
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsContentActive : 1;
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsViewDragEnd : 1;
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsSelectDragging : 1;
+	UPROPERTY(BlueprintReadOnly)
+	FBox2D SelectDragBounds;
+	UPROPERTY(BlueprintReadOnly)
+	float DeltaSeconds;
 
+	UPROPERTY(BlueprintReadOnly)
 	mutable uint8 bIsSelected : 1;
+	UPROPERTY(BlueprintReadOnly)
 	mutable uint8 bIsTopSelected : 1;
 
 	static constexpr auto FloatingContextName = "FloatingContext";
@@ -124,9 +100,9 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	{
 		return ScreenToWorldTransform.TransformPoint(Location);
 	}
-	FVector2D AddScreenOffset(const FVector2D& Position, const FVector2D& ScreenOffset) const
+	FVector2D AddScreenOffset(const FVector2D& Location, const FVector2D& ScreenOffset) const
 	{
-		return Position + ScreenOffset / Zoom;
+		return Location + ScreenOffset / Zoom;
 	}
 
 	void DrawLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float Thickness = 1.f) const;
@@ -175,4 +151,64 @@ private:
 	};
 	mutable TArray<FMessage> Messages;
 	mutable uint8 bIsConfigDirty : 1;
+};
+
+UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig)
+class IMGUI_UNREALLAYOUT_API UUnrealImGuiViewportExtentBase : public UObject
+{
+	GENERATED_BODY()
+public:
+	UUnrealImGuiViewportExtentBase()
+		: bEnable(true)
+	{}
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = ImGui)
+	int32 Priority = 0;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = ImGui)
+	FName ExtentName;
+
+	UPROPERTY(BlueprintReadOnly, Config, Category = ImGui)
+	uint8 bEnable : 1;
+
+	virtual bool ShouldCreateExtent(UObject* Owner, UUnrealImGuiViewportBase* Viewport) const { return true; }
+	virtual void Register(UObject* Owner, UUnrealImGuiViewportBase* Viewport) { ReceiveRegister(Owner, Viewport); }
+	virtual void Unregister(UObject* Owner, UUnrealImGuiViewportBase* Viewport) { ReceiveUnregister(Owner, Viewport); }
+	virtual void WhenEnable(UObject* Owner, UUnrealImGuiViewportBase* Viewport) { ReceiveWhenEnable(Owner, Viewport); }
+	virtual void WhenDisable(UObject* Owner, UUnrealImGuiViewportBase* Viewport) { ReceiveWhenDisable(Owner, Viewport); }
+	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) { ReceiveDrawMenu(Owner, bIsConfigDirty); }
+	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) { ReceiveDrawViewportMenu(Owner, bIsConfigDirty); }
+	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) { ReceiveDrawViewportContent(Owner, ViewportContext); }
+	virtual void DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel) {}
+
+	struct FPassDrawer
+	{
+		int32 Priority = 0;
+		TFunction<void(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)> Drawer;
+	};
+	virtual TArray<FPassDrawer> GetPassDrawers(UObject* Owner, UUnrealImGuiViewportBase* Viewport) { return {}; }
+
+	virtual void ResetSelection() {}
+
+	virtual void WhenFilterStringChanged(UUnrealImGuiViewportBase* Viewport, const FString& FilterString) {}
+	virtual void DrawFilterTooltip(UUnrealImGuiViewportBase* Viewport) {}
+	virtual void DrawFilterPopup(UUnrealImGuiViewportBase* Viewport) {}
+	virtual void FocusEntitiesByFilter(UUnrealImGuiViewportBase* Viewport) {}
+
+	UFUNCTION(BlueprintCallable, Category = ImGui)
+	UUnrealImGuiViewportBase* GetViewport() const;
+protected:
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveRegister(UObject* Owner, UUnrealImGuiViewportBase* Viewport);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveUnregister(UObject* Owner, UUnrealImGuiViewportBase* Viewport);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveWhenEnable(UObject* Owner, UUnrealImGuiViewportBase* Viewport);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveWhenDisable(UObject* Owner, UUnrealImGuiViewportBase* Viewport);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveDrawMenu(UObject* Owner, bool& bIsConfigDirty);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveDrawViewportMenu(UObject* Owner, bool& bIsConfigDirty);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveDrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext);
 };

@@ -19,7 +19,7 @@ public:
 	UImGuiWorldDebuggerViewportPanel();
 
 	bool ShouldCreatePanel(UObject* Owner) const override;
-
+	bool ShouldCreateExtent(UObject* Owner, TSubclassOf<UUnrealImGuiViewportExtentBase> ExtentType) const override { return true; }
 };
 
 UCLASS()

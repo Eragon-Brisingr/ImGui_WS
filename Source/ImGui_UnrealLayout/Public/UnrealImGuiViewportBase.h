@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UnrealImGuiPanel.h"
+#include "Templates/SubclassOf.h"
 #include "UnrealImGuiViewportBase.generated.h"
 
 class UUnrealImGuiViewportExtentBase;
@@ -31,10 +32,10 @@ public:
 	void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) override;
 	void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) override;
 
-	virtual bool ShouldCreateExtent(UObject* Owner, const TSubclassOf<UUnrealImGuiViewportExtentBase>& ExtentType) const { return true; }
-	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) {}
-	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) {}
-	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) {}
+	virtual bool ShouldCreateExtent(UObject* Owner, TSubclassOf<UUnrealImGuiViewportExtentBase> ExtentType) const { return ReceiveShouldCreateExtent(Owner, ExtentType); }
+	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) { ReceiveDrawMenu(Owner, bIsConfigDirty); }
+	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) { ReceiveDrawMenu(Owner, bIsConfigDirty); }
+	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) { ReceiveDrawViewportContent(Owner, ViewportContext); }
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UUnrealImGuiViewportExtentBase>> Extents;
@@ -70,6 +71,15 @@ public:
 	FString FilterString;
 	uint32 FilterType = 0;
 	TWeakObjectPtr<UClass> FilterClass;
+protected:
+	UFUNCTION(BlueprintImplementableEvent)
+	bool ReceiveShouldCreateExtent(UObject* Owner, TSubclassOf<UUnrealImGuiViewportExtentBase> ExtentType) const;
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveDrawMenu(UObject* Owner, bool& bIsConfigDirty);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveDrawViewportMenu(UObject* Owner, bool& bIsConfigDirty);
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReceiveDrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext);
 private:
 	friend struct FUnrealImGuiViewportContext;
 	static constexpr float MessageBoxWidth = 350.f;
