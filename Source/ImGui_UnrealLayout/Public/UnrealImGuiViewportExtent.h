@@ -38,41 +38,41 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 		, bIsConfigDirty(false)
 	{}
 
-	UUnrealImGuiViewportBase* Viewport;
-	ImDrawList* DrawList;
+	UUnrealImGuiViewportBase* Viewport = nullptr;
+	ImDrawList* DrawList = nullptr;
 	UPROPERTY(BlueprintReadOnly)
-	FVector2D ContentMin;
+	FVector2D ContentMin{ ForceInit };
 	UPROPERTY(BlueprintReadOnly)
-	FVector2D ContentSize;
+	FVector2D ContentSize{ ForceInit };
 	UPROPERTY(BlueprintReadOnly)
-	FVector2D ViewLocation;
+	FVector2D ViewLocation{ ForceInit };
 	UPROPERTY(BlueprintReadOnly)
-	float Zoom;
-	FTransform2D WorldToScreenTransform;
-	FTransform2D ScreenToWorldTransform;
+	float Zoom = 0.f;
+	FTransform2D WorldToScreenTransform{ 0 };
+	FTransform2D ScreenToWorldTransform{ 0 };
 	UPROPERTY(BlueprintReadOnly)
-	FBox2D ViewBounds;
+	FBox2D ViewBounds{ ForceInit };
 	UPROPERTY(BlueprintReadOnly)
-	FVector2D MousePos;
+	FVector2D MousePos{ ForceInit };
 	UPROPERTY(BlueprintReadOnly)
-	FVector2D MouseWorldPos;
+	FVector2D MouseWorldPos{ ForceInit };
 	UPROPERTY(BlueprintReadOnly)
-	uint8 bIsContentHovered : 1;
+	uint8 bIsContentHovered : 1 = false;
 	UPROPERTY(BlueprintReadOnly)
-	uint8 bIsContentActive : 1;
+	uint8 bIsContentActive : 1 = false;
 	UPROPERTY(BlueprintReadOnly)
-	uint8 bIsViewDragEnd : 1;
+	uint8 bIsViewDragEnd : 1 = false;
 	UPROPERTY(BlueprintReadOnly)
-	uint8 bIsSelectDragging : 1;
+	uint8 bIsSelectDragging : 1 = false;
 	UPROPERTY(BlueprintReadOnly)
-	FBox2D SelectDragBounds;
+	FBox2D SelectDragBounds{ ForceInit };
 	UPROPERTY(BlueprintReadOnly)
-	float DeltaSeconds;
+	float DeltaSeconds = 0.f;
 
 	UPROPERTY(BlueprintReadOnly)
-	mutable uint8 bIsSelected : 1;
+	mutable uint8 bIsSelected : 1 = false;
 	UPROPERTY(BlueprintReadOnly)
-	mutable uint8 bIsTopSelected : 1;
+	mutable uint8 bIsTopSelected : 1 = false;
 
 	static constexpr auto FloatingContextName = "FloatingContext";
 
