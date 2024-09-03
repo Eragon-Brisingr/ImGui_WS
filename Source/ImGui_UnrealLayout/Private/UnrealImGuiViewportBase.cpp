@@ -22,6 +22,7 @@ UUnrealImGuiViewportBase::UUnrealImGuiViewportBase()
 
 void UUnrealImGuiViewportBase::Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
 {
+	PanelBuilder = Builder;
 	{
 		// Only last left child class
 		auto RemoveNotLeafClass = [](TArray<UClass*>& Classes)
@@ -119,6 +120,7 @@ void UUnrealImGuiViewportBase::Unregister(UObject* Owner, UUnrealImGuiPanelBuild
 		}
 		Extent->Unregister(Owner, this);
 	}
+	PanelBuilder = nullptr;
 }
 
 void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)

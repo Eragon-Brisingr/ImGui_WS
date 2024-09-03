@@ -71,6 +71,9 @@ public:
 	FString FilterString;
 	uint32 FilterType = 0;
 	TWeakObjectPtr<UClass> FilterClass;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = ImGui)
+	TObjectPtr<UUnrealImGuiPanelBuilder> PanelBuilder;
 protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	bool ReceiveShouldCreateExtent(UObject* Owner, TSubclassOf<UUnrealImGuiViewportExtentBase> ExtentType) const;
