@@ -65,7 +65,11 @@ namespace UnrealImGui
 	void FUnrealImGuiOutputDevice::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category)
 	{
 		const ELogVerbosity::Type TestVerbosity = static_cast<ELogVerbosity::Type>(Verbosity & ELogVerbosity::VerbosityMask);
-		if (TestVerbosity == 0)
+		if (TestVerbosity == ELogVerbosity::NoLogging)
+		{
+			return;
+		}
+		if (Message == nullptr || Message[0] == TEXT('\0'))
 		{
 			return;
 		}

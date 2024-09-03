@@ -376,7 +376,7 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& 
 	ImGui::FIdScope IdScope{ Property };
 	if (Property->ArrayDim == 1)
 	{
-		AddUnrealPropertyInner(Property, Containers, Offset + Property->GetOffset_ForInternal());
+		AddUnrealPropertyInner(Property, Containers, Offset);
 	}
 	else
 	{
@@ -403,7 +403,7 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& 
 			}
 			for (int32 ArrayIndex = 0; ArrayIndex < Property->ArrayDim; ++ArrayIndex)
 			{
-				const int32 ElementOffset = Offset + Property->GetOffset_ForInternal() + Property->ElementSize * ArrayIndex;
+				const int32 ElementOffset = Offset + Property->ElementSize * ArrayIndex;
 				if (IsAllPropertiesIdentical(Property, Containers, ElementOffset) == false)
 				{
 					return false;
@@ -430,7 +430,7 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& 
 		{
 			for (int32 ArrayIndex = 0; ArrayIndex < Property->ArrayDim; ++ArrayIndex)
 			{
-				const int32 ElementOffset = Offset + Property->GetOffset_ForInternal() + Property->ElementSize * ArrayIndex;
+				const int32 ElementOffset = Offset + Property->ElementSize * ArrayIndex;
 				ImGui::FIdScope ArrayIdScope{ ArrayIndex };
 				
 				bool IsElementShowChildren = false;
@@ -485,7 +485,7 @@ void UnrealImGui::DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrA
 		{
 			continue;
 		}
-		AddUnrealProperty(Property, Instances, Offset);
+		AddUnrealProperty(Property, Instances, Offset + Property->GetOffset_ForInternal());
 	}
 }
 
@@ -506,7 +506,7 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 					{
 						continue;
 					}
-					AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset);
+					AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset + Property->GetOffset_ForInternal());
 				}
 			}
 			else
@@ -569,7 +569,7 @@ void UnrealImGui::DrawDefaultClassDetails(const UClass* TopClass, bool CollapseC
 						{
 							continue;
 						}
-						AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset);
+						AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset + Property->GetOffset_ForInternal());
 					}
 					ImGui::TreePop();
 				}

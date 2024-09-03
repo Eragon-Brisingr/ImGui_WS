@@ -51,15 +51,18 @@ public:
 	void DrawFilterPopup(UUnrealImGuiViewportBase* Viewport) override;
 	void FocusEntitiesByFilter(UUnrealImGuiViewportBase* Viewport) override;
 
-	virtual bool IsShowActorsByFilter(const AActor* Actor) const;
+	virtual bool IsShowActorsByFilter(const UUnrealImGuiViewportBase* Viewport, const AActor* Actor) const;
 
 	int32 GetDrawableActorsCount() const { return DrawableActors.Num(); }
 protected:
 	UPROPERTY(Transient)
 	TMap<TWeakObjectPtr<AActor>, TSubclassOf<UImGuiWorldDebuggerDrawerBase>> DrawableActors;
+	TMap<TWeakObjectPtr<AActor>, TSubclassOf<UImGuiWorldDebuggerDrawerBase>> ActorsToDraw;
 	FDelegateHandle OnActorSpawnedHandle;
 	FDelegateHandle OnActorDestroyedHandle;
 	FDelegateHandle OnLevelAddHandle;
+
+	bool CanAddToDraw(const UUnrealImGuiViewportBase* Viewport, const AActor* Actor, const UImGuiWorldDebuggerDrawerBase* Drawer) const;
 private:
 #if WITH_EDITOR
 	friend class FImGui_WorldDebuggerModule;

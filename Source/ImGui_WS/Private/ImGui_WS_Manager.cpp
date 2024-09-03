@@ -811,13 +811,14 @@ public:
 			}
 		}
 
-	    // generate ImDrawData
-	    ImGui::Render();
-
 		{
 			// store ImDrawData for asynchronous dispatching to WS clients
 			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWS_Generate_ImGuiData"), STAT_ImGuiWS_Generate_ImGuiData, STATGROUP_ImGui);
+			
+			// generate ImDrawData
+			ImGui::Render();
 			const ImDrawData* DrawData = ImGui::GetDrawData();
+
 			const auto CurControlIp = State.Clients.FindRef(State.CurControlId).Ip;
 			ImGuiDataTripleBuffer.WriteAndSwap(MakeShared<FImGuiData>(DrawData, RecordReplay.Get(),
 				ImGuiWS::FDrawInfo{

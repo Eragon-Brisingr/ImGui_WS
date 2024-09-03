@@ -40,14 +40,6 @@ bool UImGuiWorldDebuggerViewportActorExtent::ShouldCreateExtent(UObject* Owner, 
 	return Viewport && Viewport->IsA<UImGuiWorldDebuggerViewportPanel>();
 }
 
-void UImGuiWorldDebuggerViewportActorExtent::SetSelectedEntities(const TSet<TObjectPtr<AActor>>& NewSelectedActors)
-{
-	SelectedActors = NewSelectedActors;
-#if WITH_EDITOR
-	EditorSelectActors.ExecuteIfBound(GetWorld(), NewSelectedActors);
-#endif
-}
-
 void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImGuiViewportBase* Viewport)
 {
 	UWorld* World = Owner->GetWorld();
@@ -82,7 +74,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 		return ReturnDrawerMap;
 	}();
 
-	auto TryAddActorToDraw = [this](AActor* Actor)
+	auto TryAddActorToDraw = [this, Viewport](AActor* Actor)
 	{
 		if (Actor == nullptr || Actor->IsA<AImGuiWorldDebuggerBase>())
 		{
@@ -94,6 +86,10 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 			if (const TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawerMap.Find(TestClass))
 			{
 				DrawableActors.Add(Actor, *Drawer);
+				if (CanAddToDraw(Viewport, Actor, Drawer->GetDefaultObject()))
+				{
+					ActorsToDraw.Add(Actor, *Drawer);
+				}
 				return;
 			}
 		}
@@ -127,6 +123,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 	OnActorDestroyedHandle = World->AddOnActorDestroyedHandler(FOnActorDestroyed::FDelegate::CreateWeakLambda(this, [this](AActor* Actor)
 	{
 		DrawableActors.Remove(Actor);
+		ActorsToDraw.Remove(Actor);
 	}));
 }
 
@@ -143,6 +140,207 @@ void UImGuiWorldDebuggerViewportActorExtent::Unregister(UObject* Owner, UUnrealI
 void UImGuiWorldDebuggerViewportActorExtent::DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty)
 {
 
+}
+
+void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)
+{
+	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWorldDebuggerViewportExtent_Draw"), STAT_ImGuiWorldDebuggerViewportExtent_Draw, STATGROUP_ImGui);
+	
+	UWorld* World = GetWorld();
+	check(World);
+
+	AActor* TopSelectedActor = nullptr;
+	// Draw actor location
+	{
+		const float Zoom = ViewportContext.Zoom;
+		constexpr float ScreenMinRadius = 2.f;
+		const float MinRadius = ScreenMinRadius / Zoom;
+		auto DrawActor = [&](AActor* Actor, const UImGuiWorldDebuggerDrawerBase* Drawer, bool IsSelected)
+		{
+			const FVector Location = Actor->GetActorLocation();
+			const FRotator Rotation = Actor->GetActorRotation();
+			const float Radius = Drawer->Radius < MinRadius ? MinRadius : Drawer->Radius;
+
+			const FBox2D ActorBounds = FBox2D{ FVector2D{Location} - FVector2D(Radius), FVector2D{Location} + FVector2D(Radius) };
+			if (IsSelected || ViewportContext.ViewBounds.Intersect(ActorBounds))
+			{
+				if (IsSelected == false)
+				{
+					if (Drawer->bAlwaysDebuggerDraw == false && Drawer->Radius < MinRadius)
+					{
+						return;
+					}
+				}
+
+				if (ViewportContext.bIsSelectDragging && ViewportContext.SelectDragBounds.Intersect(ActorBounds))
+				{
+					SelectedActors.Add(Actor);
+					TopSelectedActor = Actor;
+				}
+				else if (ImGui::IsWindowHovered() && ImGui::GetIO().MouseReleased[ImGuiMouseButton_Left])
+				{
+					const float DistanceSquared = (FVector2D{ Location } - ViewportContext.MouseWorldPos).SizeSquared();
+					if (DistanceSquared < Radius * Radius)
+					{
+						TopSelectedActor = Actor;
+					}
+				}
+
+				FGuardValue_Bitfield(ViewportContext.bIsSelected, IsSelected);
+				Drawer->DrawImGuiDebuggerExtendInfo(Actor, ViewportContext);
+
+				ViewportContext.DrawCircleFilled(FVector2D(Location), Radius, Drawer->Color, 8);
+				if ((ViewportContext.MouseWorldPos - FVector2D(Location)).SizeSquared() < Radius * Radius)
+				{
+					ImGui::BeginTooltip();
+					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetName()));
+					ImGui::Separator();
+					Drawer->DrawImGuiDebuggerToolTips(Actor);
+					ImGui::EndTooltip();
+				}
+
+				if (Radius > MinRadius * MinRadius)
+				{
+					const float Thickness = FMath::GetMappedRangeValueClamped(TRange<float>{ 4.f, 16.f }, TRange<float>{ 2.f, 4.f }, Radius * Zoom);
+					ViewportContext.DrawLine(FVector2D(Location), FVector2D(Location + Rotation.Vector() * Radius * 1.5f), FColor::Black, Thickness);
+				}
+
+				if (IsSelected)
+				{
+					const FColor SelectedColor = FLinearColor{ 0.8f, 0.4f, 0.f }.ToFColor(true);
+					const float Thickness = FMath::GetMappedRangeValueClamped(TRange<float>{ 4.f, 16.f }, TRange<float>{ 2.f, 8.f }, Radius * Zoom);
+					ViewportContext.DrawCircle(FVector2D(Location), Radius, SelectedColor, 8, Thickness);
+				}
+			}
+		};
+		for (const TPair<TWeakObjectPtr<AActor>, TSubclassOf<UImGuiWorldDebuggerDrawerBase>>& Pair : ActorsToDraw)
+		{
+			if (AActor* Actor = Pair.Key.Get())
+			{
+				UImGuiWorldDebuggerDrawerBase* Drawer = Pair.Value.GetDefaultObject();
+				const bool IsSelected = SelectedActors.Contains(Actor);
+				if (IsSelected)
+				{
+					continue;
+				}
+				DrawActor(Actor, Drawer, false);
+			}
+		}
+		for (AActor* Actor : TSet<TObjectPtr<AActor>>(SelectedActors))
+		{
+			if (Actor)
+			{
+				if (const TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawableActors.Find(Actor))
+				{
+					DrawActor(Actor, Drawer->GetDefaultObject(), true);
+				}
+			}
+		}
+	}
+
+	// Sort selected actors by distance
+	if (TopSelectedActor)
+	{
+		// Clear invalid actors
+		{
+			TArray<TObjectPtr<AActor>> SelectedWorldActorsArray = SelectedActors.Array();
+			SelectedWorldActorsArray.RemoveAll([](const AActor* E) { return E == nullptr; });
+			SelectedActors = TSet<TObjectPtr<AActor>>{ SelectedWorldActorsArray };
+		}
+
+		SelectedActors.Add(TopSelectedActor);
+		SelectedActors.Sort([&](const TObjectPtr<AActor>& LHS, const TObjectPtr<AActor>& RHS)
+		{
+			const FVector2D LHS_Location = FVector2D(LHS->GetActorLocation());
+			const FVector2D RHS_Location = FVector2D(RHS->GetActorLocation());
+			return (LHS_Location - ViewportContext.MouseWorldPos).SizeSquared() < (RHS_Location - ViewportContext.MouseWorldPos).SizeSquared();
+		});
+	}
+
+#if WITH_EDITOR
+	// sync selection to editor
+	if (ViewportContext.bIsSelectDragging == false)
+	{
+		static TSet<TObjectPtr<AActor>> PreSelectedActors;
+		if (PreSelectedActors.Num() != SelectedActors.Num() || PreSelectedActors.Difference(SelectedActors).Num() > 0 || SelectedActors.Difference(PreSelectedActors).Num() > 0)
+		{
+			EditorSelectActors.ExecuteIfBound(World, SelectedActors);
+			PreSelectedActors = SelectedActors;
+		}
+	}
+#endif
+}
+
+void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel)
+{
+	UnrealImGui::TObjectArray<AActor> FilteredSelectedActors;
+	{
+		FilteredSelectedActors.Reset(SelectedActors.Num());
+		for (AActor* Actor : SelectedActors)
+		{
+			if (Actor)
+			{
+				FilteredSelectedActors.Add(Actor);
+			}
+		}
+	}
+	if (FilteredSelectedActors.Num() == 0)
+	{
+		return;
+	}
+
+	const AActor* FirstActor = FilteredSelectedActors[0];
+	if (FilteredSelectedActors.Num() == 1)
+	{
+		ImGui::Text("Actor Name: %s", TCHAR_TO_UTF8(*FirstActor->GetName()));
+		if (ImGui::BeginItemTooltip())
+		{
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstActor->GetName()));
+			ImGui::EndTooltip();
+		}
+	}
+	else
+	{
+		ImGui::Text("%d Actors", FilteredSelectedActors.Num());
+	}
+
+	static UnrealImGui::FDetailsFilter DetailsFilter;
+	DetailsFilter.Draw();
+	if (FirstActor)
+	{
+		DrawDetailTable("Actor", GetTopClass(FilteredSelectedActors), FilteredSelectedActors, &DetailsFilter);
+	}
+}
+
+void UImGuiWorldDebuggerViewportActorExtent::SetSelectedEntities(const TSet<TObjectPtr<AActor>>& NewSelectedActors)
+{
+	SelectedActors = NewSelectedActors;
+#if WITH_EDITOR
+	EditorSelectActors.ExecuteIfBound(GetWorld(), NewSelectedActors);
+#endif
+}
+
+AActor* UImGuiWorldDebuggerViewportActorExtent::GetFirstSelectActor() const
+{
+	for (AActor* Actor : SelectedActors)
+	{
+		if (Actor)
+		{
+			return Actor;
+		}
+	}
+	return nullptr;
+}
+
+void UImGuiWorldDebuggerViewportActorExtent::FocusActor(AActor* Actor)
+{
+	if (IsValid(Actor) == false)
+	{
+		return;
+	}
+	GetViewport()->ViewLocation = FVector2D(Actor->GetActorLocation());
+	SelectedActors.Reset();
+	SelectedActors.Add(Actor);
 }
 
 void UImGuiWorldDebuggerViewportActorExtent::FocusActors(const TArray<AActor*>& Actors)
@@ -170,7 +368,6 @@ void UImGuiWorldDebuggerViewportActorExtent::FocusActors(const TArray<AActor*>& 
 	{
 		SelectedActors.Add(Actor);
 	}
-	// TODO：缓存ViewBounds，对视口进行缩放
 }
 
 void UImGuiWorldDebuggerViewportActorExtent::WhenFilterStringChanged(UUnrealImGuiViewportBase* Viewport, const FString& FilterString)
@@ -191,7 +388,6 @@ void UImGuiWorldDebuggerViewportActorExtent::WhenFilterStringChanged(UUnrealImGu
 			if (Viewport->FilterClass.IsValid())
 			{
 				Viewport->FilterType = EFilterType::TypeFilter;
-				return;
 			}
 		}
 	}
@@ -202,6 +398,15 @@ void UImGuiWorldDebuggerViewportActorExtent::WhenFilterStringChanged(UUnrealImGu
 	else
 	{
 		Viewport->FilterType = EFilterType::NameFilter;
+	}
+
+	ActorsToDraw.Empty();
+	for (const auto& [Actor, Drawer] : DrawableActors)
+	{
+		if (CanAddToDraw(Viewport, Actor.Get(), Drawer.GetDefaultObject()))
+		{
+			ActorsToDraw.Add(Actor, Drawer);
+		}
 	}
 }
 
@@ -226,8 +431,7 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawFilterPopup(UUnrealImGuiViewpor
 			TSet<UClass*> Classes;
 			for (const TPair<TWeakObjectPtr<AActor>, TSubclassOf<UImGuiWorldDebuggerDrawerBase>>& Pair : DrawableActors)
 			{
-				AActor* Actor = Pair.Key.Get();
-				if (Actor)
+				if (AActor* Actor = Pair.Key.Get())
 				{
 					Classes.Add(Actor->GetClass());
 				}
@@ -292,19 +496,6 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawFilterPopup(UUnrealImGuiViewpor
 	}
 }
 
-bool UImGuiWorldDebuggerViewportActorExtent::IsShowActorsByFilter(const AActor* Actor) const
-{
-	using namespace UnrealImGui::Viewport;
-	if (GetViewport()->FilterType == EFilterType::TypeFilter)
-	{
-		if (UClass* FilterClass = GetViewport()->FilterClass.Get())
-		{
-			return Actor->IsA(FilterClass);
-		}
-	}
-	return false;
-}
-
 void UImGuiWorldDebuggerViewportActorExtent::FocusEntitiesByFilter(UUnrealImGuiViewportBase* Viewport)
 {
 	using namespace UnrealImGui::Viewport;
@@ -321,6 +512,41 @@ void UImGuiWorldDebuggerViewportActorExtent::FocusEntitiesByFilter(UUnrealImGuiV
 			}
 		}
 	}
+}
+
+bool UImGuiWorldDebuggerViewportActorExtent::IsShowActorsByFilter(const UUnrealImGuiViewportBase* Viewport, const AActor* Actor) const
+{
+	if (Viewport->FilterType == UnrealImGui::Viewport::EFilterType::TypeFilter)
+	{
+		if (UClass* FilterClass = GetViewport()->FilterClass.Get())
+		{
+			return Actor->IsA(FilterClass);
+		}
+	}
+	return false;
+}
+
+bool UImGuiWorldDebuggerViewportActorExtent::CanAddToDraw(const UUnrealImGuiViewportBase* Viewport, const AActor* Actor, const UImGuiWorldDebuggerDrawerBase* Drawer) const
+{
+	if (Actor == nullptr)
+	{
+		return false;
+	}
+	if (Viewport->FilterType != UnrealImGui::Viewport::EFilterType::None && Viewport->FilterType != UnrealImGui::Viewport::EFilterType::NameFilter)
+	{
+		if (IsShowActorsByFilter(Viewport, Actor) == false)
+		{
+			return false;
+		}
+	}
+	else
+	{
+		if (Drawer->GetClass() == UImGuiWorldDebuggerDrawer_Default::StaticClass())
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 #if WITH_EDITOR
@@ -348,212 +574,3 @@ void UImGuiWorldDebuggerViewportActorExtent::WhenEditorSelectionChanged(const TA
 
 UImGuiWorldDebuggerViewportActorExtent::FEditorSelectActors UImGuiWorldDebuggerViewportActorExtent::EditorSelectActors;
 #endif
-
-void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext)
-{
-	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWorldDebuggerViewportExtent_Draw"), STAT_ImGuiWorldDebuggerViewportExtent_Draw, STATGROUP_ImGui);
-	
-	UWorld* World = GetWorld();
-	check(World);
-
-	AActor* TopSelectedActor = nullptr;
-	const float Zoom = ViewportContext.Zoom;
-	// 绘制实体位置
-	{
-		const float ScreenMinRadius = 2.f;
-		const float MinRadius = ScreenMinRadius / Zoom;
-		auto DrawActor = [&](AActor* Actor, const UImGuiWorldDebuggerDrawerBase* Drawer, bool IsSelected)
-		{
-			const FVector Location = Actor->GetActorLocation();
-			const FRotator Rotation = Actor->GetActorRotation();
-			const float Radius = Drawer->Radius < MinRadius ? MinRadius : Drawer->Radius;
-
-			const FBox2D ActorBounds = FBox2D{ FVector2D{Location} - FVector2D(Radius), FVector2D{Location} + FVector2D(Radius) };
-			if (IsSelected || ViewportContext.ViewBounds.Intersect(ActorBounds))
-			{
-				if (IsSelected == false)
-				{
-					using namespace UnrealImGui::Viewport;
-					if (ViewportContext.Viewport->FilterType != EFilterType::None && ViewportContext.Viewport->FilterType != EFilterType::NameFilter)
-					{
-						if (IsShowActorsByFilter(Actor) == false)
-						{
-							return;
-						}
-					}
-					else
-					{
-						// Actor的默认绘制类默认不显示
-						if (Drawer->GetClass() == UImGuiWorldDebuggerDrawer_Default::StaticClass())
-						{
-							return;
-						}
-						if (Drawer->bAlwaysDebuggerDraw == false && Drawer->Radius < MinRadius)
-						{
-							return;
-						}
-					}
-				}
-
-				if (ViewportContext.bIsSelectDragging && ViewportContext.SelectDragBounds.Intersect(ActorBounds))
-				{
-					SelectedActors.Add(Actor);
-					TopSelectedActor = Actor;
-				}
-				else if (ImGui::IsWindowHovered() && ImGui::GetIO().MouseReleased[ImGuiMouseButton_Left])
-				{
-					const float DistanceSquared = (FVector2D{ Location } - ViewportContext.MouseWorldPos).SizeSquared();
-					if (DistanceSquared < Radius * Radius)
-					{
-						TopSelectedActor = Actor;
-					}
-				}
-
-				FGuardValue_Bitfield(ViewportContext.bIsSelected, IsSelected);
-				Drawer->DrawImGuiDebuggerExtendInfo(Actor, ViewportContext);
-
-				ViewportContext.DrawCircleFilled(FVector2D(Location), Radius, Drawer->Color, 8);
-				if ((ViewportContext.MouseWorldPos - FVector2D(Location)).SizeSquared() < Radius * Radius)
-				{
-					ImGui::BeginTooltip();
-					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetName()));
-					ImGui::Separator();
-					Drawer->DrawImGuiDebuggerToolTips(Actor);
-					ImGui::EndTooltip();
-				}
-
-				if (Radius > MinRadius * MinRadius)
-				{
-					const float Thickness = FMath::GetMappedRangeValueClamped(TRange<float>{ 4.f, 16.f }, TRange<float>{ 2.f, 4.f }, Radius * Zoom);
-					ViewportContext.DrawLine(FVector2D(Location), FVector2D(Location + Rotation.Vector() * Radius * 1.5f), FColor::Black, Thickness);
-				}
-
-				if (IsSelected)
-				{
-					const FColor SelectedColor = FLinearColor{ 0.8f, 0.4f, 0.f }.ToFColor(true);
-					const float Thickness = FMath::GetMappedRangeValueClamped(TRange<float>{ 4.f, 16.f }, TRange<float>{ 2.f, 8.f }, Radius * Zoom);
-					ViewportContext.DrawCircle(FVector2D(Location), Radius, SelectedColor, 8, Thickness);
-				}
-			}
-		};
-		for (const TPair<TWeakObjectPtr<AActor>, TSubclassOf<UImGuiWorldDebuggerDrawerBase>>& Pair : DrawableActors)
-		{
-			if (AActor* Actor = Pair.Key.Get())
-			{
-				UImGuiWorldDebuggerDrawerBase* Drawer = Pair.Value.GetDefaultObject();
-				const bool IsSelected = SelectedActors.Contains(Actor);
-				if (IsSelected)
-				{
-					continue;
-				}
-				DrawActor(Actor, Drawer, false);
-			}
-		}
-		for (AActor* Actor : TSet<TObjectPtr<AActor>>(SelectedActors))
-		{
-			if (Actor)
-			{
-				if (const TSubclassOf<UImGuiWorldDebuggerDrawerBase>* Drawer = DrawableActors.Find(Actor))
-				{
-					DrawActor(Actor, Drawer->GetDefaultObject(), true);
-				}
-			}
-		}
-	}
-
-	// 根据选中Actor距离进行排序
-	if (TopSelectedActor)
-	{
-		// 清理无效的Actor
-		{
-			TArray<TObjectPtr<AActor>> SelectedWorldActorsArray = SelectedActors.Array();
-			SelectedWorldActorsArray.RemoveAll([](const AActor* E) { return E == nullptr; });
-			SelectedActors = TSet<TObjectPtr<AActor>>{ SelectedWorldActorsArray };
-		}
-
-		SelectedActors.Add(TopSelectedActor);
-		SelectedActors.Sort([&](const TObjectPtr<AActor>& LHS, const TObjectPtr<AActor>& RHS)
-		{
-			const FVector2D LHS_Location = FVector2D(LHS->GetActorLocation());
-			const FVector2D RHS_Location = FVector2D(RHS->GetActorLocation());
-			return (LHS_Location - ViewportContext.MouseWorldPos).SizeSquared() < (RHS_Location - ViewportContext.MouseWorldPos).SizeSquared();
-		});
-	}
-
-#if WITH_EDITOR
-	// 编辑器下同步选择
-	if (ViewportContext.bIsSelectDragging == false)
-	{
-		static TSet<TObjectPtr<AActor>> PreSelectedActors;
-		if (PreSelectedActors.Num() != SelectedActors.Num() || PreSelectedActors.Difference(SelectedActors).Num() > 0 || SelectedActors.Difference(PreSelectedActors).Num() > 0)
-		{
-			EditorSelectActors.ExecuteIfBound(World, SelectedActors);
-			PreSelectedActors = SelectedActors;
-		}
-	}
-#endif
-}
-
-void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UImGuiWorldDebuggerDetailsPanel* DetailsPanel)
-{
-	UnrealImGui::TObjectArray<AActor> FilteredSelectedActors;
-	{
-		FilteredSelectedActors.Reset(SelectedActors.Num());
-		for (AActor* Actor : SelectedActors)
-		{
-			if (Actor)
-			{
-				FilteredSelectedActors.Add(Actor);
-			}
-		}
-	}
-	if (FilteredSelectedActors.Num() == 0)
-	{
-		return;
-	}
-
-	const AActor* FirstActor = FilteredSelectedActors[0];
-	if (FilteredSelectedActors.Num() == 1)
-	{
-		ImGui::Text("Actor Name: %s", TCHAR_TO_UTF8(*FirstActor->GetName()));
-		if (ImGui::BeginItemTooltip())
-		{
-			ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstActor->GetName()));
-			ImGui::EndTooltip();
-		}
-	}
-	else
-	{
-		ImGui::Text("%d Actors", FilteredSelectedActors.Num());
-	}
-
-	static UnrealImGui::FDetailsFilter DetailsFilter;
-	DetailsFilter.Draw();
-	if (FirstActor)
-	{
-		DrawDetailTable("Actor", GetTopClass(FilteredSelectedActors), FilteredSelectedActors, &DetailsFilter);
-	}
-}
-
-AActor* UImGuiWorldDebuggerViewportActorExtent::GetFirstSelectActor() const
-{
-	for (AActor* Actor : SelectedActors)
-	{
-		if (Actor)
-		{
-			return Actor;
-		}
-	}
-	return nullptr;
-}
-
-void UImGuiWorldDebuggerViewportActorExtent::FocusActor(AActor* Actor)
-{
-	if (IsValid(Actor) == false)
-	{
-		return;
-	}
-	GetViewport()->ViewLocation = FVector2D(Actor->GetActorLocation());
-	SelectedActors.Reset();
-	SelectedActors.Add(Actor);
-}
