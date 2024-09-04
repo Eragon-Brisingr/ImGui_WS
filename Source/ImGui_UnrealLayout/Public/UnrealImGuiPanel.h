@@ -67,8 +67,10 @@ public:
 
 	void LocalPanelOpened();
 	void LocalPanelClosed();
-	
-	void SaveConfig();
+
+	void SaveConfig() { Super::SaveConfig(CPF_Config, nullptr, GConfig, false); }
+	UFUNCTION(BlueprintCallable, Category = ImGui)
+	void SaveImGuiConfig() { SaveConfig(); }
 private:
 	void InitialConfigObject();
 	UUnrealImGuiPanelBase* GetConfigObject() const { return ConfigObjectPrivate; }

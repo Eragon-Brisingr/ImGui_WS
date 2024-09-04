@@ -196,6 +196,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = ImGui)
 	UUnrealImGuiViewportBase* GetViewport() const;
+
+	void SaveConfig() { Super::SaveConfig(CPF_Config, nullptr, GConfig, false); }
+	UFUNCTION(BlueprintCallable, Category = ImGui)
+	void SaveImGuiConfig() { SaveConfig(); }
 protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void ReceiveRegister(UObject* Owner, UUnrealImGuiViewportBase* Viewport);

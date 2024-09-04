@@ -55,11 +55,6 @@ void UUnrealImGuiPanelBase::LocalPanelClosed()
 	}
 }
 
-void UUnrealImGuiPanelBase::SaveConfig()
-{
-	Super::SaveConfig(CPF_Config, nullptr, GConfig, false);
-}
-
 void UUnrealImGuiPanelBase::InitialConfigObject()
 {
 	if (UWorld* World = GetWorld())
