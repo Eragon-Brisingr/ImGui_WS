@@ -94,25 +94,25 @@ public:
 	
 	virtual bool ShouldCreatePanel(UObject* Owner) const { FScriptExecutionGuard ScriptExecutionGuard{ this }; return ReceiveShouldCreatePanel(Owner); }
 
-	virtual void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveRegister(Owner, Builder); }
-	virtual void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveUnregister(Owner, Builder); }
+	virtual void Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReceiveRegister(Owner, Builder); }
+	virtual void Unregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReceiveUnregister(Owner, Builder); }
 
-	virtual void WhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveWhenOpen(Owner, Builder); }
-	virtual void WhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveWhenClose(Owner, Builder); }
+	virtual void WhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReceiveWhenOpen(Owner, Builder); }
+	virtual void WhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReceiveWhenClose(Owner, Builder); }
 	
-	virtual void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReveiveDraw(Owner, Builder, DeltaSeconds); }
+	virtual void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReceiveDraw(Owner, Builder, DeltaSeconds); }
 	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
 protected:
 	UFUNCTION(BlueprintNativeEvent)
 	bool ReceiveShouldCreatePanel(UObject* Owner) const;
 	UFUNCTION(BlueprintImplementableEvent)
-	void ReveiveRegister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	void ReceiveRegister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
 	UFUNCTION(BlueprintImplementableEvent)
-	void ReveiveUnregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	void ReceiveUnregister(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
 	UFUNCTION(BlueprintImplementableEvent)
-	void ReveiveWhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	void ReceiveWhenOpen(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
 	UFUNCTION(BlueprintImplementableEvent)
-	void ReveiveWhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
+	void ReceiveWhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder);
 	UFUNCTION(BlueprintImplementableEvent)
-	void ReveiveDraw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
+	void ReceiveDraw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
 };

@@ -198,6 +198,11 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					static constexpr auto SinglePanelFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	
 					UClass* Class = PanelClass.Get();
+					if (Class && Class->HasAnyClassFlags(CLASS_NewerVersionExists))
+					{
+						PanelClass = PanelClass.ToSoftObjectPath();
+						Class = PanelClass.Get();
+					}
 					if (Class == nullptr)
 					{
 						if (ImGui::FWindow Window{ "Panel", nullptr, SinglePanelFlags })
