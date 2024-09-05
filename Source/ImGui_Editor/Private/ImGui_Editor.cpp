@@ -6,6 +6,7 @@
 #include "ImGui_WS_Manager.h"
 #include "Selection.h"
 #include "ToolMenus.h"
+#include "UnrealImGuiLibrary.h"
 #include "Editor/EditorPerformanceSettings.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Input/SButton.h"
@@ -109,6 +110,13 @@ void FImGui_EditorModule::StartupModule()
 		const auto Notification = FSlateNotificationManager::Get().AddNotification(Info);
 		Notification->SetCompletionState(SNotificationItem::CS_Pending);
 		NotificationPtr = Notification;
+	}
+
+	for (TFieldIterator<UFunction> It{ UImGuiLibrary::StaticClass() }; It; ++It)
+	{
+		// Support script call internal function
+		static const FName NAME_Function_ScriptCallable("ScriptCallable");
+		It->SetMetaData(NAME_Function_ScriptCallable, TEXT(""));
 	}
 }
 
