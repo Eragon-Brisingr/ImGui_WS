@@ -146,7 +146,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 		}
 		
 		const UUnrealImGuiPanelBase* CDO = Class->GetDefaultObject<UUnrealImGuiPanelBase>();
-		UpdateCategoryPanels(CDO->Title, CDO->Categories, Class);
+		UpdateCategoryPanels(CDO->Title.IsNone() ? Class->GetFName() : CDO->Title, CDO->Categories, Class);
 	}
 	const UImGuiSettings* ImGuiSettings = GetDefault<UImGuiSettings>();
 	for (const auto& BlueprintPanel : ImGuiSettings->BlueprintPanels)
@@ -324,6 +324,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					return SpawnedTab;
 				}))
 				.SetDisplayName(FText::FromName(Panel.Name))
+				.SetTooltipText(FText::FromString(Panel.Class.ToString()))
 				.SetGroup(Group)
 				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("WidgetReflector.TabIcon")));
 			}
