@@ -83,7 +83,4 @@ protected:
 	void ReceiveDrawViewportMenu(UObject* Owner, bool& bIsConfigDirty);
 	UFUNCTION(BlueprintImplementableEvent)
 	void ReceiveDrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext);
-private:
-	friend struct FUnrealImGuiViewportContext;
-	static constexpr float MessageBoxWidth = 350.f;
 };

@@ -15,8 +15,19 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 {
 	GENERATED_BODY()
 
+	struct FMessage
+	{
+		FString Text;
+		FColor Color;
+	};
+	struct FData
+	{
+		mutable TArray<FMessage> Messages;
+		mutable uint8 bIsConfigDirty : 1 = false;
+	};
+
 	FUnrealImGuiViewportContext() = default;
-	FUnrealImGuiViewportContext(UUnrealImGuiViewportBase* Viewport, struct ImDrawList* DrawList, const FVector2D& ContentMin, const FVector2D& ContentSize, const FVector2D& ViewLocation, float Zoom, const FVector2D& MousePos, bool bIsContentHovered, bool bIsContentActive, bool bIsViewDragEnd, bool IsSelectDragging, const FVector2D& MouseClickedPos, float DeltaSeconds)
+	FUnrealImGuiViewportContext(FData& Data, UUnrealImGuiViewportBase* Viewport, struct ImDrawList* DrawList, const FVector2D& ContentMin, const FVector2D& ContentSize, const FVector2D& ViewLocation, float Zoom, const FVector2D& MousePos, bool bIsContentHovered, bool bIsContentActive, bool bIsViewDragEnd, bool IsSelectDragging, const FVector2D& MouseClickedPos, float DeltaSeconds)
 		: Viewport(Viewport)
 		, DrawList(DrawList)
 		, ContentMin(ContentMin)
@@ -33,9 +44,7 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 		, bIsSelectDragging(IsSelectDragging)
 		, SelectDragBounds{ IsSelectDragging ? TArray<FVector2D>{ ScreenToWorldTransform.TransformPoint(MouseClickedPos), ScreenToWorldTransform.TransformPoint(MousePos) } : FBox2D() }
 		, DeltaSeconds(DeltaSeconds)
-		, bIsSelected(false)
-		, bIsTopSelected(false)
-		, bIsConfigDirty(false)
+		, Data(&Data)
 	{}
 
 	UUnrealImGuiViewportBase* Viewport = nullptr;
@@ -135,22 +144,15 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	void FDrawQuadFilled(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color) const { DrawQuadFilled(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color); }
 	void DrawText(const FVector2D& Position, const FString& Text, const FColor& Color) const;
 	void FDrawText(const FVector2f& Position, const FString& Text, const FColor& Color) const { DrawText(FVector2D{ Position }, Text, Color); }
-	void AddMessageText(const FString& Message, const FColor& Color = FColor::White) const { Messages.Add(FMessage{ Message, Color }); }
-	void MarkConfigDirty() const { bIsConfigDirty |= true; }
+	void AddMessageText(const FString& Message, const FColor& Color = FColor::White) const { Data->Messages.Add(FMessage{ Message, Color }); }
+	void MarkConfigDirty() const { Data->bIsConfigDirty |= true; }
 private:
 	friend class UUnrealImGuiViewportBase;
 
+	FData* Data;
+
 	using ImU32 = uint32;
 	static ImU32 FColorToU32(const FColor& Color);
-
-	mutable float MessageHeight = 0.f;
-	struct FMessage
-	{
-		FString Text;
-		FColor Color;
-	};
-	mutable TArray<FMessage> Messages;
-	mutable uint8 bIsConfigDirty : 1;
 };
 
 UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig)

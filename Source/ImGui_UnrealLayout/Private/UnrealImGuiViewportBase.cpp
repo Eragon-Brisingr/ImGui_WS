@@ -374,8 +374,10 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 			}
 		}
 	}
+	FUnrealImGuiViewportContext::FData ContextData;
 	const FUnrealImGuiViewportContext Context
 	{
+		ContextData,
 		this,
 		DrawList,
 		ContentMin,
@@ -394,7 +396,6 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 	constexpr int32 FloatContextFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	{
 		ImGui::SetNextWindowPos(ImVec2{ ContentMin + 10.f }, ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2{ MessageBoxWidth, -1.f });
 		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
 		ImGui::SetNextWindowBgAlpha(0.5f);
 		if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
@@ -422,9 +423,9 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 		{
 			continue;
 		}
-		FGuardValue_Bitfield(Context.bIsConfigDirty, false);
+		FGuardValue_Bitfield(Context.Data->bIsConfigDirty, false);
 		Drawer.Drawer(Owner, Context);
-		if (Context.bIsConfigDirty)
+		if (Context.Data->bIsConfigDirty)
 		{
 			Drawer.Extent->SaveConfig();
 		}
@@ -516,20 +517,18 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 	}
 	ImGui::PopClipRect();
 
+	if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
 	{
-		if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
+		for (const auto& Message : Context.Data->Messages)
 		{
-			for (const auto& Message : Context.Messages)
-			{
-				ImGui::PushStyleColor(ImGuiCol_Text, Context.FColorToU32(Message.Color));
-				ImGui::TextUnformatted(TCHAR_TO_UTF8(*Message.Text));
-				ImGui::PopStyleColor();
-			}
+			ImGui::PushStyleColor(ImGuiCol_Text, Context.FColorToU32(Message.Color));
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*Message.Text));
+			ImGui::PopStyleColor();
 		}
-		ImGui::End();
 	}
+	ImGui::End();
 
-	bIsConfigDirty |= Context.bIsConfigDirty;
+	bIsConfigDirty |= Context.Data->bIsConfigDirty;
 	if (bIsConfigDirty)
 	{
 		SaveConfig();
