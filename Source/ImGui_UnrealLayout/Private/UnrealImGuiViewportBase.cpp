@@ -4,6 +4,7 @@
 #include "UnrealImGuiViewportBase.h"
 
 #include "ImGuiEx.h"
+#include "imgui_internal.h"
 #include "UnrealImGuiViewportExtent.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
@@ -517,8 +518,10 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 	}
 	ImGui::PopClipRect();
 
+	auto ViewportWindow = ImGui::GetCurrentWindow();
 	if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
 	{
+		ImGui::BringWindowToDisplayBehind(ViewportWindow, ImGui::GetCurrentWindow());
 		for (const auto& Message : Context.Data->Messages)
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, Context.FColorToU32(Message.Color));
