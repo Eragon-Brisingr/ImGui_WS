@@ -116,14 +116,18 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 
 	void DrawLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float Thickness = 1.f) const;
 	void FDrawLine(const FVector2f& Start, const FVector2f& End, const FColor& Color, float Thickness = 1.f) const { DrawLine(FVector2D{ Start }, FVector2D{ End }, Color, Thickness); }
+	void DrawDashedLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float DashSize = 100.f, float Thickness = 1.f) const;
+	void FDrawDashedLine(const FVector2f& Start, const FVector2f& End, const FColor& Color, float DashSize = 100.f, float Thickness = 1.f) const { DrawDashedLine(FVector2D{ Start }, FVector2D{ End }, Color, DashSize, Thickness); }
+	void DrawArc(const FVector2D& Center, float MinAngle, float MaxAngle, double Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const;
+	void FDrawArc(const FVector2f& Center, float MinAngle, float MaxAngle, double Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const { DrawArc(FVector2D{ Center }, MinAngle, MaxAngle, Radius, Color, NumSegments, Thickness); }
 	void DrawArrow(const FVector2D& Start, const FVector2D& End, const FColor& Color, float ArrowSize = 12.f, float Thickness = 1.f) const;
 	void FDrawArrow(const FVector2f& Start, const FVector2f& End, const FColor& Color, float ArrowSize = 12.f, float Thickness = 1.f) const { DrawArrow(FVector2D{ Start }, FVector2D{ End }, Color, ArrowSize, Thickness); }
 	void DrawTriangle(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color, float Thickness = 1.f) const;
 	void FDrawTriangle(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color, float Thickness = 1.f) const { DrawTriangle(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color, Thickness); }
 	void DrawTriangleFilled(const FVector2D& A, const FVector2D& B, const FVector2D& C, const FColor& Color) const;
 	void FDrawTriangleFilled(const FVector2f& A, const FVector2f& B, const FVector2f& C, const FColor& Color) const { DrawTriangleFilled(FVector2D{ A }, FVector2D{ B }, FVector2D{ C }, Color); }
-	void DrawCircle(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.0f) const;
-	void FDrawCircle(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.0f) const { DrawCircle(FVector2D{ Center }, Radius, Color, NumSegments, Thickness); }
+	void DrawCircle(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const;
+	void FDrawCircle(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const { DrawCircle(FVector2D{ Center }, Radius, Color, NumSegments, Thickness); }
 	void DrawCircleFilled(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments = 0) const;
 	void FDrawCircleFilled(const FVector2f& Center, float Radius, const FColor& Color, int NumSegments = 0) const { DrawCircleFilled(FVector2D{ Center }, Radius, Color, NumSegments); }
 	void DrawCapsule(const FVector2D& A, const FVector2D& B, float Radius, const FColor& Color, int NumSegments = 0, float Thickness = 1.f) const;
@@ -138,21 +142,24 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	void FDrawRect(const FBox2f& Box, const FColor& Color, float Rounding = 0.f, float Thickness = 1.f) const { DrawRect(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding, Thickness); }
 	void DrawRectFilled(const FBox2D& Box, const FColor& Color, float Rounding = 0.f) const;
 	void FDrawRectFilled(const FBox2f& Box, const FColor& Color, float Rounding = 0.f) const { DrawRectFilled(FBox2D{ FVector2D{ Box.Min }, FVector2D{ Box.Max } }, Color, Rounding); }
-	void DrawQuad(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color, float Thickness = 1.0f) const;
-	void FDrawQuad(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color, float Thickness = 1.0f) const { DrawQuad(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color, Thickness); }
+	void DrawQuad(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color, float Thickness = 1.f) const;
+	void FDrawQuad(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color, float Thickness = 1.f) const { DrawQuad(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color, Thickness); }
 	void DrawQuadFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color) const;
 	void FDrawQuadFilled(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color) const { DrawQuadFilled(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color); }
+	void DrawCoordinateSystem(const FTransform& Transform, float Scale = 100.f, float Thickness = 1.f) const;
 	void DrawText(const FVector2D& Position, const FString& Text, const FColor& Color) const;
 	void FDrawText(const FVector2f& Position, const FString& Text, const FColor& Color) const { DrawText(FVector2D{ Position }, Text, Color); }
 	void AddMessageText(const FString& Message, const FColor& Color = FColor::White) const { Data->Messages.Add(FMessage{ Message, Color }); }
 	void MarkConfigDirty() const { Data->bIsConfigDirty |= true; }
+
+	FORCEINLINE static uint32 FColorToU32(const FColor& Color)
+	{
+		return (static_cast<uint32>(Color.A)<<24) | (static_cast<uint32>(Color.B)<<16) | (static_cast<uint32>(Color.G)<<8) | (static_cast<uint32>(Color.R)<<0);
+	}
 private:
 	friend class UUnrealImGuiViewportBase;
 
 	FData* Data;
-
-	using ImU32 = uint32;
-	static ImU32 FColorToU32(const FColor& Color);
 };
 
 UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig)

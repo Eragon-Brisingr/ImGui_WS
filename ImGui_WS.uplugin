@@ -64,6 +64,16 @@
 			"Name": "ImGui_UnrealPanelsEditor",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_Viewport",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ImGui_ViewportEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	]
 }

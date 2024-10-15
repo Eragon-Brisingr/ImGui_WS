@@ -7,11 +7,6 @@
 #include "imgui_internal.h"
 #include "UnrealImGuiViewportBase.h"
 
-ImU32 FUnrealImGuiViewportContext::FColorToU32(const FColor& Color)
-{
-	return IM_COL32(Color.R, Color.G, Color.B, Color.A);
-}
-
 UUnrealImGuiViewportBase* UUnrealImGuiViewportExtentBase::GetViewport() const
 {
 	return CastChecked<UUnrealImGuiViewportBase>(GetOuter());
@@ -22,6 +17,49 @@ void FUnrealImGuiViewportContext::DrawLine(const FVector2D& Start, const FVector
 	if (ViewBounds.Intersect(FBox2D(TArray<FVector2D>{Start, End})))
 	{
 		DrawList->AddLine(ImVec2{ WorldToScreenLocation(Start) }, ImVec2{ WorldToScreenLocation(End) }, FColorToU32(Color), Thickness);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawDashedLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float DashSize, float Thickness) const
+{
+	if (!ViewBounds.Intersect(FBox2D(TArray<FVector2D>{Start, End})))
+	{
+		return;
+	}
+
+	FVector2D LineDir = End - Start;
+	double LineLeft = (End - Start).Size();
+	if (LineLeft)
+	{
+		LineDir /= LineLeft;
+	}
+
+	const FVector2D Dash = (DashSize * LineDir);
+	FVector2D DrawStart = Start;
+	while (LineLeft > DashSize)
+	{
+		const FVector2D DrawEnd = DrawStart + Dash;
+
+		DrawList->AddLine(ImVec2{ WorldToScreenLocation(Start) }, ImVec2{ WorldToScreenLocation(End) }, FColorToU32(Color), Thickness);
+
+		LineLeft -= 2*DashSize;
+		DrawStart = DrawEnd + Dash;
+	}
+	if (LineLeft > 0.0f)
+	{
+		DrawList->AddLine(ImVec2{ WorldToScreenLocation(Start) }, ImVec2{ WorldToScreenLocation(End) }, FColorToU32(Color), Thickness);
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawArc(const FVector2D& Center, float MinAngle, float MaxAngle, double Radius, const FColor& Color, int NumSegments, float Thickness) const
+{
+	const FBox2D CircleBounds{ Center - Radius, Center + Radius };
+	if (ViewBounds.Intersect(CircleBounds))
+	{
+		MinAngle = FMath::DegreesToRadians(MinAngle);
+		MaxAngle = FMath::DegreesToRadians(MaxAngle);
+		DrawList->PathArcTo(ImVec2{ WorldToScreenLocation(Center) }, Radius, MinAngle, MaxAngle, NumSegments);
+		DrawList->PathStroke(FColorToU32(Color), ImDrawFlags_None, Thickness);
 	}
 }
 
@@ -55,12 +93,11 @@ void FUnrealImGuiViewportContext::DrawTriangleFilled(const FVector2D& A, const F
 
 void FUnrealImGuiViewportContext::DrawCircle(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments, float Thickness) const
 {
-	const FBox2D CircleBounds{ FVector2D{Center} - FVector2D(Radius), FVector2D{Center} + FVector2D(Radius) };
+	const FBox2D CircleBounds{ Center - Radius, Center + Radius };
 	if (ViewBounds.Intersect(CircleBounds))
 	{
 		const float InnerRectRadius = Radius * 0.7071f;
-		const FBox2D InnerRectBounds = FBox2D{ FVector2D{Center} - FVector2D(InnerRectRadius), FVector2D{Center} + FVector2D(InnerRectRadius) };
-
+		const FBox2D InnerRectBounds = FBox2D{ Center - InnerRectRadius, Center + InnerRectRadius };
 		if (InnerRectBounds.IsInside(ViewBounds) == false)
 		{
 			DrawList->AddCircle(ImVec2{ WorldToScreenLocation(Center) }, Radius * Zoom, FColorToU32(Color), NumSegments, Thickness);
@@ -70,7 +107,7 @@ void FUnrealImGuiViewportContext::DrawCircle(const FVector2D& Center, float Radi
 
 void FUnrealImGuiViewportContext::DrawCircleFilled(const FVector2D& Center, float Radius, const FColor& Color, int NumSegments) const
 {
-	const FBox2D CircleBounds{ FVector2D{Center} - FVector2D(Radius), FVector2D{Center} + FVector2D(Radius) };
+	const FBox2D CircleBounds{ Center - Radius, Center + Radius };
 	if (ViewBounds.Intersect(CircleBounds))
 	{
 		DrawList->AddCircleFilled(ImVec2{ WorldToScreenLocation(Center) }, Radius * Zoom, FColorToU32(Color), NumSegments);
@@ -171,6 +208,35 @@ void FUnrealImGuiViewportContext::DrawQuadFilled(const FVector2D& P1, const FVec
 	if (ViewBounds.Intersect(QuadBounds))
 	{
 		DrawList->AddQuadFilled(ImVec2{ WorldToScreenLocation(P1) }, ImVec2{ WorldToScreenLocation(P2) }, ImVec2{ WorldToScreenLocation(P3) }, ImVec2{ WorldToScreenLocation(P4) }, FColorToU32(Color));
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawCoordinateSystem(const FTransform& Transform, float Scale, float Thickness) const
+{
+	const FVector2D X{ Transform.GetScaledAxis(EAxis::X) * Scale };
+	const FVector2D Y{ Transform.GetScaledAxis(EAxis::Y) * Scale };
+	const FVector2D Z{ Transform.GetScaledAxis(EAxis::Z) * Scale };
+
+	FBox2D Bounds;
+	const FVector2D Location{ Transform.GetLocation() };
+	Bounds += Location;
+	Bounds += X;
+	Bounds += Y;
+	Bounds += Z;
+	if (ViewBounds.Intersect(Bounds))
+	{
+		if (!X.IsNearlyZero())
+		{
+			DrawList->AddLine(ImVec2{ WorldToScreenLocation(Location) }, ImVec2{ WorldToScreenLocation(Location + X) }, FColorToU32(FColor::Red), Thickness);
+		}
+		if (!Y.IsNearlyZero())
+		{
+			DrawList->AddLine(ImVec2{ WorldToScreenLocation(Location) }, ImVec2{ WorldToScreenLocation(Location + Y) }, FColorToU32(FColor::Green), Thickness);
+		}
+		if (!Z.IsNearlyZero())
+		{
+			DrawList->AddLine(ImVec2{ WorldToScreenLocation(Location) }, ImVec2{ WorldToScreenLocation(Location + Z) }, FColorToU32(FColor::Blue), Thickness);
+		}
 	}
 }
 

@@ -1191,13 +1191,19 @@ public:
 		return ImGui::CollapsingHeader(TCHAR_TO_UTF8(*Label.ToString()), nullptr, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static bool CollapsingHeader(FName Label, UPARAM(Ref)bool& Visible, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
+	static bool CollapsingHeader(FName Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
+	{
+		if (!CheckImGuiContextThrowError()) { return false; }
+		return ImGui::CollapsingHeader(TCHAR_TO_UTF8(*Label.ToString()), Flags);
+	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	static bool CollapsingHeaderWithState(FName Label, UPARAM(Ref)bool& Visible, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTreeNodeFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::CollapsingHeader(TCHAR_TO_UTF8(*Label.ToString()), &Visible, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Trees", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetNextItemOpen(bool IsOpen, EImGuiCond Cond = EImGuiCond::None)
+	static void SetNextItemOpen(bool IsOpen, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetNextItemOpen(IsOpen, (int32)Cond);

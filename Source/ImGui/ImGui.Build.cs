@@ -27,11 +27,6 @@ public class ImGui : ModuleRules
 			"RHI",
 		});
 
-		if (Target.Platform.IsInGroup(UnrealPlatformGroup.Desktop))
-		{
-			PrivateDependencyModuleNames.Add("DesktopPlatform");
-		}
-		
 		PublicIncludePaths.AddRange(new string[] {
 			Path.Combine(ModuleDirectory, "ImGuiLibrary/Public"),
 			Path.Combine(ModuleDirectory, "ImPlotLibrary/Public"),

@@ -29,21 +29,6 @@ FColor ConvertColor(const uint32 Color)
 		(Color >> IM_COL32_A_SHIFT) & 0xFF
 	);
 }
-
-struct FScopedContext
-{
-	FScopedContext(ImGuiContext* Context)
-		: PreContext(ImGui::GetCurrentContext())
-	{
-		ImGui::SetCurrentContext(Context);
-	}
-	~FScopedContext()
-	{
-		ImGui::SetCurrentContext(PreContext);
-	}
-private:
-	ImGuiContext* PreContext;
-};
 }
 
 FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)
@@ -75,68 +60,78 @@ SImGuiPanel::FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 
 void SImGuiPanel::Construct(const FArguments& Args)
 {
-	ImGui::FScopedContext ScopedContext{ nullptr };
-	Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
-	Context->IO.IniFilename = nullptr;
-	PlotContext = ImPlot::CreateContext();
-	OnImGuiTick = Args._OnImGuiTick;
-	DesiredSize = Args._DesiredSize;
+	{
+		const FScopedContext ScopedContext{ nullptr, nullptr };
+		Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
+		Context->IO.IniFilename = nullptr;
+		PlotContext = ImPlot::CreateContext();
+		OnImGuiTick = Args._OnImGuiTick;
+		DesiredSize = Args._DesiredSize;
+	}
 }
 
 SImGuiPanel::~SImGuiPanel()
 {
+	if (Context->WithinFrameScope)
+	{
+		const FScopedContext ScopedContext{ ImGuiScopedContext() };
+		ImGui::EndFrame();
+	}
+
 	DisableVirtualInput();
 	FImGuiDelegates::OnImGuiContextDestroyed.Broadcast(Context);
+
 	ImGui::DestroyContext(Context);
 	ImPlot::DestroyContext(PlotContext);
 }
 
 void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
-	ImGui::FScopedContext ScopedContext{ Context };
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 
-	ImGuiIO& IO = ImGui::GetIO();
-	IO.DisplaySize = ImVec2{ AllottedGeometry.GetAbsoluteSize() };
-	IO.DeltaTime = InDeltaTime;
-
-	FSlateApplication& SlateApp = FSlateApplication::Get();
-	const bool bHasGamepad = (IO.BackendFlags & ImGuiBackendFlags_HasGamepad);
-	if (bHasGamepad != SlateApp.IsGamepadAttached())
+	auto NewFrame = [this](const FVector2D& DisplaySize, float DeltaTime)
 	{
-		IO.BackendFlags ^= ImGuiBackendFlags_HasGamepad;
-	}
+		ImGuiIO& IO = ImGui::GetIO();
+		IO.DisplaySize = ImVec2{ DisplaySize };
+		IO.DeltaTime = DeltaTime;
 
-	if (HasAnyUserFocus())
-	{
-		if (IO.WantSetMousePos)
+		FSlateApplication& SlateApp = FSlateApplication::Get();
+		const bool bHasGamepad = (IO.BackendFlags & ImGuiBackendFlags_HasGamepad);
+		if (bHasGamepad != SlateApp.IsGamepadAttached())
 		{
-			SlateApp.SetCursorPos(FVector2D{ IO.MousePos });
+			IO.BackendFlags ^= ImGuiBackendFlags_HasGamepad;
 		}
 
-		if (IO.WantCaptureKeyboard && !HasKeyboardFocus())
+		if (HasAnyUserFocus())
 		{
-			// No HandleKeyCharEvent so punt focus to the widget for it to receive OnKeyChar events
-			SlateApp.SetKeyboardFocus(AsShared());
+			if (IO.WantSetMousePos)
+			{
+				SlateApp.SetCursorPos(FVector2D{ IO.MousePos });
+			}
+
+			if (IO.WantCaptureKeyboard && !HasKeyboardFocus())
+			{
+				// No HandleKeyCharEvent so punt focus to the widget for it to receive OnKeyChar events
+				SlateApp.SetKeyboardFocus(AsShared());
+			}
+
+			if (IO.WantTextInput)
+			{
+				EnableVirtualInput();
+			}
+			else
+			{
+				DisableVirtualInput();
+			}
 		}
 
-		if (IO.WantTextInput)
-		{
-			EnableVirtualInput();
-		}
-		else
-		{
-			DisableVirtualInput();
-		}
-	}
-
-	ImPlotContext* OldPlotContent = ImPlot::GetCurrentContext();
-	ON_SCOPE_EXIT
-	{
-		ImPlot::SetCurrentContext(OldPlotContent);
+		ImGui::NewFrame();
 	};
-	ImPlot::SetCurrentContext(PlotContext);
-
-	ImGui::NewFrame();
+	
+	if (Context->FrameCountEnded < 0)
+	{
+		NewFrame(AllottedGeometry.GetAbsoluteSize(), InDeltaTime);
+	}
 
 	if (ensure(OnImGuiTick.IsBound()))
 	{
@@ -149,6 +144,8 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 	DrawData = FImGuiDrawData{ Data };
 
 	ImGui::EndFrame();
+
+	NewFrame(AllottedGeometry.GetAbsoluteSize(), InDeltaTime);
 }
 
 int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
@@ -303,7 +300,7 @@ FVector2D SImGuiPanel::ComputeDesiredSize(float LayoutScaleMultiplier) const
 
 FReply SImGuiPanel::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	ImGui::FScopedContext ScopedContext{ Context };
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	ImGuiIO& IO = ImGui::GetIO();
 	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
 	IO.AddMousePosEvent(Position.X, Position.Y);
@@ -312,7 +309,7 @@ FReply SImGuiPanel::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent
 
 FReply SImGuiPanel::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	ImGui::FScopedContext ScopedContext{ Context };
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	ImGuiIO& IO = ImGui::GetIO();
 	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
 	IO.AddMousePosEvent(Position.X, Position.Y);
@@ -334,7 +331,7 @@ FReply SImGuiPanel::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointe
 
 FReply SImGuiPanel::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	ImGuiIO& IO = ImGui::GetIO();
 	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
 	IO.AddMousePosEvent(Position.X, Position.Y);
@@ -362,7 +359,7 @@ FReply SImGuiPanel::OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const 
 
 FReply SImGuiPanel::OnMouseWheel(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.AddMouseWheelEvent(0.0f, MouseEvent.GetWheelDelta());
 	return IO.WantCaptureMouse ? FReply::Handled() : FReply::Unhandled();
@@ -370,7 +367,7 @@ FReply SImGuiPanel::OnMouseWheel(const FGeometry& MyGeometry, const FPointerEven
 
 FReply SImGuiPanel::OnAnalogValueChanged(const FGeometry& MyGeometry, const FAnalogInputEvent& InAnalogInputEvent)
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 
 	ImGuiIO& IO = ImGui::GetIO();
 	const float Value = InAnalogInputEvent.GetAnalogValue();
@@ -380,7 +377,7 @@ FReply SImGuiPanel::OnAnalogValueChanged(const FGeometry& MyGeometry, const FAna
 
 FReply SImGuiPanel::OnKeyChar(const FGeometry& MyGeometry, const FCharacterEvent& Event)
 {
-	ImGui::FScopedContext ScopedContext{ Context };
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.AddInputCharacter(CharCast<ANSICHAR>(Event.GetCharacter()));
@@ -389,7 +386,7 @@ FReply SImGuiPanel::OnKeyChar(const FGeometry& MyGeometry, const FCharacterEvent
 
 FReply SImGuiPanel::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.AddKeyEvent(UnrealImGui::ConvertKey(InKeyEvent.GetKey()), true);
@@ -403,7 +400,7 @@ FReply SImGuiPanel::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKe
 
 FReply SImGuiPanel::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.AddKeyEvent(UnrealImGui::ConvertKey(InKeyEvent.GetKey()), false);
@@ -417,7 +414,7 @@ FReply SImGuiPanel::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyE
 
 FReply SImGuiPanel::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.AddFocusEvent(true);
 
@@ -426,7 +423,7 @@ FReply SImGuiPanel::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEve
 
 void SImGuiPanel::OnFocusLost(const FFocusEvent& InFocusEvent)
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.AddFocusEvent(false);
 	ImGui::SetWindowFocus(nullptr);
@@ -435,7 +432,7 @@ void SImGuiPanel::OnFocusLost(const FFocusEvent& InFocusEvent)
 
 FCursorReply SImGuiPanel::OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const
 {
-	ImGui::FScopedContext ScopedContext(Context);
+	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	const ImGuiIO& IO = ImGui::GetIO();
 	if (IO.WantCaptureMouse && !(IO.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange))
 	{
@@ -650,6 +647,20 @@ void SImGuiPanel::EndComposition()
 	VirtualInput.CompositionString.Reset();
 	VirtualInput.SelectionRangeBeginIndex = 0;
 	VirtualInput.SelectionRangeLength = 0;
+}
+
+SImGuiPanel::FScopedContext::FScopedContext(ImGuiContext* ImGui, ImPlotContext* Plot)
+	: PreContext(ImGui::GetCurrentContext())
+	, PrePlotContent(ImPlot::GetCurrentContext())
+{
+	ImGui::SetCurrentContext(ImGui);
+	ImPlot::SetCurrentContext(Plot);
+}
+
+SImGuiPanel::FScopedContext::~FScopedContext()
+{
+	ImGui::SetCurrentContext(PreContext);
+	ImPlot::SetCurrentContext(PrePlotContent);
 }
 
 void SImGuiPanel::EnableVirtualInput()

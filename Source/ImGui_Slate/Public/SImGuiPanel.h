@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "GenericPlatform/ITextInputMethodSystem.h"
 #include "Widgets/SLeafWidget.h"
 #include "Widgets/Input/IVirtualKeyboardEntry.h"
@@ -84,6 +85,17 @@ public:
 	void UpdateCompositionRange(const int32 InBeginIndex, const uint32 InLength) override;
 	void EndComposition() override;
 	// ITextInputMethodContext end
+
+	struct IMGUI_SLATE_API FScopedContext
+	{
+		FScopedContext(ImGuiContext* ImGui, ImPlotContext* Plot);
+		~FScopedContext();
+	private:
+		ImGuiContext* PreContext;
+		ImPlotContext* PrePlotContent;
+	};
+
+	FScopedContext ImGuiScopedContext() const { return { Context, PlotContext }; }
 private:
 	FOnImGuiTick OnImGuiTick;
 	TAttribute<FVector2D> DesiredSize;

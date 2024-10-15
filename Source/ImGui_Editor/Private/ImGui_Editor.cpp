@@ -70,9 +70,9 @@ void FImGui_EditorModule::StartupModule()
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("IMGUI_Label", "IMGUI"))
+				.Text(LOCTEXT("IMGUI_Label", "ImGui"))
 			]
-		], LOCTEXT("IMGUI_Label", "IMGUI")));
+		], LOCTEXT("IMGUI_Label", "ImGui")));
 
 	static TWeakPtr<SNotificationItem> NotificationPtr;
 	if (GetDefault<UEditorPerformanceSettings>()->bThrottleCPUWhenNotForeground)
