@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "UnrealImGuiTexture.h"
 #include "UnrealImGuiViewportBase.h"
 
 UUnrealImGuiViewportBase* UUnrealImGuiViewportExtentBase::GetViewport() const
@@ -240,10 +241,25 @@ void FUnrealImGuiViewportContext::DrawCoordinateSystem(const FTransform& Transfo
 	}
 }
 
-void FUnrealImGuiViewportContext::DrawText(const FVector2D& Position, const FString& Text, const FColor& Color) const
+void FUnrealImGuiViewportContext::DrawTexture(const FVector2D& Location, UnrealImGui::ETextureFormat TextureFormat, UTexture* Texture, const FVector2D& Size, const FColor& Color, const FVector2D& UV_Min, const FVector2D& UV_Max) const
 {
-	if (ViewBounds.IsInside(Position))
+	if (!Texture)
 	{
-		DrawList->AddText(ImVec2{ WorldToScreenLocation(Position) }, FColorToU32(Color), TCHAR_TO_UTF8(*Text));
+		return;
+	}
+	if (ViewBounds.Intersect(FBox2D{ Location, Location + Size }))
+	{
+		const FVector2D Min{ WorldToScreenLocation(Location) };
+		const FVector2D Max{ Min + WorldToScreenTransform.TransformVector(Size) };
+		auto Handle = UnrealImGui::FindOrAddTexture(TextureFormat, Texture);
+		DrawList->AddImage(Handle, ImVec2{ Min }, ImVec2{ Max }, ImVec2{ UV_Min }, ImVec2{ UV_Max }, FColorToU32(Color));
+	}
+}
+
+void FUnrealImGuiViewportContext::DrawText(const FVector2D& Location, const FString& Text, const FColor& Color) const
+{
+	if (ViewBounds.IsInside(Location))
+	{
+		DrawList->AddText(ImVec2{ WorldToScreenLocation(Location) }, FColorToU32(Color), TCHAR_TO_UTF8(*Text));
 	}
 }

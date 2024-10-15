@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UnrealImGuiTypes.h"
 #include "UnrealImGuiViewportExtent.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UnrealImGuiViewportContextLibrary.generated.h"
@@ -214,14 +215,19 @@ public:
 		Context.DrawCoordinateSystem(Transform, Scale, Thickness);
 	}
 	UFUNCTION(BlueprintCallable, Category = ImGui)
-	static void DrawText(const FUnrealImGuiViewportContext& Context, const FVector2D& Position, const FString& Text, const FColor& Color)
+	static void DrawTexture(const FUnrealImGuiViewportContext& Context, const FVector2D& Location, EImGuiTextureFormat TextureFormat, FVector2D Size, UTexture* Texture, const FColor& Color = FColor::White, FVector2D UV_Min = FVector2D::ZeroVector, FVector2D UV_Max = FVector2D::UnitVector)
 	{
-		Context.DrawText(Position, Text, Color);
+		Context.DrawTexture(Location, static_cast<UnrealImGui::ETextureFormat>(TextureFormat), Texture, Size, Color, UV_Min, UV_Max);
 	}
 	UFUNCTION(BlueprintCallable, Category = ImGui)
-	static void FDrawText(const FUnrealImGuiViewportContext& Context, const FVector2f& Position, const FString& Text, const FColor& Color)
+	static void DrawText(const FUnrealImGuiViewportContext& Context, const FVector2D& Location, const FString& Text, const FColor& Color)
 	{
-		Context.FDrawText(Position, Text, Color);
+		Context.DrawText(Location, Text, Color);
+	}
+	UFUNCTION(BlueprintCallable, Category = ImGui)
+	static void FDrawText(const FUnrealImGuiViewportContext& Context, const FVector2f& Location, const FString& Text, const FColor& Color)
+	{
+		Context.FDrawText(Location, Text, Color);
 	}
 	UFUNCTION(BlueprintCallable, Category = ImGui)
 	static void AddMessageText(const FUnrealImGuiViewportContext& Context, const FString& Message, const FColor& Color = FColor::White)
