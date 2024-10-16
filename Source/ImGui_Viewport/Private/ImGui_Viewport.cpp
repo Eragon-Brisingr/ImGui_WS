@@ -87,9 +87,14 @@ namespace ImGui::Viewport
 	
 	TSharedPtr<SImGuiPanel> GetViewport(const UWorld* World)
 	{
+		if (CVar_ShowImGuiViewport.GetValueOnGameThread() == false)
+		{
+			return nullptr;
+		}
+
 		TSharedPtr<SImGuiPanel> Viewport;
 #if WITH_EDITOR
-		if (World->WorldType == EWorldType::Editor)
+		if (World->WorldType == EWorldType::Editor || World->GetNetMode() == NM_DedicatedServer)
 		{
 			Viewport = FImGui_ViewportModule::EditorViewport.Pin();
 		}
@@ -107,7 +112,7 @@ namespace ImGui::Viewport
 
 	EVisibility GetVisibility()
 	{
-		return CVar_ShowImGuiViewport.GetValueOnGameThread() ? EVisibility::Visible : EVisibility::Collapsed;
+		return CVar_ShowImGuiViewport.GetValueOnGameThread() ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
 	}
 }
 
