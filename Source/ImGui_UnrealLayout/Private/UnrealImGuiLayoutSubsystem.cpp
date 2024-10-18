@@ -41,7 +41,7 @@ FUnrealImGuiLayoutManager* FUnrealImGuiLayoutManager::Get(const UObject* WorldCo
 
 UUnrealImGuiPanelBase* FUnrealImGuiLayoutManager::FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const
 {
-	for (const auto PanelBuilder : PanelBuilders)
+	for (const auto& PanelBuilder : PanelBuilders)
 	{
 		if (auto Panel = PanelBuilder->FindPanel(PanelType))
 		{
