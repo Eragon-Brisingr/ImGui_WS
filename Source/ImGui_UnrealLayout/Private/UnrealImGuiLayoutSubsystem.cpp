@@ -3,6 +3,7 @@
 
 #include "UnrealImGuiLayoutSubsystem.h"
 
+#include "UnrealImGuiPanelBuilder.h"
 #include "Engine/World.h"
 
 FUnrealImGuiLayoutManager* FUnrealImGuiLayoutManager::Get(const UObject* WorldContextObject)
@@ -34,6 +35,18 @@ FUnrealImGuiLayoutManager* FUnrealImGuiLayoutManager::Get(const UObject* WorldCo
 	if (UUnrealImGuiLayoutSubsystem* Subsystem = World->GetSubsystem<UUnrealImGuiLayoutSubsystem>())
 	{
 		return &Subsystem->Context;
+	}
+	return nullptr;
+}
+
+UUnrealImGuiPanelBase* FUnrealImGuiLayoutManager::FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const
+{
+	for (const auto PanelBuilder : PanelBuilders)
+	{
+		if (auto Panel = PanelBuilder->FindPanel(PanelType))
+		{
+			return Panel;
+		}
 	}
 	return nullptr;
 }

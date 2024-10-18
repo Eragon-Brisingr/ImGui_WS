@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "UnrealImGuiLayoutSubsystem.generated.h"
 
+class UUnrealImGuiPanelBase;
 class UUnrealImGuiPanelBuilder;
 
 USTRUCT()
@@ -17,6 +19,10 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiLayoutManager
 	TArray<TObjectPtr<UUnrealImGuiPanelBuilder>> PanelBuilders;
 	
 	static FUnrealImGuiLayoutManager* Get(const UObject* WorldContextObject);
+
+	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const;
+	template<typename T>
+	T* FindPanel() const { return (T*)FindPanel(T::StaticClass()); }
 };
 
 UCLASS()
@@ -28,4 +34,20 @@ public:
 
 	UPROPERTY()
 	FUnrealImGuiLayoutManager Context;
+};
+
+UCLASS()
+class IMGUI_UNREALLAYOUT_API UUnrealImGuiPanelLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+public:
+	UFUNCTION(BlueprintCallable, Category = ImGui, meta = (WorldContext = WorldContextObject, DeterminesOutputType = PanelType))
+	static UUnrealImGuiPanelBase* FindPanel(const UObject* WorldContextObject, TSubclassOf<UUnrealImGuiPanelBase> PanelType)
+	{
+		if (auto Manager = FUnrealImGuiLayoutManager::Get(WorldContextObject))
+		{
+			return Manager->FindPanel(PanelType);
+		}
+		return nullptr;
+	}
 };
