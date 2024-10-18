@@ -86,6 +86,8 @@ public:
 	void EndComposition() override;
 	// ITextInputMethodContext end
 
+	virtual void WhenImGuiTick(float DeltaSeconds) {}
+	
 	struct IMGUI_SLATE_API FScopedContext
 	{
 		FScopedContext(ImGuiContext* ImGui, ImPlotContext* Plot);

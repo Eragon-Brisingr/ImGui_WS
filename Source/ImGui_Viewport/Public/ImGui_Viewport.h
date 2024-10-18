@@ -1,8 +1,10 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "SImGuiPanel.h"
 #include "Modules/ModuleManager.h"
 
+class SImGuiViewportOverlay;
 struct EVisibility;
 class SImGuiPanel;
 class UGameInstance;
@@ -21,13 +23,23 @@ public:
     static FViewportLookup ViewportLookup;
 
 #if WITH_EDITOR
-    IMGUI_VIEWPORT_API static TWeakPtr<SImGuiPanel> EditorViewport;
+    IMGUI_VIEWPORT_API static TWeakPtr<SImGuiViewportOverlay> EditorViewport;
 #endif
+};
+
+class IMGUI_VIEWPORT_API SImGuiViewportOverlay : public SImGuiPanel
+{
+    using Super = SImGuiPanel;
+protected:
+    void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
+    void WhenImGuiTick(float DeltaSeconds);
+public:
+    static constexpr auto FloatingContextName = "FloatingContext";
 };
 
 namespace ImGui::Viewport
 {
-    IMGUI_VIEWPORT_API TSharedPtr<SImGuiPanel> GetViewport(const UWorld* World);
+    IMGUI_VIEWPORT_API TSharedPtr<SImGuiViewportOverlay> GetViewport(const UWorld* World);
     IMGUI_VIEWPORT_API EVisibility GetVisibility();
 
     DECLARE_MULTICAST_DELEGATE_TwoParams(FOnImGuiTick, UWorld* /*World*/, float /*DeltaSeconds*/);

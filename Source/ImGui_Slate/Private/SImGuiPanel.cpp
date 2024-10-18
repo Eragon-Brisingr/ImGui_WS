@@ -137,6 +137,7 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 	{
 		OnImGuiTick.Execute(InDeltaTime);
 	}
+	WhenImGuiTick(InDeltaTime);
 
 	ImGui::Render();
 

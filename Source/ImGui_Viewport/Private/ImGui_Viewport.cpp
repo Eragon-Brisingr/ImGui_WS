@@ -1,6 +1,5 @@
 ﻿#include "ImGui_Viewport.h"
 
-#include "SImGuiPanel.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
@@ -16,7 +15,7 @@ TAutoConsoleVariable<bool> CVar_ShowImGuiViewport
 
 FImGui_ViewportModule::FViewportLookup FImGui_ViewportModule::ViewportLookup;
 #if WITH_EDITOR
-TWeakPtr<SImGuiPanel> FImGui_ViewportModule::EditorViewport;
+TWeakPtr<SImGuiViewportOverlay> FImGui_ViewportModule::EditorViewport;
 #endif
 
 void FImGui_ViewportModule::StartupModule()
@@ -29,9 +28,9 @@ void FImGui_ViewportModule::ShutdownModule()
 	UGameViewportClient::OnViewportCreated().RemoveAll(this);
 }
 
-class FImGui_ViewportModule::SImGuiGameViewportOverlay : public SImGuiPanel
+class FImGui_ViewportModule::SImGuiGameViewportOverlay : public SImGuiViewportOverlay
 {
-	using Super = SImGuiPanel;
+	using Super = SImGuiViewportOverlay;
 	
 	TWeakObjectPtr<UGameInstance> WeakGameInstance;
 public:
@@ -81,18 +80,53 @@ void FImGui_ViewportModule::WhenViewportCreated()
 	Viewport->AddViewportWidgetContent(ImGuiPanel, 1);
 }
 
+void SImGuiViewportOverlay::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+{
+	Super::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+
+	const auto ScopedContext = ImGuiScopedContext();
+
+	constexpr int32 FloatContextFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+	ImGui::SetNextWindowBgAlpha(0.4f);
+	if (ImGui::Begin(FloatingContextName, nullptr, FloatContextFlags))
+	{
+		// Prepare FloatingContext panel
+	}
+	ImGui::End();
+}
+
+void SImGuiViewportOverlay::WhenImGuiTick(float DeltaSeconds)
+{
+	Super::WhenImGuiTick(DeltaSeconds);
+
+	if (auto FloatingWindow = ImGui::FindWindowByName(FloatingContextName))
+	{
+		if (FloatingWindow->ContentSize.y > 0)
+		{
+			ImGui::SetWindowPos(FloatingWindow, { 50, 50 });
+		}
+		else
+		{
+			if (FloatingWindow->DrawList)
+			{
+				FloatingWindow->DrawList->_ResetForNewFrame();
+			}
+		}
+	}
+}
+
 namespace ImGui::Viewport
 {
 	FOnImGuiTick OnImGuiTick;
 	
-	TSharedPtr<SImGuiPanel> GetViewport(const UWorld* World)
+	TSharedPtr<SImGuiViewportOverlay> GetViewport(const UWorld* World)
 	{
 		if (CVar_ShowImGuiViewport.GetValueOnGameThread() == false)
 		{
 			return nullptr;
 		}
 
-		TSharedPtr<SImGuiPanel> Viewport;
+		TSharedPtr<SImGuiViewportOverlay> Viewport;
 #if WITH_EDITOR
 		if (World->WorldType == EWorldType::Editor || World->GetNetMode() == NM_DedicatedServer)
 		{

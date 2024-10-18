@@ -62,7 +62,7 @@ void FImGui_ViewportEditorModule::WhenLevelEditorCreated(TSharedPtr<ILevelEditor
 		return;
 	}
 
-	auto Content = SNew(SImGuiPanel)
+	auto Content = SNew(SImGuiViewportOverlay)
 		.Visibility_Lambda([]
 		{
 			if (GEditor->IsPlayingSessionInEditor() && !GEditor->bIsSimulatingInEditor)
