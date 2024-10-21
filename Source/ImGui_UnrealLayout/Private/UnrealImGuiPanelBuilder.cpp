@@ -214,7 +214,7 @@ void UUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 	}
 	for (UUnrealImGuiPanelBase* Panel : Panels)
 	{
-		if (Panel->IsOpen())
+		if (Panel->IsOpenedInLayout())
 		{
 			Panel->SetOpenState(false);
 		}
@@ -276,7 +276,7 @@ void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 		{
 			for (UUnrealImGuiPanelBase* Panel : Panels.Panels)
 			{
-				bool IsOpen = Panel->IsOpen();
+				bool IsOpen = Panel->IsOpenedInLayout();
 				if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
 				{
 					Panel->SetOpenState(IsOpen);
@@ -325,7 +325,7 @@ UUnrealImGuiPanelBase* UUnrealImGuiPanelBuilder::FindPanel(const TSubclassOf<UUn
 	{
 		if (Panel->IsA(PanelType))
 		{
-			return Panel->IsOpen() ? Panel : nullptr;
+			return Panel->IsOpened() ? Panel : nullptr;
 		}
 	}
 	return nullptr;

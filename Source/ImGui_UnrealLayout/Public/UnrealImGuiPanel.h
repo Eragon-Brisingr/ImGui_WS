@@ -61,7 +61,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	TMap<FName, FImGuiDefaultDockLayout> DefaultDockSpace;
 
-	bool IsOpen() const { return GetConfigObject()->bIsOpen; }
+	bool IsOpenedInLayout() const { return GetConfigObject()->bIsOpen; }
+	bool IsOpenedInLocal() const { return LocalOpenCounter > 0; }
+
+	bool IsOpened() const { return IsOpenedInLayout() || IsOpenedInLocal(); }
 	void SetOpenState(bool bOpen);
 	FString GetLayoutPanelName(const FString& LayoutName) const { return FString::Printf(TEXT("%s##%s_%s"), *Title.ToString(), *GetClass()->GetName(), *LayoutName); }
 
