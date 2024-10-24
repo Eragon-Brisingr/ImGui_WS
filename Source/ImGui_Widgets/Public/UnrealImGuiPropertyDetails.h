@@ -14,8 +14,8 @@ namespace UnrealImGui
 
 	namespace GlobalValue
 	{
-		IMGUI_UNREALPANELS_API extern bool GEnableEditVisibleProperty;
-		IMGUI_UNREALPANELS_API extern bool GDisplayAllProperties;
+		IMGUI_WIDGETS_API extern bool GEnableEditVisibleProperty;
+		IMGUI_WIDGETS_API extern bool GDisplayAllProperties;
 	}
 	
 	constexpr int32 ArrayInlineAllocateSize = 1;
@@ -45,7 +45,7 @@ namespace UnrealImGui
 			return reinterpret_cast<const FObjectArray&>(*this);
 		}
 	};
-	struct IMGUI_UNREALPANELS_API FDetailsFilter
+	struct IMGUI_WIDGETS_API FDetailsFilter
 	{
 		FString StringFilter;
 		void Draw(const char* Label = "##DetailsFilter");
@@ -71,7 +71,7 @@ namespace UnrealImGui
 		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization);
 	}
 
-	struct IMGUI_UNREALPANELS_API IUnrealPropertyCustomization : public TSharedFromThis<IUnrealPropertyCustomization>
+	struct IMGUI_WIDGETS_API IUnrealPropertyCustomization : public TSharedFromThis<IUnrealPropertyCustomization>
 	{
 		IUnrealPropertyCustomization()
 			: bHasChildProperties(false)
@@ -96,7 +96,7 @@ namespace UnrealImGui
 		virtual ~IUnrealPropertyCustomization() {}
 	};
 
-	struct IMGUI_UNREALPANELS_API IUnrealStructCustomization : public TSharedFromThis<IUnrealStructCustomization>
+	struct IMGUI_WIDGETS_API IUnrealStructCustomization : public TSharedFromThis<IUnrealStructCustomization>
 	{
 		// 值控件右侧剩余空间
 		int32 ValueAdditiveRightWidth = 0;
@@ -109,14 +109,14 @@ namespace UnrealImGui
 		virtual ~IUnrealStructCustomization() {}
 	};
 
-	struct IMGUI_UNREALPANELS_API IUnrealDetailsCustomization : public TSharedFromThis<IUnrealDetailsCustomization>
+	struct IMGUI_WIDGETS_API IUnrealDetailsCustomization : public TSharedFromThis<IUnrealDetailsCustomization>
 	{
 		virtual void CreateClassDetails(const UClass* Class, const FObjectArray& Containers, int32 Offset) const;
 
 		virtual ~IUnrealDetailsCustomization() {}
 	};
 	
-	struct IMGUI_UNREALPANELS_API UnrealPropertyCustomizeFactory
+	struct IMGUI_WIDGETS_API UnrealPropertyCustomizeFactory
 	{
 	public:
 		using PropertyCustomizeFunc = TFunction<void(const FProperty * Property, const FPtrArray & Containers, int32 Offset)>;
@@ -237,16 +237,16 @@ namespace UnrealImGui
 		return Property->HasAllPropertyFlags(CPF_Edit) && Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance) == false;
 	}
 
-	IMGUI_UNREALPANELS_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride = nullptr);
+	IMGUI_WIDGETS_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride = nullptr);
 	
-	IMGUI_UNREALPANELS_API void AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
+	IMGUI_WIDGETS_API void AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
 
-	IMGUI_UNREALPANELS_API void DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
-	IMGUI_UNREALPANELS_API void DrawDefaultClassDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);
+	IMGUI_WIDGETS_API void DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
+	IMGUI_WIDGETS_API void DrawDefaultClassDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);
 	
-	IMGUI_UNREALPANELS_API void DrawStructCustomizationDetails(const TSharedPtr<IUnrealStructCustomization>& Customization, const UScriptStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
+	IMGUI_WIDGETS_API void DrawStructCustomizationDetails(const TSharedPtr<IUnrealStructCustomization>& Customization, const UScriptStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 
-	struct IMGUI_UNREALPANELS_API FDetailTableContextGuard
+	struct IMGUI_WIDGETS_API FDetailTableContextGuard
 	{
 		[[nodiscard]]
 		FDetailTableContextGuard(const FDetailsFilter* Filter, const FPostPropertyValueChanged& PostPropertyValueChanged);
@@ -257,13 +257,13 @@ namespace UnrealImGui
 		TGuardValue<TMap<InnerValue::FFilterCacheKey, bool>> GFilterCacheMapGuard;
 	};
 	
-	IMGUI_UNREALPANELS_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
-	IMGUI_UNREALPANELS_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 
-	IMGUI_UNREALPANELS_API UClass* GetTopClass(const FObjectArray& Objects, const UClass* StopClass = UObject::StaticClass());
-	IMGUI_UNREALPANELS_API const UStruct* GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct = nullptr);
+	IMGUI_WIDGETS_API UClass* GetTopClass(const FObjectArray& Objects, const UClass* StopClass = UObject::StaticClass());
+	IMGUI_WIDGETS_API const UStruct* GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct = nullptr);
 	
-	IMGUI_UNREALPANELS_API bool IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
-	IMGUI_UNREALPANELS_API inline FString GetPropertyValueLabel(const FProperty* Property, bool IsIdentical) { return IsIdentical ? TEXT("##") + Property->GetName() : TEXT("*##") + Property->GetName(); }
-	IMGUI_UNREALPANELS_API void NotifyPostPropertyValueChanged(const FProperty* Property);
+	IMGUI_WIDGETS_API bool IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
+	IMGUI_WIDGETS_API inline FString GetPropertyValueLabel(const FProperty* Property, bool IsIdentical) { return IsIdentical ? TEXT("##") + Property->GetName() : TEXT("*##") + Property->GetName(); }
+	IMGUI_WIDGETS_API void NotifyPostPropertyValueChanged(const FProperty* Property);
 }

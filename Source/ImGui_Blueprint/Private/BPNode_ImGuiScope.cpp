@@ -9,7 +9,7 @@
 #include "K2Node_ExecutionSequence.h"
 #include "K2Node_IfThenElse.h"
 #include "KismetCompiler.h"
-#include "UnrealImGuiLibrary.h"
+#include "ImGuiLibrary.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 

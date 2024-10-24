@@ -10,7 +10,7 @@ class AActor;
 
 namespace UnrealImGui
 {
-	struct IMGUI_UNREALPANELS_API FPropertyDisableScope
+	struct IMGUI_WIDGETS_API FPropertyDisableScope
 	{
 		FPropertyDisableScope(const FProperty* Property);
 		~FPropertyDisableScope();
@@ -18,7 +18,7 @@ namespace UnrealImGui
 		bool Disable = false;
 	};
 
-	struct IMGUI_UNREALPANELS_API FPropertyEnableScope
+	struct IMGUI_WIDGETS_API FPropertyEnableScope
 	{
 		FPropertyEnableScope();
 		~FPropertyEnableScope();
@@ -26,17 +26,17 @@ namespace UnrealImGui
 		bool Enable = false;
 	};
 
-	struct IMGUI_UNREALPANELS_API FBoolPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FBoolPropertyCustomization : IUnrealPropertyCustomization
 	{
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FNumericPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FNumericPropertyCustomization : IUnrealPropertyCustomization
 	{
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FObjectPropertyBaseCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FObjectPropertyBaseCustomization : IUnrealPropertyCustomization
 	{
 		FObjectPropertyBaseCustomization()
 		{
@@ -47,66 +47,48 @@ namespace UnrealImGui
 		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-	private:
-		mutable TWeakObjectPtr<UClass> CachedAssetClass;
-		mutable TArray<FAssetData> CachedAssetList;
-
-		mutable TWeakObjectPtr<UClass> CachedInstancedClass;
-		mutable TArray<TWeakObjectPtr<UClass>> CachedClassList;
 	};
 
-	struct IMGUI_UNREALPANELS_API FObjectPropertyCustomization : public FObjectPropertyBaseCustomization {};
+	struct IMGUI_WIDGETS_API FObjectPropertyCustomization : FObjectPropertyBaseCustomization {};
 
-	struct IMGUI_UNREALPANELS_API FWeakObjectPropertyCustomization : public FObjectPropertyBaseCustomization {};
+	struct IMGUI_WIDGETS_API FWeakObjectPropertyCustomization : FObjectPropertyBaseCustomization {};
 
-	struct IMGUI_UNREALPANELS_API FSoftObjectPropertyCustomization : public IUnrealPropertyCustomization
-	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-	private:
-		mutable TWeakObjectPtr<UClass> CachedAssetClass;
-		mutable TArray<FAssetData> CachedAssetList;
-
-		mutable TWeakObjectPtr<UClass> CachedActorClass;
-		mutable TArray<TWeakObjectPtr<AActor>> CachedActorList;
-	};
-
-	struct IMGUI_UNREALPANELS_API FClassPropertyCustomization : public IUnrealPropertyCustomization
-	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-	private:
-		mutable TWeakObjectPtr<UClass> CachedClass;
-		mutable TArray<TWeakObjectPtr<UClass>> CachedClassList;
-	};
-
-	struct IMGUI_UNREALPANELS_API FSoftClassPropertyCustomization : public IUnrealPropertyCustomization
-	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-	private:
-		mutable TWeakObjectPtr<UClass> CachedClass;
-		mutable TArray<TWeakObjectPtr<UClass>> CachedClassList;
-	};
-
-	struct IMGUI_UNREALPANELS_API FStringPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FSoftObjectPropertyCustomization : IUnrealPropertyCustomization
 	{
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FNamePropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FClassPropertyCustomization : IUnrealPropertyCustomization
 	{
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FTextPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FSoftClassPropertyCustomization : IUnrealPropertyCustomization
 	{
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FEnumPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FStringPropertyCustomization : IUnrealPropertyCustomization
 	{
 		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FArrayPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FNamePropertyCustomization : IUnrealPropertyCustomization
+	{
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+	};
+
+	struct IMGUI_WIDGETS_API FTextPropertyCustomization : IUnrealPropertyCustomization
+	{
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+	};
+
+	struct IMGUI_WIDGETS_API FEnumPropertyCustomization : IUnrealPropertyCustomization
+	{
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+	};
+
+	struct IMGUI_WIDGETS_API FArrayPropertyCustomization : IUnrealPropertyCustomization
 	{
 		FArrayPropertyCustomization()
 		{
@@ -119,7 +101,7 @@ namespace UnrealImGui
 		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FSetPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FSetPropertyCustomization : IUnrealPropertyCustomization
 	{
 		FSetPropertyCustomization()
 		{
@@ -132,7 +114,7 @@ namespace UnrealImGui
 		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FMapPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FMapPropertyCustomization : IUnrealPropertyCustomization
 	{
 		FMapPropertyCustomization()
 		{
@@ -145,7 +127,7 @@ namespace UnrealImGui
 		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
 	};
 
-	struct IMGUI_UNREALPANELS_API FStructPropertyCustomization : public IUnrealPropertyCustomization
+	struct IMGUI_WIDGETS_API FStructPropertyCustomization : IUnrealPropertyCustomization
 	{
 		FStructPropertyCustomization()
 		{

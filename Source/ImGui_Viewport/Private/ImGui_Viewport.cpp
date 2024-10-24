@@ -4,7 +4,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
 
-#define LOCTEXT_NAMESPACE "ImGui"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 TAutoConsoleVariable<bool> CVar_ShowImGuiViewport
 {

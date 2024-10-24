@@ -6,7 +6,7 @@
 #include "Engine/Engine.h"
 #include "Misc/CoreDelegates.h"
 
-#define LOCTEXT_NAMESPACE "FImGui_UnrealLayoutModule"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGui_UnrealLayoutModule::StartupModule()
 {

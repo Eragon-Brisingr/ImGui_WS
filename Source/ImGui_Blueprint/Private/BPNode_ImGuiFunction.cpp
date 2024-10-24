@@ -7,7 +7,7 @@
 #include "BlueprintNodeSpawner.h"
 #include "EdGraphSchema_K2.h"
 #include "KismetCompiler.h"
-#include "UnrealImGuiLibrary.h"
+#include "ImGuiLibrary.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 

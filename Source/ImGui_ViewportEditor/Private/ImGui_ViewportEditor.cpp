@@ -6,7 +6,7 @@
 #include "SLevelViewport.h"
 #include "Slate/SGameLayerManager.h"
 
-#define LOCTEXT_NAMESPACE "ImGui"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGui_ViewportEditorModule::StartupModule()
 {

@@ -1,0 +1,484 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UnrealImGuiAssetPicker.h"
+
+#include "EngineUtils.h"
+#include "imgui.h"
+#include "ImGuiEx.h"
+#include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryHelpers.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
+#include "Blueprint/BlueprintSupport.h"
+
+namespace UnrealImGui
+{
+	bool ComboObjectPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const FAssetData&)>& IsSelectedFunc, const TFunctionRef<void(const FAssetData&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, const char* FilterHint, FObjectPickerData* Data)
+	{
+		if (Data == nullptr)
+		{
+			static FObjectPickerData GlobalData;
+			Data = &GlobalData;
+		}
+		auto& FilterString = Data->FilterString;
+		auto& CachedAssetClass = Data->CachedAssetClass;
+		auto& CachedAssetList = Data->CachedAssetList;
+		bool bValueChanged = false;
+		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
+		{
+			ImGui::FIdScope IdScope{ Label };
+			ImGui::SetNextItemWidth(-1);
+			ImGui::InputTextWithHint("##Filter", FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			const bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::Separator();
+			if (ImGui::Selectable("Clear"))
+			{
+				OnClearValue();
+				bValueChanged = true;
+			}
+
+			if (CachedAssetClass != BaseClass || IsFiltered)
+			{
+				CachedAssetClass = BaseClass;
+				CachedAssetList.Reset();
+				static IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+				FARFilter ARFilter;
+				ARFilter.bRecursivePaths = true;
+				ARFilter.bRecursiveClasses = true;
+				ARFilter.ClassPaths.Add(FTopLevelAssetPath{ BaseClass });
+				AssetRegistry.GetAssets(ARFilter, CachedAssetList);
+				const FString Filter = FilterString.ToString().ToLower();
+				if (Filter.IsEmpty() == false)
+				{
+					CachedAssetList.RemoveAllSwap([&](const FAssetData& E) { return E.AssetName.ToString().ToLower().Contains(Filter) == false; });
+				}
+				CachedAssetList.Sort([](const FAssetData& LHS, const FAssetData& RHS)
+				{
+					return LHS.AssetName.FastLess(RHS.AssetName);
+				});
+			}
+			if (auto ListBox = ImGui::FListBox("##Content", { -1, -1 }))
+			{
+				ImGuiListClipper ListClipper{};
+				ListClipper.Begin(CachedAssetList.Num());
+				while (ListClipper.Step())
+				{
+					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					{
+						const FAssetData& Asset = CachedAssetList[Idx];
+						const bool IsSelected = IsSelectedFunc(Asset);
+						ImGui::FIdScope AssetIdScope{ (int32)Asset.PackagePath.GetComparisonIndex().ToUnstableInt() };
+						if (ImGui::Selectable(TCHAR_TO_UTF8(*Asset.AssetName.ToString()), IsSelected))
+						{
+							OnSetValue(Asset);
+							bValueChanged = true;
+						}
+						if (IsSelected)
+						{
+							ImGui::SetItemDefaultFocus();
+						}
+
+						if (ImGui::BeginItemTooltip())
+						{
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*Asset.GetSoftObjectPath().ToString()));
+							ImGui::EndTooltip();
+						}
+					}
+				}
+				ListClipper.End();
+			}
+			if (bValueChanged)
+			{
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		else if (FilterString.IsEmpty() == false)
+		{
+			FilterString.Reset();
+			CachedAssetClass = nullptr;
+			CachedAssetList.Empty();
+		}
+		return bValueChanged;
+	}
+
+	bool ComboObjectPicker(const char* Label, UClass* BaseClass, UObject*& ObjectPtr, const char* FilterHint, FObjectPickerData* Data)
+	{
+		const bool bValueChanged = ComboObjectPicker(Label, ObjectPtr ? TCHAR_TO_UTF8(*ObjectPtr->GetName()) : "None", BaseClass,
+		[ObjectPath = FSoftObjectPath{ ObjectPtr }](const FAssetData& Asset)
+		{
+			return ObjectPath == Asset.GetSoftObjectPath();
+		}, [&](const FAssetData& Asset)
+		{
+			ObjectPtr = Asset.GetAsset();
+		}, [&]
+		{
+			ObjectPtr = nullptr;	
+		}, FilterHint, Data);
+		if (auto Tooltip = ImGui::FItemTooltip())
+		{
+			ImGui::TextUnformatted(ObjectPtr ? TCHAR_TO_UTF8(*ObjectPtr->GetPathName()) : "None");
+		}
+		return bValueChanged;
+	}
+	
+	bool ComboSoftObjectPicker(const char* Label, UClass* BaseClass, TSoftObjectPtr<UObject>& SoftObjectPtr, const char* FilterHint, FObjectPickerData* Data)
+	{
+		const bool bValueChanged = ComboObjectPicker(Label, SoftObjectPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftObjectPtr.GetAssetName()), BaseClass,
+			[&](const FAssetData& Asset)
+			{
+				return SoftObjectPtr.GetUniqueID() == Asset.GetSoftObjectPath();
+			}, [&](const FAssetData& Asset)
+			{
+				SoftObjectPtr = Asset.GetSoftObjectPath();
+			}, [&]
+			{
+				SoftObjectPtr.Reset();	
+			}, FilterHint, Data);
+		if (auto Tooltip = ImGui::FItemTooltip())
+		{
+			ImGui::TextUnformatted(SoftObjectPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftObjectPtr.ToString()));
+		}
+		return bValueChanged;
+	}
+
+	bool ComboActorPicker(UWorld* World, const char* Label, const char* PreviewValue, const TSubclassOf<AActor>& BaseClass, const TFunctionRef<bool(AActor*)>& IsSelectedFunc, const TFunctionRef<void(AActor*)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, const char* FilterHint, FActorPickerData* Data)
+	{
+		if (Data == nullptr)
+		{
+			static FActorPickerData GlobalData;
+			Data = &GlobalData;
+		}
+		auto& FilterString = Data->FilterString;
+		auto& CachedActorClass = Data->CachedActorClass;
+		auto& CachedActorList = Data->CachedActorList;
+		bool bValueChanged = false;
+		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
+		{
+			ImGui::SetNextItemWidth(-1);
+			ImGui::InputTextWithHint("##Filter", FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			const bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::Separator();
+			if (ImGui::Selectable("Clear"))
+			{
+				OnClearValue();
+				bValueChanged = true;
+			}
+
+			if (CachedActorClass != BaseClass.Get() || IsFiltered)
+			{
+				CachedActorClass = BaseClass;
+				CachedActorList.Reset();
+				const FString Filter = FilterString.ToString().ToLower();
+				for (TActorIterator<AActor> It(World, BaseClass); It; ++It)
+				{
+					AActor* Actor = *It;
+					if (Actor == nullptr)
+					{
+						continue;
+					}
+					if (Filter.Len() > 0 && Actor->GetName().ToLower().Contains(Filter) == false)
+					{
+						continue;
+					}
+					CachedActorList.Add(Actor);
+				}
+			}
+			if (auto ListBox = ImGui::FListBox("##Content", { -1, -1 }))
+			{
+				ImGuiListClipper ListClipper{};
+				ListClipper.Begin(CachedActorList.Num());
+				while (ListClipper.Step())
+				{
+					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					{
+						if (AActor* Actor = CachedActorList[Idx].Get())
+						{
+							const bool IsSelected = IsSelectedFunc(Actor);
+							ImGui::FIdScope ActorIdScope{ Actor };
+							if (ImGui::Selectable(TCHAR_TO_UTF8(*Actor->GetName()), IsSelected))
+							{
+								OnSetValue(Actor);
+								bValueChanged = true;
+							}
+							if (IsSelected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
+
+							if (ImGui::BeginItemTooltip())
+							{
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Actor->GetFullName()));
+								ImGui::EndTooltip();
+							}
+						}
+						else
+						{
+							ImGui::BeginDisabled(true);
+							ImGui::Text("Deleted");
+							ImGui::EndDisabled();
+						}
+					}
+				}
+				ListClipper.End();
+			}
+			if (bValueChanged)
+			{
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		else
+		{
+			FilterString.Reset();
+			CachedActorClass = nullptr;
+			CachedActorList.Empty();
+		}
+		return bValueChanged;
+	}
+
+	bool ComboActorPicker(UWorld* World, const char* Label, const TSubclassOf<AActor>& BaseClass, AActor*& ActorPtr, const char* FilterHint, FActorPickerData* Data)
+	{
+		const bool bValueChanged = ComboActorPicker(World, Label, ActorPtr ? TCHAR_TO_UTF8(*ActorPtr->GetName()) : "None", BaseClass,
+			[&](const AActor* Actor)
+			{
+				return ActorPtr == Actor;
+			}, [&](AActor* Actor)
+			{
+				ActorPtr = Actor;
+			}, [&]
+			{
+				ActorPtr = nullptr;	
+			}, FilterHint, Data);
+		if (auto Tooltip = ImGui::FItemTooltip())
+		{
+			ImGui::TextUnformatted(ActorPtr ? TCHAR_TO_UTF8(*ActorPtr->GetPathName()) : "None");
+		}
+		return bValueChanged;
+	}
+
+	bool ComboSoftActorPicker(UWorld* World, const char* Label, const TSubclassOf<AActor>& BaseClass, TSoftObjectPtr<AActor>& SoftActorPtr, const char* FilterHint, FActorPickerData* Data)
+	{
+		const bool bValueChanged = ComboActorPicker(World, Label, SoftActorPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftActorPtr.GetAssetName()), BaseClass,
+			[&](const AActor* Actor)
+			{
+				return SoftActorPtr == Actor;
+			}, [&](AActor* Actor)
+			{
+				SoftActorPtr = Actor;
+			}, [&]
+			{
+				SoftActorPtr = nullptr;	
+			}, FilterHint, Data);
+		if (auto Tooltip = ImGui::FItemTooltip())
+		{
+			ImGui::TextUnformatted(SoftActorPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftActorPtr.ToString()));
+		}
+		return bValueChanged;
+	}
+
+	// same as UAssetRegistryHelpers::GetBlueprintAssets, if UAssetRegistryHelpers::GetBlueprintAssets mark ASSETREGISTRY_API replace this
+	void GetBlueprintAssets(const FTopLevelAssetPath& BaseClass, TArray<FAssetData>& OutAssetData)
+	{
+		IAssetRegistry& AssetRegistry = IAssetRegistry::GetChecked();
+
+		FARFilter Filter;
+		Filter.bRecursiveClasses = true;
+		Filter.ClassPaths.Add(BaseClass);
+		// Expand list of classes to include derived classes
+		TArray<FTopLevelAssetPath> BlueprintParentClassPathRoots = MoveTemp(Filter.ClassPaths);
+		TSet<FTopLevelAssetPath> BlueprintParentClassPaths;
+		if (Filter.bRecursiveClasses)
+		{
+			AssetRegistry.GetDerivedClassNames(BlueprintParentClassPathRoots, TSet<FTopLevelAssetPath>(), BlueprintParentClassPaths);
+		}
+		else
+		{
+			BlueprintParentClassPaths.Append(BlueprintParentClassPathRoots);
+		}
+
+		// Search for all blueprints and then check BlueprintParentClassPaths in the results
+		Filter.ClassPaths.Reset(1);
+		Filter.ClassPaths.Add(FTopLevelAssetPath(FName(TEXT("/Script/Engine")), FName(TEXT("BlueprintCore"))));
+		Filter.bRecursiveClasses = true;
+
+		auto FilterLambda = [&OutAssetData, &BlueprintParentClassPaths](const FAssetData& AssetData)
+		{
+			// Verify blueprint class
+			if (BlueprintParentClassPaths.IsEmpty() || UAssetRegistryHelpers::IsAssetDataBlueprintOfClassSet(AssetData, BlueprintParentClassPaths))
+			{
+				OutAssetData.Add(AssetData);
+			}
+			return true;
+		};
+		AssetRegistry.EnumerateAssets(Filter, FilterLambda);
+	}
+
+	bool ComboClassPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const TSoftClassPtr<UObject>&)>& IsSelectedFunc, const TFunctionRef<void(const TSoftClassPtr<UObject>&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, EClassFlags IgnoreClassFlags, const char* FilterHint, FClassPickerData* Data)
+	{
+		if (Data == nullptr)
+		{
+			static FClassPickerData GlobalData;
+			Data = &GlobalData;
+		}
+		IgnoreClassFlags |= CLASS_Deprecated | CLASS_NewerVersionExists;
+		auto& FilterString = Data->FilterString;
+		auto& CachedClass = Data->CachedClass;
+		auto& CachedClassList = Data->CachedClassList;
+		bool bValueChanged = false;
+		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
+		{
+			ImGui::SetNextItemWidth(-1);
+			ImGui::InputTextWithHint("##Filter", FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			const bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::Separator();
+			if (ImGui::Selectable("Clear"))
+			{
+				OnClearValue();
+				bValueChanged = true;
+			}
+			if (CachedClass != BaseClass || IsFiltered)
+			{
+				CachedClass = BaseClass;
+				CachedClassList.Reset();
+				
+				TSet<TSoftClassPtr<UObject>> AllClasses;
+				TArray<UClass*> LoadedClasses;
+				GetDerivedClasses(BaseClass, LoadedClasses);
+				LoadedClasses.Add(BaseClass);
+				const FString Filter = FilterString.ToString().ToLower();
+				for (UClass* Class : LoadedClasses)
+				{
+					if (Class->HasAnyClassFlags(IgnoreClassFlags))
+					{
+						continue;
+					}
+#if WITH_EDITOR
+					if (Class->GetName().StartsWith(TEXT("SKEL_")))
+					{
+						continue;
+					}
+#endif
+					if (Filter.Len() > 0 && Class->GetName().ToLower().Contains(Filter) == false)
+					{
+						continue;
+					}
+					AllClasses.Add(Class);
+				}
+
+				TArray<FAssetData> BlueprintClasses;
+				GetBlueprintAssets(FTopLevelAssetPath{ BaseClass }, BlueprintClasses);
+				for (const auto& Asset : BlueprintClasses)
+				{
+					uint32 ClassFlags;
+					if (!Asset.GetTagValue(FBlueprintTags::ClassFlags, ClassFlags))
+					{
+						continue;
+					}
+					if (EnumHasAnyFlags((EClassFlags)ClassFlags, IgnoreClassFlags))
+					{
+						continue;
+					}
+					FString GeneratedClass;
+					if (!Asset.GetTagValue(FBlueprintTags::GeneratedClassPath, GeneratedClass))
+					{
+						continue;
+					}
+					if (Filter.Len() > 0 && Asset.AssetName.ToString().ToLower().Contains(Filter) == false)
+					{
+						continue;
+					}
+					AllClasses.Add(TSoftClassPtr<UObject>{ FSoftClassPath{ GeneratedClass } });
+				}
+
+				CachedClassList = AllClasses.Array();
+				CachedClassList.Sort([](const TSoftClassPtr<UObject>& LHS, const TSoftClassPtr<UObject>& RHS)
+				{
+					return LHS.ToSoftObjectPath().FastLess(RHS.ToSoftObjectPath());
+				});
+			}
+			if (auto ListBox = ImGui::FListBox("##Content", { -1, -1 }))
+			{
+				ImGuiListClipper ListClipper{};
+				ListClipper.Begin(CachedClassList.Num());
+				while (ListClipper.Step())
+				{
+					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
+					{
+						if (auto& Class = CachedClassList[Idx])
+						{
+							const bool IsSelected = IsSelectedFunc(Class);
+							ImGui::FIdScope ClassIdScope{ (int32)Class.ToSoftObjectPath().GetAssetPath().GetPackageName().GetComparisonIndex().ToUnstableInt() };
+							if (ImGui::Selectable(TCHAR_TO_UTF8(*Class.GetAssetName()), IsSelected))
+							{
+								OnSetValue(Class);
+								bValueChanged = true;
+							}
+							if (IsSelected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
+
+							if (ImGui::BeginItemTooltip())
+							{
+								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class.ToString()));
+								ImGui::EndTooltip();
+							}
+						}
+					}
+				}
+				ListClipper.End();
+			}
+			if (bValueChanged)
+			{
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		else if (FilterString.IsEmpty() == false)
+		{
+			FilterString.Reset();
+			CachedClass = nullptr;
+			CachedClassList.Empty();
+		}
+		return bValueChanged;
+	}
+
+	bool ComboClassPicker(const char* Label, UClass* BaseClass, TSubclassOf<UObject>& ClassPtr, EClassFlags IgnoreClassFlags, const char* FilterHint, FClassPickerData* Data)
+	{
+		const bool bValueChanged = ComboClassPicker(Label, ClassPtr ? TCHAR_TO_UTF8(*ClassPtr->GetName()) : "None", BaseClass,
+			[&](const TSoftClassPtr<UObject>& Class)
+			{
+				return ClassPtr == Class.Get();
+			}, [&](const TSoftClassPtr<UObject>& Class)
+			{
+				ClassPtr = Class.LoadSynchronous();
+			}, [&]
+			{
+				ClassPtr = nullptr;	
+			}, IgnoreClassFlags, FilterHint, Data);
+		if (auto Tooltip = ImGui::FItemTooltip())
+		{
+			ImGui::TextUnformatted(ClassPtr ? TCHAR_TO_UTF8(*ClassPtr->GetPathName()) : "None");
+		}
+		return bValueChanged;
+	}
+
+	bool ComboSoftClassPicker(const char* Label, UClass* BaseClass, TSoftClassPtr<UObject>& SoftClassPtr, EClassFlags IgnoreClassFlags, const char* FilterHint, FClassPickerData* Data)
+	{
+		const bool bValueChanged = ComboClassPicker(Label, SoftClassPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftClassPtr.GetAssetName()), BaseClass,
+			[&](const TSoftClassPtr<UObject>& Class)
+			{
+				return SoftClassPtr == Class;
+			}, [&](const TSoftClassPtr<UObject>& Class)
+			{
+				SoftClassPtr = Class;
+			}, [&]
+			{
+				SoftClassPtr = nullptr;	
+			}, IgnoreClassFlags, FilterHint, Data);
+		if (auto Tooltip = ImGui::FItemTooltip())
+		{
+			ImGui::TextUnformatted(SoftClassPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftClassPtr.ToString()));
+		}
+		return bValueChanged;
+	}
+}

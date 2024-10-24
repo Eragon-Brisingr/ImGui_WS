@@ -27,6 +27,7 @@ public class ImGui_UnrealPanels : ModuleRules
                 "EngineSettings",
 
                 "ImGui",
+	            "ImGui_Widgets",
                 "ImGui_Slate",
                 "ImGui_UnrealLayout",
             }

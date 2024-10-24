@@ -8,7 +8,7 @@
 #include "ImGuiWorldDebuggerBase.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
 
-#define LOCTEXT_NAMESPACE "ImGuiUnrealEx"
+#define LOCTEXT_NAMESPACE "ImGui_WS"
 
 void FImGui_WorldDebuggerModule::StartupModule()
 {

@@ -6,7 +6,7 @@
 #include "ImGui_WS_Manager.h"
 #include "Selection.h"
 #include "ToolMenus.h"
-#include "UnrealImGuiLibrary.h"
+#include "ImGuiLibrary.h"
 #include "Editor/EditorPerformanceSettings.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Input/SButton.h"

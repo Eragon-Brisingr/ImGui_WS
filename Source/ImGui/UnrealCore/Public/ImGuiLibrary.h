@@ -11,7 +11,7 @@
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGuiTypes.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "UnrealImGuiLibrary.generated.h"
+#include "ImGuiLibrary.generated.h"
 
 static_assert(std::is_same_v<FVector2D::FReal, double>);
 

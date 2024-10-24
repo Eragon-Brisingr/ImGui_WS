@@ -50,4 +50,14 @@ public:
 		}
 		return nullptr;
 	}
+
+	UFUNCTION(BlueprintCallable, Category = ImGui, meta = (DeterminesOutputType = PanelType))
+	static UUnrealImGuiPanelBase* FindPanelByWorld(UWorld* World, TSubclassOf<UUnrealImGuiPanelBase> PanelType)
+	{
+		if (auto Manager = FUnrealImGuiLayoutManager::Get((UObject*)World))
+		{
+			return Manager->FindPanel(PanelType);
+		}
+		return nullptr;
+	}
 };
