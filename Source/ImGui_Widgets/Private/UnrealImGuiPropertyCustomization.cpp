@@ -295,11 +295,6 @@ namespace UnrealImGui
 			{
 				ObjectName = FirstValue->GetFName();
 			}
-			else
-			{
-				static FName NoneName = TEXT("None");
-				ObjectName = NoneName;
-			}
 		}
 		else
 		{
