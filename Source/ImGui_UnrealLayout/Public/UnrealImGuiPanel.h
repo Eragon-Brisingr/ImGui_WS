@@ -57,7 +57,7 @@ public:
 	TArray<FName> Categories;
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	FImGuiDefaultPanelState DefaultState{ false, true };
-	// Key为类型名
+	// Key is type name
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	TMap<FName, FImGuiDefaultDockLayout> DefaultDockSpace;
 

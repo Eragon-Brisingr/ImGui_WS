@@ -647,21 +647,19 @@ namespace UnrealImGui
 	{
 		const FEnumProperty* EnumProperty = CastFieldChecked<FEnumProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
-		const UEnum* EnumDef = EnumProperty->GetEnum();
+		const UEnum* EnumType = EnumProperty->GetEnum();
 		const FNumericProperty* UnderlyingProperty = EnumProperty->GetUnderlyingProperty();
 		const int64 EnumValue = UnderlyingProperty->GetSignedIntPropertyValue(FirstValuePtr);
 
-		FString EnumName = EnumDef->GetNameByValue(EnumValue).ToString();
-		EnumName.Split(TEXT("::"), nullptr, &EnumName);
-		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), TCHAR_TO_UTF8(*EnumName), ImGuiComboFlags_PopupAlignLeft))
+		const int32 ShortNameStartIdx = EnumType->GetName().Len() + 2;
+		const auto PreviewEnumName = EnumType->GetNameByValue(EnumValue);
+		if (ImGui::BeginCombo(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, IsIdentical)), PreviewEnumName != NAME_None ? TCHAR_TO_UTF8(*PreviewEnumName.ToString().Mid(ShortNameStartIdx)) : "None", ImGuiComboFlags_PopupAlignLeft))
 		{
-			for (int32 Idx = 0; Idx < EnumDef->NumEnums() - 1; ++Idx)
+			for (int32 Idx = 0; Idx < EnumType->NumEnums() - 1; ++Idx)
 			{
-				const int64 CurrentEnumValue = EnumDef->GetValueByIndex(Idx);
+				const int64 CurrentEnumValue = EnumType->GetValueByIndex(Idx);
 				const bool IsSelected = CurrentEnumValue == EnumValue;
-				EnumName = EnumDef->GetNameByIndex(Idx).ToString();
-				EnumName.Split(TEXT("::"), nullptr, &EnumName);
-				if (ImGui::Selectable(TCHAR_TO_UTF8(*EnumName), IsSelected))
+				if (ImGui::Selectable(TCHAR_TO_UTF8(*EnumType->GetNameByValue(Idx).ToString().Mid(ShortNameStartIdx)), IsSelected))
 				{
 					for (uint8* Container : Containers)
 					{

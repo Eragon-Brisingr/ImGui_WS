@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UnrealImGuiAssetPicker.h"
+#include "UnrealImGuiComboEnum.h"
 #include "UnrealImGuiPropertyDetails.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SubclassOf.h"
@@ -48,6 +49,15 @@ public:
 	static bool ComboSoftClassPicker(FName Label, UClass* BaseClass, UPARAM(Ref)TSoftClassPtr<UObject>& SoftClassPtr, bool bAllowAbstract = false, const FString& FilterHint = TEXT("Filter"))
 	{
 		return UnrealImGui::ComboSoftClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, TCHAR_TO_UTF8(*FilterHint));
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
+	static bool ComboEnum(FName Label, uint8& EnumValue, UEnum* EnumType, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiComboFlags"))int32 Flags = 0)
+	{
+		int64 Value = EnumValue;
+		const bool bChanged = UnrealImGui::ComboEnum(TCHAR_TO_UTF8(*Label.ToString()), Value, EnumType, Flags);
+		EnumValue = Value;
+		return bChanged;
 	}
 	
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
