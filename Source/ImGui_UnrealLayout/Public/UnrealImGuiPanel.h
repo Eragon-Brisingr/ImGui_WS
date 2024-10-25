@@ -119,3 +119,16 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void ReceiveDraw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
 };
+
+UCLASS(Abstract, Config = ImGuiPanelUserConfig, Blueprintable)
+class IMGUI_UNREALLAYOUT_API UUnrealImGuiPanelGlobalConfig : public UObject
+{
+	GENERATED_BODY()
+public:
+	UFUNCTION(BlueprintCallable, Category = ImGui)
+	void SaveImGuiConfig() { SaveConfig(); }
+private:
+	// parent class must have more than one config property, otherwise save config not work.
+	UPROPERTY(Config)
+	bool DummyConfigValue = false;
+};

@@ -5,6 +5,7 @@
 
 #include "EngineUtils.h"
 #include "imgui.h"
+#include "ImGuiEx.h"
 #include "ImGuiWorldDebuggerBase.h"
 #include "ImGuiWorldDebuggerDrawer.h"
 #include "ImGuiWorldDebuggerLayout.h"
@@ -293,10 +294,9 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UI
 	if (FilteredSelectedActors.Num() == 1)
 	{
 		ImGui::Text("Actor Name: %s", TCHAR_TO_UTF8(*FirstActor->GetName()));
-		if (ImGui::BeginItemTooltip())
+		if (auto Tooltip = ImGui::FItemTooltip())
 		{
 			ImGui::TextUnformatted(TCHAR_TO_UTF8(*FirstActor->GetName()));
-			ImGui::EndTooltip();
 		}
 	}
 	else
@@ -308,7 +308,10 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawDetailsPanel(UObject* Owner, UI
 	DetailsFilter.Draw();
 	if (FirstActor)
 	{
-		DrawDetailTable("Actor", GetTopClass(FilteredSelectedActors), FilteredSelectedActors, &DetailsFilter);
+		if (auto ChildWindow = ImGui::FChildWindow("ActorDetails"))
+		{
+			DrawDetailTable("Actor", GetTopClass(FilteredSelectedActors), FilteredSelectedActors, &DetailsFilter);
+		}
 	}
 }
 

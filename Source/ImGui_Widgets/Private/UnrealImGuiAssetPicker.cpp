@@ -215,7 +215,7 @@ namespace UnrealImGui
 						else
 						{
 							ImGui::BeginDisabled(true);
-							ImGui::Text("Deleted");
+							ImGui::TextUnformatted("Deleted");
 							ImGui::EndDisabled();
 						}
 					}
@@ -404,25 +404,23 @@ namespace UnrealImGui
 				{
 					for (int32 Idx = ListClipper.DisplayStart; Idx < ListClipper.DisplayEnd; ++Idx)
 					{
-						if (auto& Class = CachedClassList[Idx])
+						auto& Class = CachedClassList[Idx];
+						const bool IsSelected = IsSelectedFunc(Class);
+						ImGui::FIdScope ClassIdScope{ (int32)Class.ToSoftObjectPath().GetAssetPath().GetPackageName().GetComparisonIndex().ToUnstableInt() };
+						if (ImGui::Selectable(TCHAR_TO_UTF8(*Class.GetAssetName()), IsSelected))
 						{
-							const bool IsSelected = IsSelectedFunc(Class);
-							ImGui::FIdScope ClassIdScope{ (int32)Class.ToSoftObjectPath().GetAssetPath().GetPackageName().GetComparisonIndex().ToUnstableInt() };
-							if (ImGui::Selectable(TCHAR_TO_UTF8(*Class.GetAssetName()), IsSelected))
-							{
-								OnSetValue(Class);
-								bValueChanged = true;
-							}
-							if (IsSelected)
-							{
-								ImGui::SetItemDefaultFocus();
-							}
+							OnSetValue(Class);
+							bValueChanged = true;
+						}
+						if (IsSelected)
+						{
+							ImGui::SetItemDefaultFocus();
+						}
 
-							if (ImGui::BeginItemTooltip())
-							{
-								ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class.ToString()));
-								ImGui::EndTooltip();
-							}
+						if (ImGui::BeginItemTooltip())
+						{
+							ImGui::TextUnformatted(TCHAR_TO_UTF8(*Class.ToString()));
+							ImGui::EndTooltip();
 						}
 					}
 				}
