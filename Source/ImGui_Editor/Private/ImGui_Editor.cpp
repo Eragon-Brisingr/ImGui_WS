@@ -42,7 +42,7 @@ void FImGui_EditorModule::StartupModule()
 			}
 
 			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
-			FPlatformProcess::LaunchURL(*FString::Printf(TEXT("http://localhost:%d"), Manager->GetPort()), nullptr, nullptr);
+			Manager->OpenWebPage();
 			return FReply::Handled();
 		})
 		.Content()

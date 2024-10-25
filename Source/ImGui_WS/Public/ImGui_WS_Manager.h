@@ -17,12 +17,18 @@ public:
 	~UImGui_WS_Manager() override;
 
 	static bool IsSettingsEnable();
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	bool IsEnable() const { return Impl != nullptr; }
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	void Enable();
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	void Disable();
-	
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	int32 GetPort() const;
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	int32 GetConnectionCount() const;
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
+	void OpenWebPage(bool bServerPort = false) const;
 
 	bool IsRecording() const;
 	void StartRecord();

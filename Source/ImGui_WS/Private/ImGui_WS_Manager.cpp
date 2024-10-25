@@ -45,14 +45,7 @@ FAutoConsoleCommand LaunchImGuiWeb
 	FConsoleCommandDelegate::CreateLambda([]
 	{
 		const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
-		if (Manager->IsEnable())
-		{
-			FPlatformProcess::LaunchURL(*FString::Printf(TEXT("http://localhost:%d"), Manager->GetPort()), nullptr, nullptr);
-		}
-		else
-		{
-			FPlatformProcess::LaunchURL(TEXT("http://localhost#ImGui_WS_Not_Enable!"), nullptr, nullptr);
-		}
+		Manager->OpenWebPage();
 	})
 };
 
@@ -108,17 +101,11 @@ TAutoConsoleVariable<int32> CVar_ImGui_WS_Enable
 		{
 			if (bIsEnable)
 			{
-				if (Manager->IsEnable() == false)
-				{
-					Manager->Enable();
-				}
+				Manager->Enable();
 			}
 			else
 			{
-				if (Manager->IsEnable())
-				{
-					Manager->Disable();
-				}
+				Manager->Disable();
 			}
 		}
 	})
@@ -920,14 +907,20 @@ bool UImGui_WS_Manager::IsSettingsEnable()
 
 void UImGui_WS_Manager::Enable()
 {
-	check(IsEnable() == false);
+	if (IsEnable())
+	{
+		return;
+	}
 	UE_LOG(LogImGui, Log, TEXT("Enable ImGui WS"));
 	Impl = new FImpl{ *this };
 }
 
 void UImGui_WS_Manager::Disable()
 {
-	check(IsEnable());
+	if (IsEnable() == false)
+	{
+		return;
+	}
 	delete Impl;
 	Impl = nullptr;
 	UE_LOG(LogImGui, Log, TEXT("Disable ImGui WS"));
@@ -953,6 +946,19 @@ int32 UImGui_WS_Manager::GetPort() const
 int32 UImGui_WS_Manager::GetConnectionCount() const
 {
 	return Impl ? Impl->ImGuiWS.NumConnected() : 0;
+}
+
+void UImGui_WS_Manager::OpenWebPage(bool bServerPort) const
+{
+	if (bServerPort == false && IsEnable() == false)
+	{
+		FPlatformProcess::LaunchURL(TEXT("http://localhost#ImGui_WS_Not_Enable!"), nullptr, nullptr);
+	}
+	else
+	{
+		const int32 Port = bServerPort ? GetDefault<UImGuiSettings>()->ServerPort : GetPort();
+		FPlatformProcess::LaunchURL(*FString::Printf(TEXT("http://localhost:%d"), Port), nullptr, nullptr);
+	}
 }
 
 bool UImGui_WS_Manager::IsRecording() const
@@ -994,10 +1000,7 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 		}
 		if (IsSettingsEnable())
 		{
-			if (IsEnable() == false)
-			{
-				Enable();
-			}
+			Enable();
 		}
 		else
 		{
@@ -1009,10 +1012,7 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 
 void UImGui_WS_Manager::Deinitialize()
 {
-	if (IsEnable())
-	{
-		Disable();
-	}
+	Disable();
 	Super::Deinitialize();
 }
 
