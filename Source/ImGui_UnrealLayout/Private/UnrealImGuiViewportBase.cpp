@@ -18,7 +18,7 @@ namespace UnrealImGui::Viewport::EFilterType
 
 UUnrealImGuiViewportBase::UUnrealImGuiViewportBase()
 {
-	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar;
+	ImGuiWindowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar;
 }
 
 void UUnrealImGuiViewportBase::Register(UObject* Owner, UUnrealImGuiPanelBuilder* Builder)
