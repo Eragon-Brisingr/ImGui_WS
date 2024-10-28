@@ -9,8 +9,11 @@
 #include "UnrealImGuiLayoutSubsystem.h"
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
+#include "UnrealImGuiStat.h"
+#include "UnrealImGuiString.h"
 #include "WorkspaceMenuStructure.h"
 #include "WorkspaceMenuStructureModule.h"
+#include "HAL/PlatformFileManager.h"
 #include "Styling/AppStyle.h"
 #include "Textures/SlateIcon.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -176,6 +179,8 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 			const TSharedRef<SImGuiPanel> ImGuiPanel = SNew(SImGuiPanel)
 				.OnImGuiTick_Lambda([this](float DeltaSeconds)
 				{
+					DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiEditorPanel_Tick"), STAT_ImGuiEditorPanel_Tick, STATGROUP_ImGui);
+
 					UImGuiUnrealContextManager* ContextManager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
 					if (ContextManager == nullptr)
 					{
@@ -246,20 +251,28 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					}
 					if (Panel == nullptr)
 					{
-						if (ImGui::FWindow Window{ "Panel", nullptr, SinglePanelFlags })
+						if (ImGui::FWindow Window{ "NoFindInstancePanel", nullptr, SinglePanelFlags })
 						{
 							ImGui::TextUnformatted("No active panel instance");
 						}
 						return;
 					}
-					if (ImGui::FWindow Window{ "Panel", nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
+					if (ImGui::FWindow Window{ TCHAR_TO_UTF8(*Panel->Title.ToString()), nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
 					{
 						OnPrePanelDraw.Broadcast(World);
 						Panel->Draw(World, Builder.Get(), DeltaSeconds);
 						OnPostPanelDraw.Broadcast(World);
 					}
 				});
-			ImGuiPanel->GetContext()->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
+			auto Context = ImGuiPanel->GetContext();
+			Context->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
+
+			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+			const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
+			// Make sure that directory is created.
+			PlatformFile.CreateDirectory(*IniDirectory);
+			static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_EditorPanels.ini");
+			Context->IO.IniFilename = IniFilePath.GetData();
 
 			ChildSlot
 			[

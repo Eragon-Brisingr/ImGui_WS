@@ -17,8 +17,8 @@ namespace ImGui_WS::LocalPanel
 		DockWindow = 2,
 	};
 	IMGUI_UNREALPANELS_API bool IsLocalWindowOpened(const UWorld* World);
-	IMGUI_UNREALPANELS_API void OpenLocalWindow();
-	IMGUI_UNREALPANELS_API void CloseLocalWindow();
+	IMGUI_UNREALPANELS_API void OpenLocalWindow(UWorld* World);
+	IMGUI_UNREALPANELS_API void CloseLocalWindow(UWorld* World);
 }
 
 USTRUCT()
@@ -30,6 +30,8 @@ public:
 	FVector2f Pos{ 0.1f, 0.1f };
 	UPROPERTY()
 	FVector2f Size{ 0.4f, 0.4f };
+	UPROPERTY()
+	bool bMaximize = false;
 };
 
 UCLASS(Config = ImGuiPanelUserConfig, PerObjectConfig)

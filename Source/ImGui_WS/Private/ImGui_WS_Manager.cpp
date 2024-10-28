@@ -225,7 +225,7 @@ public:
 		const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
 		// Make sure that directory is created.
 		PlatformFile.CreateDirectory(*IniDirectory);
-		static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("Imgui_WS.ini");
+		static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_WS.ini");
 		IO.IniFilename = IniFilePath.GetData();
 	    IO.DisplaySize = ImVec2(0, 0);
 

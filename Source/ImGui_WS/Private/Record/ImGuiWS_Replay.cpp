@@ -39,38 +39,38 @@ void FImGuiWS_Replay::Draw(float DeltaTime, bool& CloseReplay)
 	const float WindowWidth = IO.DisplaySize.x - HPadding * 2.f;
 	ImGui::SetNextWindowPos({ HPadding, IO.DisplaySize.y - Height - VPadding + WindowHeightOffset });
 	ImGui::SetNextWindowSize({ WindowWidth, Height });
-	ImGui::Begin("ReplayControl", nullptr, ImGuiWindowFlags_NoDecoration);
-
-	ImGui::SetCursorPos({ 20.f, 10.f });
-	ImGui::Text("ImGui-WS Replay");
-	ImGui::SameLine(WindowWidth - 60.f);
-	if (ImGui::Button("Quit"))
+	if (ImGui::Begin("ReplayControl", nullptr, ImGuiWindowFlags_NoDecoration))
 	{
-		CloseReplay = true;
-	}
+		ImGui::SetCursorPos({ 20.f, 10.f });
+		ImGui::Text("ImGui-WS Replay");
+		ImGui::SameLine(WindowWidth - 60.f);
+		if (ImGui::Button("Quit"))
+		{
+			CloseReplay = true;
+		}
 	
-	ImGui::SetCursorPos({ 30.f, 40.f });
-	switch (PlayState)
-	{
-	case EPlayState::Pause:
-		if (ImGui::Button(ICON_FA_PLAY))
+		ImGui::SetCursorPos({ 30.f, 40.f });
+		switch (PlayState)
 		{
-			PlayState = EPlayState::Play;
+		case EPlayState::Pause:
+			if (ImGui::Button(ICON_FA_PLAY))
+			{
+				PlayState = EPlayState::Play;
+			}
+			break;
+		case EPlayState::Play:
+			if (ImGui::Button(ICON_FA_PAUSE))
+			{
+				PlayState = EPlayState::Pause;
+			}
+			break;
+		default: ;
 		}
-		break;
-	case EPlayState::Play:
-		if (ImGui::Button(ICON_FA_PAUSE))
-		{
-			PlayState = EPlayState::Pause;
-		}
-		break;
-	default: ;
+		ImGui::SameLine();
+
+		ImGui::SetNextItemWidth(-30.f);
+		ImGui::SliderInt("##PlayPosition", &FrameIndex, 0, LoadedSession.nFrames() - 1);
 	}
-	ImGui::SameLine();
-
-	ImGui::SetNextItemWidth(-30.f);
-	ImGui::SliderInt("##PlayPosition", &FrameIndex, 0, LoadedSession.nFrames() - 1);
-
 	ImGui::End();
 
 	ImGui::PopStyleVar();

@@ -10,6 +10,7 @@
 #include "RenderingThread.h"
 #include "TextureResource.h"
 #include "UnrealImGuiKeyUtils.h"
+#include "UnrealImGuiStat.h"
 #include "UnrealImGuiTexture.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
@@ -151,6 +152,8 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 
 int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
+	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("SImGuiPanel_OnPaint"), STAT_SImGuiPanel_OnPaint, STATGROUP_ImGui);
+	
 	if (!DrawData.bValid)
 	{
 		return LayerId;

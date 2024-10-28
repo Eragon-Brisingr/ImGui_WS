@@ -37,7 +37,7 @@ void UUnrealImGuiObjectBrowserPanel::Unregister(UObject* Owner, UUnrealImGuiPane
 
 void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
-	if (ImGui::BeginChild("ObjectPathViewer", { 0.f, ImGui::GetFontSize() * 2.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar))
+	if (ImGui::FChildWindow ChildWindow{ "ObjectPathViewer", { 0.f, ImGui::GetFontSize() * 2.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar })
 	{
 		if (ImGui::Button("Root"))
 		{
@@ -64,7 +64,6 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 				}
 			}
 		}
-		ImGui::EndChild();
 	}
 
 	const ImGuiWindowClass* WindowClass = &ImGui::GetCurrentWindowRead()->WindowClass;
@@ -82,7 +81,7 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 	ImGui::DockSpace(DockSpaceId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_AutoHideTabBar, WindowClass);
 	
 	ImGui::SetNextWindowClass(WindowClass);
-	if (ImGui::Begin("ObjectBrowserContent"))
+	if (ImGui::FWindow Window{ "ObjectBrowserContent" })
 	{
 		static UnrealImGui::FUTF8String FilterString;
 		const bool bInvokeSearch = ImGui::InputTextWithHint("##Filter", "Filter (Input full path then press Enter to search object)", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
@@ -138,7 +137,7 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 		constexpr ImGuiTableFlags OutlinerTableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
 			ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody | ImGuiTableFlags_ScrollY;
 
-		if (ImGui::BeginTable("ContentTable", 1, OutlinerTableFlags))
+		if (ImGui::FTable Table{ "ContentTable", 1, OutlinerTableFlags })
 		{
 			ImGuiListClipper ListClipper{};
 			ListClipper.Begin(DisplayObjects.Num());
@@ -153,25 +152,22 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 						SelectedObject = Object;
 						FilterString.Empty();
 					}
-					if (ImGui::BeginItemTooltip())
+					if (ImGui::FItemTooltip ItemTooltip{})
 					{
 						ImGui::TextUnformatted(TCHAR_TO_UTF8(*FString::Printf(TEXT("Class: %s"), *Object->GetClass()->GetName())));
 						ImGui::Text("InPackage: %s", Object->HasAnyFlags(RF_Load) ? "true" : "false");
-						ImGui::EndTooltip();
 					}
 				}
 			}
-			ImGui::EndTable();
 		}
-		ImGui::End();
 	}
 
 	ImGui::SetNextWindowClass(WindowClass);
-	if (ImGui::Begin("ObjectBrowserDetails", nullptr, ImGuiWindowFlags_MenuBar))
+	if (ImGui::FWindow Window{ "ObjectBrowserDetails", nullptr, ImGuiWindowFlags_MenuBar })
 	{
-		if (ImGui::BeginMenuBar())
+		if (ImGui::FMenuBar MenuBar{})
 		{
-			if (ImGui::BeginMenu("Detail Settings"))
+			if (ImGui::FMenu Menu{ "Detail Settings" })
 			{
 				{
 					bool Value = bDisplayAllProperties;
@@ -189,9 +185,7 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 						Owner->SaveConfig();
 					}
 				}
-				ImGui::EndMenu();
 			}
-			ImGui::EndMenuBar();
 		}
 		static UnrealImGui::FDetailsFilter DetailsFilter;
 		DetailsFilter.Draw();
@@ -206,8 +200,6 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 		{
 			ImGui::Text("Not select object");
 		}
-
-		ImGui::End();
 	}
 }
 
