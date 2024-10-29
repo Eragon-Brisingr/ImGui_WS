@@ -23,12 +23,10 @@ public class ImGui_UnrealPanels : ModuleRules
                 "SlateCore",
                 "Navmesh",
                 "NavigationSystem",
-                "InputCore",
                 "EngineSettings",
 
                 "ImGui",
 	            "ImGui_Widgets",
-                "ImGui_Slate",
                 "ImGui_UnrealLayout",
             }
         );

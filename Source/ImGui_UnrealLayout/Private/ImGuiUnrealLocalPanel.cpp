@@ -36,11 +36,11 @@ TAutoConsoleVariable<int32> CVarLocalPanelMode
 {
 	TEXT("ImGui.WS.LocalPanelMode"),
 #if WITH_EDITOR
-	(int32)ELocalPanelMode::DockWindow,
+	(int32)EImGuiLocalPanelMode::DockWindow,
 #elif PLATFORM_DESKTOP
-	(int32)ELocalPanelMode::SingleWindow,
+	(int32)EImGuiLocalPanelMode::SingleWindow,
 #else
-	(int32)ELocalPanelMode::GameViewport,
+	(int32)EImGuiLocalPanelMode::GameViewport,
 #endif
 	TEXT("0: open in game viewport\n")
 	TEXT("1: open as single window (desktop platform only)\n")
@@ -399,6 +399,7 @@ public:
 
 	void Construct(const FArguments& Args)
 	{
+		SetVisibility(EVisibility::SelfHitTestInvisible);
 		ChildSlot
 		[
 			SAssignNew(Canvas, SConstraintCanvas)
@@ -454,6 +455,28 @@ bool IsLocalWindowOpened(const UWorld* World)
 	}
 	return FGlobalTabmanager::Get()->FindExistingLiveTab(WindowTabId) != nullptr;
 }
+
+bool IsLocalWindowOpened(const UWorld* World, EImGuiLocalPanelMode PanelMode)
+{
+	switch (PanelMode)
+	{
+	case EImGuiLocalPanelMode::GameViewport:
+		{
+			const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(World);
+			return ViewportPanel ? ViewportPanel->Overlay.IsValid() : false;
+		}
+	case EImGuiLocalPanelMode::SingleWindow:
+		{
+			return WindowPtr.IsValid();
+		}
+	case EImGuiLocalPanelMode::DockWindow:
+		{
+			return FGlobalTabmanager::Get()->FindExistingLiveTab(WindowTabId) != nullptr;
+		}
+	}
+	return false;
+}
+
 TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 {
 	UImGuiUnrealContextManager* Manager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
@@ -490,7 +513,7 @@ TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 	const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
 	// Make sure that directory is created.
 	PlatformFile.CreateDirectory(*IniDirectory);
-	static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_WS_Window.ini");
+	static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_LocalWindow.ini");
 	IO.IniFilename = IniFilePath.GetData();
 	return Panel;
 }
@@ -529,9 +552,11 @@ public:
 				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiLocalPanel_Tick"), STAT_ImGuiLocalPanel_Tick, STATGROUP_ImGui);
 				ImGui::SetNextWindowPos(ImVec2{ 0, 0 });
 				ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
-				if (ImGui::FWindow Window{ "Panel", nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
+				if (ImGui::FWindow Window{ TCHAR_TO_UTF8(*Panel->Title.ToString()), nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
 				{
+					UImGuiUnrealContextManager::OnPreDraw.Broadcast(World);
 					Panel->Draw(World, Builder, DeltaSeconds);
+					UImGuiUnrealContextManager::OnPostDraw.Broadcast(World);
 				}
 			});
 		const FImGuiLocalPanelConfig PanelConfig = Config->PanelConfigMap.FindRef(Panel->GetClass());
@@ -1216,6 +1241,12 @@ private:
 
 void OpenLocalWindow(UWorld* World)
 {
+	const EImGuiLocalPanelMode PanelMode{ static_cast<uint8>(CVarLocalPanelMode.GetValueOnAnyThread()) };
+	OpenLocalWindow(World, PanelMode);
+}
+
+void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
+{
 	class SImGuiPanelLifetime : public SCompoundWidget
 	{
 		SLATE_BEGIN_ARGS(SImGuiPanelLifetime)
@@ -1238,8 +1269,7 @@ void OpenLocalWindow(UWorld* World)
 		}
 	};
 
-	const ELocalPanelMode PanelMode{ CVarLocalPanelMode.GetValueOnAnyThread() };
-	if (PanelMode == ELocalPanelMode::DockWindow && GIsEditor)
+	if (PanelMode == EImGuiLocalPanelMode::DockWindow && GIsEditor)
 	{
 		static FName Id = []
 		{
@@ -1267,7 +1297,7 @@ void OpenLocalWindow(UWorld* World)
 		}();
 		FGlobalTabmanager::Get()->TryInvokeTab(Id);
 	}
-	else if (PanelMode == ELocalPanelMode::SingleWindow && PLATFORM_DESKTOP)
+	else if (PanelMode == EImGuiLocalPanelMode::SingleWindow && PLATFORM_DESKTOP)
 	{
 		if (WindowPtr.IsValid())
 		{
@@ -1336,17 +1366,22 @@ void OpenLocalWindow(UWorld* World)
 		GameViewport->AddViewportWidgetContent(Overlay, INT32_MAX - 1);
 	}
 }
+
 void CloseLocalWindow(UWorld* World)
 {
-	const ELocalPanelMode PanelMode{ CVarLocalPanelMode.GetValueOnAnyThread() };
-	if (PanelMode == ELocalPanelMode::DockWindow && GIsEditor)
+	const EImGuiLocalPanelMode PanelMode{ static_cast<uint8>(CVarLocalPanelMode.GetValueOnAnyThread()) };
+	CloseLocalWindow(World, PanelMode);
+}
+void CloseLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
+{
+	if (PanelMode == EImGuiLocalPanelMode::DockWindow && GIsEditor)
 	{
 		if (const TSharedPtr<SDockTab> Tab = FGlobalTabmanager::Get()->FindExistingLiveTab(WindowTabId))
 		{
 			Tab->RequestCloseTab();
 		}
 	}
-	else if (PanelMode == ELocalPanelMode::SingleWindow && PLATFORM_DESKTOP)
+	else if (PanelMode == EImGuiLocalPanelMode::SingleWindow && PLATFORM_DESKTOP)
 	{
 		if (WindowPtr.IsValid())
 		{

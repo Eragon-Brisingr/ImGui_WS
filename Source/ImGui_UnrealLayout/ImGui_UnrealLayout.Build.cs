@@ -20,8 +20,10 @@ public class ImGui_UnrealLayout : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
+                "InputCore",
 
                 "ImGui",
+                "ImGui_Slate",
             }
         );
     }

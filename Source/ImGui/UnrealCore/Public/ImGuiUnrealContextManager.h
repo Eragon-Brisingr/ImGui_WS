@@ -60,6 +60,10 @@ public:
 	void DrawContextContent(int32& ContextIndex);
 	UWorld* GetContextIndexWorld(int32 ContextIndex) const;
 
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnPreDraw, UWorld*);
+	static FOnPreDraw OnPreDraw;
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnPostDraw, UWorld*);
+	static FOnPostDraw OnPostDraw;
 private:
 #if WITH_EDITORONLY_DATA
 	UPROPERTY()

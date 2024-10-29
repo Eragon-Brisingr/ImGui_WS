@@ -8,6 +8,8 @@
 #include "Engine/Engine.h"
 #include "UObject/Package.h"
 
+UImGuiUnrealContextManager::FOnPreDraw UImGuiUnrealContextManager::OnPreDraw;
+UImGuiUnrealContextManager::FOnPostDraw UImGuiUnrealContextManager::OnPostDraw;
 
 UImGuiUnrealContextWorldSubsystem* UImGuiUnrealContextWorldSubsystem::Get(const UObject* WorldContextObject)
 {
@@ -73,6 +75,13 @@ FImGuiUnrealEditorContext* UImGuiUnrealContextManager::GetImGuiEditorContext()
 
 void UImGuiUnrealContextManager::DrawViewport(int32& ContextIndex, float DeltaSeconds)
 {
+	UWorld* World = GetContextIndexWorld(ContextIndex);
+	OnPreDraw.Broadcast(World);
+	ON_SCOPE_EXIT
+	{
+		OnPostDraw.Broadcast(World);
+	};
+	
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("ImGui_WS"))
