@@ -197,6 +197,17 @@ var imgui_ws = {
         this.canvas.addEventListener('touchend', ontouch);
         this.canvas.addEventListener('touchcancel', ontouch);
 
+        // disable default drag event
+        this.canvas.addEventListener('dragstart', function(e){
+            e.preventDefault();
+        }, false);
+        document.body.addEventListener('dragover', function(e){
+            e.preventDefault();
+        }, false);
+        this.canvas.addEventListener('drop', function(e){
+            e.preventDefault();
+        }, false);
+
         this.virtual_input.addEventListener('keydown', onkeydown, true);
         this.virtual_input.addEventListener('keyup', onkeyup, true);
 
