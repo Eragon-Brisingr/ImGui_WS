@@ -19,6 +19,7 @@ public class ImGui_UnrealLayout : ModuleRules
                 "CoreUObject",
                 "Engine",
                 "Slate",
+                "UMG",
                 "SlateCore",
                 "InputCore",
 

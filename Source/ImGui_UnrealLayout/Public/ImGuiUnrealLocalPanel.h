@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/Object.h"
 #include "ImGuiUnrealLocalPanel.generated.h"
@@ -58,6 +59,23 @@ public:
 
 	UPROPERTY(Config)
 	TArray<TSoftClassPtr<UUnrealImGuiPanelBase>> RecentlyPanels;
+};
+
+UCLASS(Abstract)
+class IMGUI_UNREALLAYOUT_API UImGuiLocalPanelManagerWidget : public UUserWidget
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditDefaultsOnly, Category = ImGui)
+	FString Title = TEXT("ImGui Panel Manager");
+
+	virtual void DrawMenu() { ReceiveDrawMenu(); }
+	UFUNCTION(BlueprintImplementableEvent, Category = ImGui)
+	void ReceiveDrawMenu();
+	
+	virtual void DrawContent() { ReceiveDrawContent(); }
+	UFUNCTION(BlueprintImplementableEvent, Category = ImGui)
+	void ReceiveDrawContent();
 };
 
 UCLASS()

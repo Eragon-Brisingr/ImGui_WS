@@ -6,6 +6,8 @@
 #include "Engine/DeveloperSettings.h"
 #include "ImGuiSettings.generated.h"
 
+class UUserWidget;
+
 UENUM()
 enum class EImGuiFontGlyphRanges : uint8
 {
@@ -92,6 +94,9 @@ public:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "ImGui WS", meta = (EditInline))
 	TObjectPtr<UImGuiPerUserSettingsSettings> PreUserSettings = nullptr;
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.ImGuiLocalPanelManagerWidget"))
+	TSoftClassPtr<UObject> LocalPanelManagerWidget;
 	
 #if WITH_EDITOR
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPostEditChangeProperty, UImGuiSettings*, FPropertyChangedEvent&);
