@@ -175,26 +175,28 @@ void AImGuiWorldDebuggerBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 {
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWorldDebugger_DrawDebugPanel"), STAT_ImGuiWorldDebugger_DrawDebugPanel, STATGROUP_ImGui);
+
+	auto Config = GetMutableDefault<AImGuiWorldDebuggerBase>();
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("Windows"))
 		{
 			ImGui::Separator();
-			
-			bool bEnable = bEnableImGuiWorldDebugger;
+
+			bool bEnable = Config->bEnableImGuiWorldDebugger;
 			if (ImGui::Checkbox("ImGui World Debugger", &bEnable))
 			{
-				bEnableImGuiWorldDebugger = bEnable;
-				SaveConfig();
+				Config->bEnableImGuiWorldDebugger = bEnable;
+				Config->SaveConfig();
 			}
-			if (bEnableImGuiWorldDebugger)
+			if (Config->bEnableImGuiWorldDebugger)
 			{
 				PanelBuilder->DrawPanelStateMenu(this);
 			}
 			
 			ImGui::EndMenu();
 		}
-		if (bEnableImGuiWorldDebugger)
+		if (Config->bEnableImGuiWorldDebugger)
 		{
 			if (ImGui::BeginMenu("Layout"))
 			{
@@ -210,7 +212,7 @@ void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 		}
 		ImGui::EndMainMenuBar();
 	}
-	if (bEnableImGuiWorldDebugger == false)
+	if (Config->bEnableImGuiWorldDebugger == false)
 	{
 		return;
 	}

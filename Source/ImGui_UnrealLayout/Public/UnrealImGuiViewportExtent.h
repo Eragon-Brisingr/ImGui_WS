@@ -153,6 +153,7 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	void DrawQuadFilled(const FVector2D& P1, const FVector2D& P2, const FVector2D& P3, const FVector2D& P4, const FColor& Color) const;
 	void FDrawQuadFilled(const FVector2f& P1, const FVector2f& P2, const FVector2f& P3, const FVector2f& P4, const FColor& Color) const { DrawQuadFilled(FVector2D{ P1 }, FVector2D{ P2 }, FVector2D{ P3 }, FVector2D{ P4 }, Color); }
 	void DrawCoordinateSystem(const FTransform& Transform, float Scale = 100.f, float Thickness = 1.f) const;
+	void DrawViewFrustum(const FTransform& Transform, float TanHalfFov, float NearClipDist, float FarClipDist, const FColor& Color, float Thickness = 1.f) const;
 	void DrawTexture(const FVector2D& Location, UnrealImGui::ETextureFormat TextureFormat, UTexture* Texture, const FVector2D& Size, const FColor& Color = FColor::White, const FVector2D& UV_Min = FVector2D::ZeroVector, const FVector2D& UV_Max = FVector2D::UnitVector) const;
 	void DrawText(const FVector2D& Location, const FString& Text, const FColor& Color) const;
 	void FDrawText(const FVector2f& Location, const FString& Text, const FColor& Color) const { DrawText(FVector2D{ Location }, Text, Color); }

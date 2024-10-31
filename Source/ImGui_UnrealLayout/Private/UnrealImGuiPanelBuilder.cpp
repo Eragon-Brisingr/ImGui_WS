@@ -60,7 +60,7 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	static auto RegisterPanel = [](UObject* Owner, const UUnrealImGuiLayoutBase* Layout, UUnrealImGuiPanelBase* Panel, UUnrealImGuiPanelBuilder* Builder)
 	{
 		Panel->InitialConfigObject();
-		if (const bool* IsOpenPtr = Panel->GetConfigObject()->PanelOpenState.Find(Layout->GetClass()->GetFName()))
+		if (const bool* IsOpenPtr = Panel->ConfigObjectPrivate->PanelOpenState.Find(Layout->GetClass()->GetFName()))
 		{
 			Panel->SetOpenState(*IsOpenPtr);
 		}
@@ -280,7 +280,7 @@ void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 				if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
 				{
 					Panel->SetOpenState(IsOpen);
-					UUnrealImGuiPanelBase* ConfigObject = Panel->GetConfigObject();
+					UUnrealImGuiPanelBase* ConfigObject = Panel->ConfigObjectPrivate;
 					ConfigObject->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
 					ConfigObject->SaveConfig();
 				}

@@ -241,6 +241,26 @@ void FUnrealImGuiViewportContext::DrawCoordinateSystem(const FTransform& Transfo
 	}
 }
 
+void FUnrealImGuiViewportContext::DrawViewFrustum(const FTransform& Transform, float TanHalfFov, float NearClipDist, float FarClipDist, const FColor& Color, float Thickness) const
+{
+	const FVector2D CameraViewShape[]
+	{
+		FVector2D{ Transform.TransformPosition({NearClipDist, -TanHalfFov * NearClipDist, 0.f }), },
+		FVector2D{ Transform.TransformPosition({NearClipDist, TanHalfFov * NearClipDist, 0.f }) },
+		FVector2D{ Transform.TransformPosition({FarClipDist, TanHalfFov * FarClipDist, 0.f }) },
+		FVector2D{ Transform.TransformPosition({FarClipDist, -TanHalfFov * FarClipDist, 0.f }) }
+	};
+	if (ViewBounds.Intersect(FBox2D{ CameraViewShape, UE_ARRAY_COUNT(CameraViewShape) }))
+	{
+		ImVec2 Ploys[UE_ARRAY_COUNT(CameraViewShape)];
+		for (int32 Idx = 0; Idx < UE_ARRAY_COUNT(CameraViewShape); ++Idx)
+		{
+			Ploys[Idx] = ImVec2{ WorldToScreenLocation(CameraViewShape[Idx]) };
+		}
+		DrawList->AddPolyline(Ploys, UE_ARRAY_COUNT(CameraViewShape), FColorToU32(Color), ImDrawFlags_Closed, Thickness);
+	}
+}
+
 void FUnrealImGuiViewportContext::DrawTexture(const FVector2D& Location, UnrealImGui::ETextureFormat TextureFormat, UTexture* Texture, const FVector2D& Size, const FColor& Color, const FVector2D& UV_Min, const FVector2D& UV_Max) const
 {
 	if (!Texture)

@@ -12,7 +12,9 @@
 #include "ImGuiWorldDebuggerPanel.h"
 #include "UnrealImGuiPropertyDetails.h"
 #include "UnrealImGuiStat.h"
+#include "Engine/GameViewportClient.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
 #include "UObject/UObjectIterator.h"
 
 UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
@@ -28,6 +30,47 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 bool UImGuiWorldDebuggerViewportPanel::ShouldCreatePanel(UObject* Owner) const
 {
 	return Owner && Owner->IsA<AImGuiWorldDebuggerBase>();
+}
+
+void UImGuiWorldDebuggerViewportPanel::DrawCurrentViewFrustum(UObject* Owner, const FUnrealImGuiViewportContext& Context)
+{
+	UWorld* World = GetWorld();
+	auto Config = GetConfigObject<ThisClass>();
+	// Draw player location
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APlayerController* PlayerController = It->Get())
+		{
+			// Draw Camera
+			FVector PlayerViewLocation;
+			FRotator PlayerViewRotation;
+			PlayerController->GetPlayerViewPoint(PlayerViewLocation, PlayerViewRotation);
+			float Fov;
+			if (PlayerController->PlayerCameraManager && PlayerController->PlayerCameraManager->GetCameraCacheTime() > 0.f)
+			{
+				Fov = PlayerController->PlayerCameraManager->GetFOVAngle();
+			}
+			else if (auto CDO = PlayerController->PlayerCameraManagerClass.GetDefaultObject())
+			{
+				Fov = CDO->DefaultFOV;
+			}
+			else
+			{
+				Fov = 70.f;
+			}
+			Context.DrawViewFrustum(FTransform{ PlayerViewRotation, PlayerViewLocation }, FMath::Tan(Fov / 2.f), Config->NearPlaneDistance, Config->FarPlaneDistance, FColor{ 0, 127, 255, 127 });
+			const FVector2D ViewLocation2D{ PlayerViewLocation };
+			Context.DrawCircleFilled(ViewLocation2D, 3.f / CurrentZoom, FColor::White);
+			if (const APlayerState* PlayerState = PlayerController->PlayerState)
+			{
+				Context.DrawText(ViewLocation2D + FVector2D{ -20.f / CurrentZoom, 6.f / CurrentZoom }, PlayerState->GetPlayerName(), FColor::White);
+			}
+		}
+	}
+	if (World->GetGameViewport() && World->GetGameViewport()->IsSimulateInEditorViewport())
+	{
+		Super::DrawCurrentViewFrustum(Owner, Context);
+	}
 }
 
 UImGuiWorldDebuggerViewportActorExtent::UImGuiWorldDebuggerViewportActorExtent()

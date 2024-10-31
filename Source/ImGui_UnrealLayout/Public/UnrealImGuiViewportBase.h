@@ -36,6 +36,7 @@ public:
 	virtual void DrawMenu(UObject* Owner, bool& bIsConfigDirty) { ReceiveDrawMenu(Owner, bIsConfigDirty); }
 	virtual void DrawViewportMenu(UObject* Owner, bool& bIsConfigDirty) { ReceiveDrawMenu(Owner, bIsConfigDirty); }
 	virtual void DrawViewportContent(UObject* Owner, const FUnrealImGuiViewportContext& ViewportContext) { ReceiveDrawViewportContent(Owner, ViewportContext); }
+	virtual void DrawCurrentViewFrustum(UObject* Owner, const FUnrealImGuiViewportContext& Context);
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UUnrealImGuiViewportExtentBase>> Extents;
@@ -60,13 +61,22 @@ public:
 	TArray<FPassDrawer> PassDrawers;
 
 	UPROPERTY(Config)
+	float ZoomFactorSpeed = 1.f;
+	UPROPERTY(Config)
 	float ZoomFactor = 5.f;
-	float MinZoomFactor = 0.f;
+	float MinZoomFactor = -1.f;
 	float MaxZoomFactor = 10.f;
 	float CurrentZoom = 1.f;
 	UPROPERTY(Config)
 	FVector2D ViewLocation = { 0.f, 0.f };
 	FVector2D CurrentViewLocation;
+
+	UPROPERTY(Config)
+	bool bDrawViewFrustum = true;
+	UPROPERTY(Config)
+	float NearPlaneDistance = 100.f;
+	UPROPERTY(Config)
+	float FarPlaneDistance = 1000.f;
 
 	FString FilterString;
 	uint32 FilterType = 0;

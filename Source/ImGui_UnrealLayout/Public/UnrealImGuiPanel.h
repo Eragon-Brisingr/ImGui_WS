@@ -61,7 +61,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Settings)
 	TMap<FName, FImGuiDefaultDockLayout> DefaultDockSpace;
 
-	bool IsOpenedInLayout() const { return GetConfigObject()->bIsOpen; }
+	bool IsOpenedInLayout() const { return ConfigObjectPrivate->bIsOpen; }
 	bool IsOpenedInLocal() const { return LocalOpenCounter > 0; }
 
 	bool IsOpened() const { return IsOpenedInLayout() || IsOpenedInLocal(); }
@@ -73,10 +73,12 @@ public:
 
 	void SaveConfig() { Super::SaveConfig(CPF_Config, nullptr, GConfig, false); }
 	UFUNCTION(BlueprintCallable, Category = ImGui)
-	void SaveImGuiConfig() { SaveConfig(); }
+	void SaveImGuiConfig() { ConfigObjectPrivate->SaveConfig(); }
+
+	template<typename T>
+	T* GetConfigObject() const { return CastChecked<T>(ConfigObjectPrivate); }
 private:
 	void InitialConfigObject();
-	UUnrealImGuiPanelBase* GetConfigObject() const { return ConfigObjectPrivate; }
 
 	friend class UUnrealImGuiPanelBuilder;
 	friend class UUnrealImGuiLayoutBase;

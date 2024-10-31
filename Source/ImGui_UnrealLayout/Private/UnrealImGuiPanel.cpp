@@ -16,7 +16,7 @@ UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
 
 void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
 {
-	UUnrealImGuiPanelBase* ConfigObject = GetConfigObject();
+	UUnrealImGuiPanelBase* ConfigObject = ConfigObjectPrivate;
 	if (ConfigObject->bIsOpen != bOpen)
 	{
 		ConfigObject->bIsOpen = bOpen;
@@ -37,7 +37,7 @@ void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
 
 void UUnrealImGuiPanelBase::LocalPanelOpened()
 {
-	if (LocalOpenCounter == 0 && GetConfigObject()->bIsOpen == false)
+	if (LocalOpenCounter == 0 && ConfigObjectPrivate->bIsOpen == false)
 	{
 		UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
 		WhenOpen(Builder->GetOuter(), Builder);
@@ -48,7 +48,7 @@ void UUnrealImGuiPanelBase::LocalPanelOpened()
 void UUnrealImGuiPanelBase::LocalPanelClosed()
 {
 	LocalOpenCounter -= 1;
-	if (LocalOpenCounter == 0 && GetConfigObject()->bIsOpen == false)
+	if (LocalOpenCounter == 0 && ConfigObjectPrivate->bIsOpen == false)
 	{
 		UUnrealImGuiPanelBuilder* Builder = CastChecked<UUnrealImGuiPanelBuilder>(GetOuter());
 		WhenClose(Builder->GetOuter(), Builder);
@@ -82,7 +82,7 @@ UUnrealImGuiPanelBase::FScriptExecutionGuard::FScriptExecutionGuard(const UUnrea
 
 void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
-	UUnrealImGuiPanelBase* ConfigObject = GetConfigObject();
+	UUnrealImGuiPanelBase* ConfigObject = ConfigObjectPrivate;
 	if (ConfigObject->bIsOpen == false)
 	{
 		return;

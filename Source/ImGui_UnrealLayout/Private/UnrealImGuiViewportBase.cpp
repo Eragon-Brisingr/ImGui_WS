@@ -6,10 +6,7 @@
 #include "ImGuiEx.h"
 #include "imgui_internal.h"
 #include "UnrealImGuiViewportExtent.h"
-#include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
-#include "GameFramework/PlayerController.h"
-#include "GameFramework/PlayerState.h"
 
 namespace UnrealImGui::Viewport::EFilterType
 {
@@ -132,12 +129,35 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 		return;
 	}
 
+	auto Config = GetConfigObject<ThisClass>();
+
 	ImGuiIO& IO = ImGui::GetIO();
 	// Avoid left mouse drag window
 	TGuardValue<bool> ConfigWindowsMoveFromTitleBarOnlyGuard{ IO.ConfigWindowsMoveFromTitleBarOnly, true };
 
-	CurrentViewLocation = FMath::Vector2DInterpTo(CurrentViewLocation, ViewLocation, DeltaSeconds, 10.f);
-	CurrentZoom = FMath::FInterpTo(CurrentZoom, FMath::Pow(2.f, -ZoomFactor), DeltaSeconds, 10.f);
+	{
+		float ViewMoveScale = 0.f;
+		if (CurrentViewLocation != ViewLocation)
+		{
+			const FVector2D PrevViewLocation{ CurrentViewLocation };
+			const float PrevDist = FVector2D::Distance(CurrentViewLocation, ViewLocation);
+			CurrentViewLocation = FMath::Vector2DInterpTo(CurrentViewLocation, ViewLocation, DeltaSeconds, 10.f);
+			const float MoveDist = FVector2D::Distance(PrevViewLocation, CurrentViewLocation);
+			ViewMoveScale = MoveDist / PrevDist;
+		}
+		else
+		{
+			ViewMoveScale = 0.f;
+		}
+		if (ViewMoveScale > 0.f)
+		{
+			CurrentZoom = FMath::Pow(2.f, FMath::Lerp(FMath::LogX(2.f, CurrentZoom), -ZoomFactor, ViewMoveScale));
+		}
+		else
+		{
+			CurrentZoom = FMath::Pow(2.f, -ZoomFactor);
+		}
+	}
 
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 
@@ -170,12 +190,42 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 				}
 			}
 			ImGui::Separator();
-			if (ImGui::Button("To View Location"))
+			ImGui::TextUnformatted("Zoom Speed: ");
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 4.f);
+			if (ImGui::DragFloat("##ZoomFactorSpeed", &Config->ZoomFactorSpeed, 0.1f, 0.1f, 2.f))
 			{
-				if (World->ViewLocationsRenderedLastFrame.Num() > 0)
+				SaveImGuiConfig();
+			}
+			if (ImGui::BeginMenu("View Frustum"))
+			{
+				if (ImGui::Checkbox("Draw View Frustum", &Config->bDrawViewFrustum))
 				{
-					const FVector LastViewLocation{ World->ViewLocationsRenderedLastFrame[0] };
-					ViewLocation = FVector2D{ LastViewLocation.X, LastViewLocation.Y };
+					SaveImGuiConfig();
+				}
+				ImGui::TextUnformatted("Near Plane Distance");
+				if (ImGui::DragFloat("##NearPlaneDistance", &Config->NearPlaneDistance, 1, 0, Config->FarPlaneDistance))
+				{
+					Config->NearPlaneDistance = FMath::Min(Config->NearPlaneDistance, Config->FarPlaneDistance);
+					SaveImGuiConfig();
+				}
+				ImGui::TextUnformatted("Far Plane Distance");
+				if (ImGui::DragFloat("##FarPlaneDistance", &Config->FarPlaneDistance, 1, Config->NearPlaneDistance, FLT_MAX))
+				{
+					Config->FarPlaneDistance = FMath::Max(Config->FarPlaneDistance, Config->NearPlaneDistance);
+					SaveImGuiConfig();
+				}
+				ImGui::EndMenu();
+			}
+			{
+				ImGui::FDisabled Disabled{ World->ViewLocationsRenderedLastFrame.Num() == 0 };
+				if (ImGui::Button("To View Location"))
+				{
+					if (World->ViewLocationsRenderedLastFrame.Num() > 0)
+					{
+						const FVector LastViewLocation{ World->ViewLocationsRenderedLastFrame[0] };
+						ViewLocation = FVector2D{ LastViewLocation.X, LastViewLocation.Y };
+					}
 				}
 			}
 			if (ImGui::Button("To Origin Location"))
@@ -338,7 +388,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 			const FVector2D ScreenMousePos{ ImGui::GetMousePos() };
 			const FTransform2D PreZoomScreenToWorldTransform{ FTransform2D{ FScale2D{CurrentZoom}, -ViewLocation * CurrentZoom + ContentSize / 2.f + ContentMin }.Inverse() };
 			const FVector2D MouseWorldPos{ PreZoomScreenToWorldTransform.TransformPoint(ScreenMousePos) };
-			ZoomFactor = FMath::Clamp(int32(ZoomFactor - IO.MouseWheel), MinZoomFactor, MaxZoomFactor);
+			ZoomFactor = FMath::Clamp(ZoomFactor - IO.MouseWheel * Config->ZoomFactorSpeed, MinZoomFactor, MaxZoomFactor);
 			const float Zoom = FMath::Pow(2.f, -ZoomFactor);
 			const FTransform2D PostZoomWorldToScreenTransform{ FTransform2D{ FScale2D{Zoom}, -ViewLocation * Zoom + ContentSize / 2.f + ContentMin }.Inverse() };
 			const FVector2D NextWorldPos{ PostZoomWorldToScreenTransform.TransformPoint(ScreenMousePos) };
@@ -431,56 +481,9 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 			Drawer.Extent->SaveConfig();
 		}
 	}
-
-	// Draw player location
-	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	if (Config->bDrawViewFrustum)
 	{
-		if (APlayerController* PlayerController = It->Get())
-		{
-			// Draw Camera
-			FVector ControlLocation;
-			FRotator ControlRotation;
-			PlayerController->GetPlayerViewPoint(ControlLocation, ControlRotation);
-
-			const FTransform CameraViewTransform{ ControlRotation.Quaternion(), ControlLocation };
-			const TArray<FVector2D> CameraViewShape
-			{
-				FVector2D{ CameraViewTransform.TransformPosition({-20.f / CurrentZoom, -3.f / CurrentZoom, 0.f}) },
-				FVector2D{ CameraViewTransform.TransformPosition({-20.f / CurrentZoom, 3.f / CurrentZoom, 0.f}) },
-				FVector2D{ CameraViewTransform.TransformPosition({10.f / CurrentZoom, 10.f / CurrentZoom, 0.f}) },
-				FVector2D{ CameraViewTransform.TransformPosition({10.f / CurrentZoom, -10.f / CurrentZoom, 0.f}) }
-			};
-
-			if (Context.ViewBounds.Intersect(FBox2D(CameraViewShape)))
-			{
-				constexpr ImU32 CameraViewColor = IM_COL32(0, 127, 255, 127);
-
-				TArray<ImVec2> Ploys;
-				for (const FVector2D& Point : CameraViewShape)
-				{
-					Ploys.Add(ImVec2{ Context.WorldToScreenLocation(Point) });
-				}
-				DrawList->AddConvexPolyFilled(Ploys.GetData(), Ploys.Num(), CameraViewColor);
-
-				// Draw PlayerName
-				if (const APlayerState* PlayerState = PlayerController->PlayerState)
-				{
-					const ImVec2 ControllerScreenLocation{ Context.WorldToScreenLocation({ ControlLocation.X, ControlLocation.Y }) };
-					DrawList->AddText({ ControllerScreenLocation.x - 40.f, ControllerScreenLocation.y }, IM_COL32_WHITE, TCHAR_TO_UTF8(*PlayerState->GetPlayerName()));
-				}
-			}
-		}
-	}
-	if (World->WorldType == EWorldType::Editor || (World->GetGameViewport() && World->GetGameViewport()->IsSimulateInEditorViewport()))
-	{
-		if (World->ViewLocationsRenderedLastFrame.Num() > 0)
-		{
-			const FVector LastViewLocation{ World->ViewLocationsRenderedLastFrame[0] };
-			const FVector2D ViewLocation2D{ LastViewLocation.X, LastViewLocation.Y };
-			Context.DrawCircleFilled(ViewLocation2D, 3.f / CurrentZoom, FColor::White);
-			const ImVec2 CameraScreenLocation = ImVec2{ Context.WorldToScreenLocation(ViewLocation2D) };
-			DrawList->AddText({ CameraScreenLocation.x - 20.f, CameraScreenLocation.y + 6.f }, IM_COL32_WHITE, "World View");
-		}
+		DrawCurrentViewFrustum(Owner, Context);
 	}
 
 	// Draw drag area
@@ -535,6 +538,28 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 	if (bIsConfigDirty)
 	{
 		SaveConfig();
+	}
+}
+
+void UUnrealImGuiViewportBase::DrawCurrentViewFrustum(UObject* Owner, const FUnrealImGuiViewportContext& Context)
+{
+	UWorld* World = GetWorld();
+	if (World->CachedViewInfoRenderedLastFrame.Num())
+	{
+		const FWorldCachedViewInfo& ViewInfo = World->CachedViewInfoRenderedLastFrame[0];
+		const auto InvTanHalfFov = ViewInfo.ProjectionMatrix.M[0][0];
+
+		FTransform ViewTransform = FTransform{ ViewInfo.ViewToWorld };
+		ViewTransform.ConcatenateRotation(FRotator{ 90.f, -90.f, 0.f }.Quaternion());
+
+		const auto TanHalfFov = 1.0 / InvTanHalfFov;
+
+		auto Config = GetConfigObject<ThisClass>();
+		Context.DrawViewFrustum(ViewTransform, TanHalfFov, Config->NearPlaneDistance, Config->FarPlaneDistance, FColor{ 0, 127, 255, 127 });
+
+		const FVector2D ViewLocation2D{ ViewTransform.GetLocation() };
+		Context.DrawCircleFilled(ViewLocation2D, 3.f / CurrentZoom, FColor::White);
+		Context.DrawText(ViewLocation2D + FVector2D{ -20.f / CurrentZoom, 6.f / CurrentZoom }, TEXT("World View"), FColor::White);
 	}
 }
 
