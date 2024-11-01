@@ -283,8 +283,8 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 		}
 
 		{
-			ImGui::Indent(ContentSize.X - 240.f);
-			ImGui::SetNextItemWidth(200.f);
+			ImGui::Indent(ContentSize.X - ImGui::GetFontSize() * 11);
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
 			TArray<ANSICHAR, TInlineAllocator<256>> FilterArray;
 			{
 				const auto StringPoint = FTCHARToUTF8(*FilterString);

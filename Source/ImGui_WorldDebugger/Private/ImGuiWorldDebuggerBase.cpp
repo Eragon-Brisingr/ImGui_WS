@@ -33,6 +33,9 @@ namespace ImGuiWorldDebuggerBootstrap
 		SpawnParameters.Name = ImGuiWorldDebuggerName;
 		SpawnParameters.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
 		SpawnParameters.ObjectFlags = RF_Transient;
+#if WITH_EDITOR
+		SpawnParameters.bHideFromSceneOutliner = true;
+#endif
 		World->SpawnActor<AImGuiWorldDebuggerBase>(SpawnedDebuggerClass, SpawnParameters);
 	}
 
