@@ -7,10 +7,8 @@
 #include "imgui.h"
 #include "ImGuiEx.h"
 #include "UnrealImGuiAssetPicker.h"
-#include "UnrealImGuiString.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "AssetRegistry/IAssetRegistry.h"
 #include "UObject/TextProperty.h"
 
 namespace UnrealImGui
@@ -282,6 +280,10 @@ namespace UnrealImGui
 		return true;
 	}
 
+	static FObjectPickerSettings ObjectPickerSettings;
+	static FActorPickerSettings ActorPickerSettings;
+	static FClassPickerSettings ClassPickerSettings;
+
 	void FObjectPropertyBaseCustomization::CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
 		const FObjectPropertyBase* ObjectProperty = CastFieldChecked<FObjectPropertyBase>(Property);
@@ -333,7 +335,7 @@ namespace UnrealImGui
 						ObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 					}
 					NotifyPostPropertyValueChanged(Property);
-				}, CLASS_None, "Filter", &ClassPickerData);
+				}, CLASS_None, &ClassPickerSettings, &ClassPickerData);
 		}
 		else
 		{
@@ -361,7 +363,7 @@ namespace UnrealImGui
 							ObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 						}
 						NotifyPostPropertyValueChanged(Property);
-					}, "Filter", &ActorPickerData);
+					}, &ActorPickerSettings, &ActorPickerData);
 			}
 			else
 			{
@@ -385,7 +387,7 @@ namespace UnrealImGui
 							ObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 						}
 						NotifyPostPropertyValueChanged(Property);
-					}, "Filter", &ObjectPickerData);
+					}, &ObjectPickerSettings, &ObjectPickerData);
 			}
 		}
 		if (FirstValue)
@@ -471,7 +473,7 @@ namespace UnrealImGui
 						SoftObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 					}
 					NotifyPostPropertyValueChanged(Property);
-				}, "Filter", &ActorPickerData);
+				}, &ActorPickerSettings, &ActorPickerData);
 		}
 		else
 		{
@@ -496,7 +498,7 @@ namespace UnrealImGui
 						SoftObjectProperty->SetObjectPropertyValue(Container + Offset, nullptr);
 					}
 					NotifyPostPropertyValueChanged(Property);
-				}, "Filter", &ObjectPickerData);
+				}, &ObjectPickerSettings, &ObjectPickerData);
 		}
 		if (IsIdentical)
 		{
@@ -534,7 +536,7 @@ namespace UnrealImGui
 					ClassProperty->SetPropertyValue(Container + Offset, nullptr);
 				}
 				NotifyPostPropertyValueChanged(Property);
-			}, CLASS_None, "Filter", &ClassPickerData);
+			}, CLASS_None, &ClassPickerSettings, &ClassPickerData);
 		if (IsIdentical && FirstValue)
 		{
 			if (auto ToolTip = ImGui::FItemTooltip())
@@ -572,7 +574,7 @@ namespace UnrealImGui
 					SoftClassProperty->SetPropertyValue(Container + Offset, FSoftObjectPtr());
 				}
 				NotifyPostPropertyValueChanged(Property);
-			}, CLASS_None, "Filter", &ClassPickerData);
+			}, CLASS_None, &ClassPickerSettings, &ClassPickerData);
 		if (IsIdentical && !FirstValue.ToSoftObjectPath().IsNull())
 		{
 			if (auto ToolTip = ImGui::FItemTooltip())

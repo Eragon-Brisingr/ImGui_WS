@@ -250,13 +250,13 @@ bool UImGuiWorldDebuggerOutlinerPanel::CanActorDisplay(const AActor* Actor) cons
 		return false;
 	}
 
-	if (Actor->GetActorLabel(false).ToLower().Contains(FilterString.ToLower()))
+	if (Actor->GetActorLabel(false).Contains(FilterString))
 	{
 		return true;
 	}
 #endif
 	
-	if (Actor->GetName().ToLower().Contains(FilterString.ToLower()))
+	if (Actor->GetName().Contains(FilterString))
 	{
 		return true;
 	}

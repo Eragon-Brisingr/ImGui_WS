@@ -161,12 +161,12 @@ namespace UnrealImGui
 
 	bool IUnrealPropertyCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		return Property->GetName().ToLower().Contains(Filter.StringFilter.ToLower());
+		return Property->GetName().Contains(Filter.StringFilter);
 	}
 
 	bool IUnrealStructCustomization::IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
 	{
-		return Property->GetName().ToLower().Contains(Filter.StringFilter.ToLower());
+		return Property->GetName().Contains(Filter.StringFilter);
 	}
 
 	void IUnrealStructCustomization::CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren) const

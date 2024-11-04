@@ -1053,12 +1053,12 @@ public:
 					else
 					{
 						TArray<UUnrealImGuiPanelBase*> FilteredPanels;
-						const FString TestString = FilterString.ToString().ToLower();
+						const FString TestString = FilterString.ToString();
 						for (const UUnrealImGuiPanelBuilder* Builder : LayoutManager->PanelBuilders)
 						{
 							for (UUnrealImGuiPanelBase* Panel : Builder->Panels)
 							{
-								if (Panel->Title.ToString().ToLower().Contains(TestString) || Panel->GetClass()->GetName().ToLower().Contains(TestString))
+								if (Panel->Title.ToString().Contains(TestString) || Panel->GetClass()->GetName().Contains(TestString))
 								{
 									FilteredPanels.Add(Panel);
 								}

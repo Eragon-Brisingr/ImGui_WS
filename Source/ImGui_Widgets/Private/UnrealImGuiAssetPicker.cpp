@@ -14,8 +14,33 @@
 
 namespace UnrealImGui
 {
-	bool ComboObjectPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const FAssetData&)>& IsSelectedFunc, const TFunctionRef<void(const FAssetData&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, const char* FilterHint, FObjectPickerData* Data)
+	bool FilterByPath(const FString& PackagePath, bool bShowDeveloperContent, bool bShowEngineContent)
 	{
+		if (!bShowDeveloperContent)
+		{
+			static const FString DeveloperPath = FPackageName::FilenameToLongPackageName(FPaths::GameDevelopersDir());
+			if (PackagePath.StartsWith(DeveloperPath))
+			{
+				return true;
+			}
+		}
+		if (!bShowEngineContent)
+		{
+			if (PackagePath.StartsWith(TEXT("/Engine")))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	bool ComboObjectPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const FAssetData&)>& IsSelectedFunc, const TFunctionRef<void(const FAssetData&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, FObjectPickerSettings* Settings, FObjectPickerData* Data)
+	{
+		if (Settings == nullptr)
+		{
+			static FObjectPickerSettings GlobalSettings;
+			Settings = &GlobalSettings;
+		}
 		if (Data == nullptr)
 		{
 			static FObjectPickerData GlobalData;
@@ -28,9 +53,22 @@ namespace UnrealImGui
 		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
 		{
 			ImGui::FIdScope IdScope{ Label };
-			ImGui::SetNextItemWidth(-1);
-			ImGui::InputTextWithHint("##Filter", FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
-			const bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 7.f);
+			ImGui::InputTextWithHint("##Filter", Settings->FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::SameLine();
+			if (ImGui::BeginMenu("Settings"))
+			{
+				if (ImGui::Checkbox("Show Developer Content", &Settings->bShowDeveloperContent))
+				{
+					IsFiltered |= ImGui::IsItemEdited();
+				}
+				if (ImGui::Checkbox("Show Engine Content", &Settings->bShowEngineContent))
+				{
+					IsFiltered |= ImGui::IsItemEdited();
+				}
+				ImGui::EndMenu();
+			}
 			ImGui::Separator();
 			if (ImGui::Selectable("Clear"))
 			{
@@ -48,11 +86,29 @@ namespace UnrealImGui
 				ARFilter.bRecursiveClasses = true;
 				ARFilter.ClassPaths.Add(FTopLevelAssetPath{ BaseClass });
 				AssetRegistry.GetAssets(ARFilter, CachedAssetList);
-				const FString Filter = FilterString.ToString().ToLower();
-				if (Filter.IsEmpty() == false)
+				const FString Filter = FilterString.ToString();
+				CachedAssetList.RemoveAllSwap([&](const FAssetData& E)
 				{
-					CachedAssetList.RemoveAllSwap([&](const FAssetData& E) { return E.AssetName.ToString().ToLower().Contains(Filter) == false; });
-				}
+					if (Filter.IsEmpty() == false)
+					{
+						if (E.AssetName.ToString().Contains(Filter) == false)
+						{
+							return true;
+						}
+					}
+					if (Settings->CustomFilter)
+					{
+						if (Settings->CustomFilter(E))
+						{
+							return true;
+						}
+					}
+					if (FilterByPath(E.PackagePath.ToString(), Settings->bShowDeveloperContent, Settings->bShowEngineContent))
+					{
+						return true;
+					}
+					return false;
+				});
 				CachedAssetList.Sort([](const FAssetData& LHS, const FAssetData& RHS)
 				{
 					return LHS.AssetName.FastLess(RHS.AssetName);
@@ -102,7 +158,7 @@ namespace UnrealImGui
 		return bValueChanged;
 	}
 
-	bool ComboObjectPicker(const char* Label, UClass* BaseClass, UObject*& ObjectPtr, const char* FilterHint, FObjectPickerData* Data)
+	bool ComboObjectPicker(const char* Label, UClass* BaseClass, UObject*& ObjectPtr, FObjectPickerSettings* Settings, FObjectPickerData* Data)
 	{
 		const bool bValueChanged = ComboObjectPicker(Label, ObjectPtr ? TCHAR_TO_UTF8(*ObjectPtr->GetName()) : "None", BaseClass,
 		[ObjectPath = FSoftObjectPath{ ObjectPtr }](const FAssetData& Asset)
@@ -114,7 +170,7 @@ namespace UnrealImGui
 		}, [&]
 		{
 			ObjectPtr = nullptr;	
-		}, FilterHint, Data);
+		}, Settings, Data);
 		if (auto Tooltip = ImGui::FItemTooltip())
 		{
 			ImGui::TextUnformatted(ObjectPtr ? TCHAR_TO_UTF8(*ObjectPtr->GetPathName()) : "None");
@@ -122,7 +178,7 @@ namespace UnrealImGui
 		return bValueChanged;
 	}
 	
-	bool ComboSoftObjectPicker(const char* Label, UClass* BaseClass, TSoftObjectPtr<UObject>& SoftObjectPtr, const char* FilterHint, FObjectPickerData* Data)
+	bool ComboSoftObjectPicker(const char* Label, UClass* BaseClass, TSoftObjectPtr<UObject>& SoftObjectPtr, FObjectPickerSettings* Settings, FObjectPickerData* Data)
 	{
 		const bool bValueChanged = ComboObjectPicker(Label, SoftObjectPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftObjectPtr.GetAssetName()), BaseClass,
 			[&](const FAssetData& Asset)
@@ -134,7 +190,7 @@ namespace UnrealImGui
 			}, [&]
 			{
 				SoftObjectPtr.Reset();	
-			}, FilterHint, Data);
+			}, Settings, Data);
 		if (auto Tooltip = ImGui::FItemTooltip())
 		{
 			ImGui::TextUnformatted(SoftObjectPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftObjectPtr.ToString()));
@@ -142,8 +198,13 @@ namespace UnrealImGui
 		return bValueChanged;
 	}
 
-	bool ComboActorPicker(UWorld* World, const char* Label, const char* PreviewValue, const TSubclassOf<AActor>& BaseClass, const TFunctionRef<bool(AActor*)>& IsSelectedFunc, const TFunctionRef<void(AActor*)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, const char* FilterHint, FActorPickerData* Data)
+	bool ComboActorPicker(UWorld* World, const char* Label, const char* PreviewValue, const TSubclassOf<AActor>& BaseClass, const TFunctionRef<bool(AActor*)>& IsSelectedFunc, const TFunctionRef<void(AActor*)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, FActorPickerSettings* Settings, FActorPickerData* Data)
 	{
+		if (Settings == nullptr)
+		{
+			static FActorPickerSettings GlobalSettings;
+			Settings = &GlobalSettings;
+		}
 		if (Data == nullptr)
 		{
 			static FActorPickerData GlobalData;
@@ -155,8 +216,9 @@ namespace UnrealImGui
 		bool bValueChanged = false;
 		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
 		{
+			ImGui::FIdScope IdScope{ Label };
 			ImGui::SetNextItemWidth(-1);
-			ImGui::InputTextWithHint("##Filter", FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputTextWithHint("##Filter", Settings->FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 			const bool IsFiltered = ImGui::IsItemEdited();
 			ImGui::Separator();
 			if (ImGui::Selectable("Clear"))
@@ -169,7 +231,7 @@ namespace UnrealImGui
 			{
 				CachedActorClass = BaseClass;
 				CachedActorList.Reset();
-				const FString Filter = FilterString.ToString().ToLower();
+				const FString Filter = FilterString.ToString();
 				for (TActorIterator<AActor> It(World, BaseClass); It; ++It)
 				{
 					AActor* Actor = *It;
@@ -177,7 +239,11 @@ namespace UnrealImGui
 					{
 						continue;
 					}
-					if (Filter.Len() > 0 && Actor->GetName().ToLower().Contains(Filter) == false)
+					if (Filter.Len() > 0 && Actor->GetName().Contains(Filter) == false)
+					{
+						continue;
+					}
+					if (Settings->CustomFilter && Settings->CustomFilter(Actor))
 					{
 						continue;
 					}
@@ -236,7 +302,7 @@ namespace UnrealImGui
 		return bValueChanged;
 	}
 
-	bool ComboActorPicker(UWorld* World, const char* Label, const TSubclassOf<AActor>& BaseClass, AActor*& ActorPtr, const char* FilterHint, FActorPickerData* Data)
+	bool ComboActorPicker(UWorld* World, const char* Label, const TSubclassOf<AActor>& BaseClass, AActor*& ActorPtr, FActorPickerSettings* Settings, FActorPickerData* Data)
 	{
 		const bool bValueChanged = ComboActorPicker(World, Label, ActorPtr ? TCHAR_TO_UTF8(*ActorPtr->GetName()) : "None", BaseClass,
 			[&](const AActor* Actor)
@@ -248,7 +314,7 @@ namespace UnrealImGui
 			}, [&]
 			{
 				ActorPtr = nullptr;	
-			}, FilterHint, Data);
+			}, Settings, Data);
 		if (auto Tooltip = ImGui::FItemTooltip())
 		{
 			ImGui::TextUnformatted(ActorPtr ? TCHAR_TO_UTF8(*ActorPtr->GetPathName()) : "None");
@@ -256,7 +322,7 @@ namespace UnrealImGui
 		return bValueChanged;
 	}
 
-	bool ComboSoftActorPicker(UWorld* World, const char* Label, const TSubclassOf<AActor>& BaseClass, TSoftObjectPtr<AActor>& SoftActorPtr, const char* FilterHint, FActorPickerData* Data)
+	bool ComboSoftActorPicker(UWorld* World, const char* Label, const TSubclassOf<AActor>& BaseClass, TSoftObjectPtr<AActor>& SoftActorPtr, FActorPickerSettings* Settings, FActorPickerData* Data)
 	{
 		const bool bValueChanged = ComboActorPicker(World, Label, SoftActorPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftActorPtr.GetAssetName()), BaseClass,
 			[&](const AActor* Actor)
@@ -268,7 +334,7 @@ namespace UnrealImGui
 			}, [&]
 			{
 				SoftActorPtr = nullptr;	
-			}, FilterHint, Data);
+			}, Settings, Data);
 		if (auto Tooltip = ImGui::FItemTooltip())
 		{
 			ImGui::TextUnformatted(SoftActorPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftActorPtr.ToString()));
@@ -313,8 +379,13 @@ namespace UnrealImGui
 		AssetRegistry.EnumerateAssets(Filter, FilterLambda);
 	}
 
-	bool ComboClassPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const TSoftClassPtr<UObject>&)>& IsSelectedFunc, const TFunctionRef<void(const TSoftClassPtr<UObject>&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, EClassFlags IgnoreClassFlags, const char* FilterHint, FClassPickerData* Data)
+	bool ComboClassPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const TSoftClassPtr<UObject>&)>& IsSelectedFunc, const TFunctionRef<void(const TSoftClassPtr<UObject>&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, EClassFlags IgnoreClassFlags, FClassPickerSettings* Settings, FClassPickerData* Data)
 	{
+		if (Settings == nullptr)
+		{
+			static FClassPickerSettings GlobalSettings;
+			Settings = &GlobalSettings;
+		}
 		if (Data == nullptr)
 		{
 			static FClassPickerData GlobalData;
@@ -327,9 +398,23 @@ namespace UnrealImGui
 		bool bValueChanged = false;
 		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
 		{
-			ImGui::SetNextItemWidth(-1);
-			ImGui::InputTextWithHint("##Filter", FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
-			const bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::FIdScope IdScope{ Label };
+			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 7.f);
+			ImGui::InputTextWithHint("##Filter", Settings->FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
+			bool IsFiltered = ImGui::IsItemEdited();
+			ImGui::SameLine();
+			if (ImGui::BeginMenu("Settings"))
+			{
+				if (ImGui::Checkbox("Show Developer Content", &Settings->bShowDeveloperContent))
+				{
+					IsFiltered |= ImGui::IsItemEdited();
+				}
+				if (ImGui::Checkbox("Show Engine Content", &Settings->bShowEngineContent))
+				{
+					IsFiltered |= ImGui::IsItemEdited();
+				}
+				ImGui::EndMenu();
+			}
 			ImGui::Separator();
 			if (ImGui::Selectable("Clear"))
 			{
@@ -345,7 +430,7 @@ namespace UnrealImGui
 				TArray<UClass*> LoadedClasses;
 				GetDerivedClasses(BaseClass, LoadedClasses);
 				LoadedClasses.Add(BaseClass);
-				const FString Filter = FilterString.ToString().ToLower();
+				const FString Filter = FilterString.ToString();
 				for (UClass* Class : LoadedClasses)
 				{
 					if (Class->HasAnyClassFlags(IgnoreClassFlags))
@@ -358,7 +443,15 @@ namespace UnrealImGui
 						continue;
 					}
 #endif
-					if (Filter.Len() > 0 && Class->GetName().ToLower().Contains(Filter) == false)
+					if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
+					{
+						continue;
+					}
+					if (Settings->CustomFilter && Settings->CustomFilter(Class))
+					{
+						continue;
+					}
+					if (FilterByPath(Class->GetPackage()->GetName(), Settings->bShowDeveloperContent, Settings->bShowEngineContent))
 					{
 						continue;
 					}
@@ -383,7 +476,15 @@ namespace UnrealImGui
 					{
 						continue;
 					}
-					if (Filter.Len() > 0 && Asset.AssetName.ToString().ToLower().Contains(Filter) == false)
+					if (Filter.Len() > 0 && Asset.AssetName.ToString().Contains(Filter) == false)
+					{
+						continue;
+					}
+					if (Settings->CustomFilterUnloadBp && Settings->CustomFilterUnloadBp(Asset))
+					{
+						continue;
+					}
+					if (FilterByPath(Asset.PackagePath.ToString(), Settings->bShowDeveloperContent, Settings->bShowEngineContent))
 					{
 						continue;
 					}
@@ -440,7 +541,7 @@ namespace UnrealImGui
 		return bValueChanged;
 	}
 
-	bool ComboClassPicker(const char* Label, UClass* BaseClass, TSubclassOf<UObject>& ClassPtr, EClassFlags IgnoreClassFlags, const char* FilterHint, FClassPickerData* Data)
+	bool ComboClassPicker(const char* Label, UClass* BaseClass, TSubclassOf<UObject>& ClassPtr, EClassFlags IgnoreClassFlags, FClassPickerSettings* Settings, FClassPickerData* Data)
 	{
 		const bool bValueChanged = ComboClassPicker(Label, ClassPtr ? TCHAR_TO_UTF8(*ClassPtr->GetName()) : "None", BaseClass,
 			[&](const TSoftClassPtr<UObject>& Class)
@@ -452,7 +553,7 @@ namespace UnrealImGui
 			}, [&]
 			{
 				ClassPtr = nullptr;	
-			}, IgnoreClassFlags, FilterHint, Data);
+			}, IgnoreClassFlags, Settings, Data);
 		if (auto Tooltip = ImGui::FItemTooltip())
 		{
 			ImGui::TextUnformatted(ClassPtr ? TCHAR_TO_UTF8(*ClassPtr->GetPathName()) : "None");
@@ -460,7 +561,7 @@ namespace UnrealImGui
 		return bValueChanged;
 	}
 
-	bool ComboSoftClassPicker(const char* Label, UClass* BaseClass, TSoftClassPtr<UObject>& SoftClassPtr, EClassFlags IgnoreClassFlags, const char* FilterHint, FClassPickerData* Data)
+	bool ComboSoftClassPicker(const char* Label, UClass* BaseClass, TSoftClassPtr<UObject>& SoftClassPtr, EClassFlags IgnoreClassFlags, FClassPickerSettings* Settings, FClassPickerData* Data)
 	{
 		const bool bValueChanged = ComboClassPicker(Label, SoftClassPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftClassPtr.GetAssetName()), BaseClass,
 			[&](const TSoftClassPtr<UObject>& Class)
@@ -472,7 +573,7 @@ namespace UnrealImGui
 			}, [&]
 			{
 				SoftClassPtr = nullptr;	
-			}, IgnoreClassFlags, FilterHint, Data);
+			}, IgnoreClassFlags, Settings, Data);
 		if (auto Tooltip = ImGui::FItemTooltip())
 		{
 			ImGui::TextUnformatted(SoftClassPtr.ToSoftObjectPath().IsNull() ? "None" : TCHAR_TO_UTF8(*SoftClassPtr.ToString()));
