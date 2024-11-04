@@ -14,10 +14,11 @@ namespace UnrealImGuiLibrary
 	struct FObjectPickerSettingsScope
 	{
 		FObjectPickerSettingsScope(const FUnrealImGuiObjectPickerSettings& Settings)
-			: FilterHint(ObjectPickerSettings.FilterHint)
+			: FilterHintString(Settings.FilterHint)
+			, FilterHint(ObjectPickerSettings.FilterHint)
 			, CustomFilter(MoveTemp(ObjectPickerSettings.CustomFilter))
 		{
-			ObjectPickerSettings.FilterHint = TCHAR_TO_UTF8(*Settings.FilterHint);
+			ObjectPickerSettings.FilterHint = FilterHintString.GetData();
 			if (Settings.Filter.IsBound())
 			{
 				ObjectPickerSettings.CustomFilter = [Filter = Settings.Filter](const FAssetData& Asset)
@@ -36,6 +37,7 @@ namespace UnrealImGuiLibrary
 			ObjectPickerSettings.CustomFilter = MoveTemp(CustomFilter);
 		}
 		
+		UnrealImGui::FUTF8String FilterHintString;
 		const char* FilterHint;
 		TFunction<bool(const FAssetData&)> CustomFilter;
 	};
@@ -43,10 +45,11 @@ namespace UnrealImGuiLibrary
 	struct FActorPickerSettingsScope
 	{
 		FActorPickerSettingsScope(const FUnrealImGuiActorPickerSettings& Settings)
-			: FilterHint(ActorPickerSettings.FilterHint)
+			: FilterHintString(Settings.FilterHint)
+			, FilterHint(ActorPickerSettings.FilterHint)
 			, CustomFilter(MoveTemp(ActorPickerSettings.CustomFilter))
 		{
-			ActorPickerSettings.FilterHint = TCHAR_TO_UTF8(*Settings.FilterHint);
+			ActorPickerSettings.FilterHint = FilterHintString.GetData();
 			if (Settings.Filter.IsBound())
 			{
 				ActorPickerSettings.CustomFilter = [Filter = Settings.Filter](const AActor* Actor)
@@ -65,6 +68,7 @@ namespace UnrealImGuiLibrary
 			ActorPickerSettings.CustomFilter = MoveTemp(CustomFilter);
 		}
 		
+		UnrealImGui::FUTF8String FilterHintString;
 		const char* FilterHint;
 		TFunction<bool(const AActor*)> CustomFilter;
 	};
@@ -72,11 +76,12 @@ namespace UnrealImGuiLibrary
 	struct FClassPickerSettingsScope
 	{
 		FClassPickerSettingsScope(const FUnrealImGuiClassPickerSettings& Settings)
-			: FilterHint(ClassPickerSettings.FilterHint)
+			: FilterHintString(Settings.FilterHint)
+			, FilterHint(ClassPickerSettings.FilterHint)
 			, CustomFilter(MoveTemp(ClassPickerSettings.CustomFilter))
 			, CustomFilterUnloadBp(MoveTemp(ClassPickerSettings.CustomFilterUnloadBp))
 		{
-			ClassPickerSettings.FilterHint = TCHAR_TO_UTF8(*Settings.FilterHint);
+			ClassPickerSettings.FilterHint = FilterHintString.GetData();
 			if (Settings.Filter.IsBound())
 			{
 				ClassPickerSettings.CustomFilter = [Filter = Settings.Filter](const UClass* Class)
@@ -108,6 +113,7 @@ namespace UnrealImGuiLibrary
 			ClassPickerSettings.CustomFilterUnloadBp = MoveTemp(CustomFilterUnloadBp);
 		}
 
+		UnrealImGui::FUTF8String FilterHintString;
 		const char* FilterHint;
 		TFunction<bool(const UClass*)> CustomFilter;
 		TFunction<bool(const FAssetData&)> CustomFilterUnloadBp;
@@ -176,5 +182,6 @@ bool UUnrealImGuiLibrary::ComboClassPickerEx(FName Label, UClass* BaseClass, TSu
 
 bool UUnrealImGuiLibrary::ComboSoftClassPickerEx(FName Label, UClass* BaseClass, TSoftClassPtr<UObject>& SoftClassPtr, bool bAllowAbstract, const FUnrealImGuiClassPickerSettings& Settings)
 {
+	auto Scope = UnrealImGuiLibrary::FClassPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboSoftClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, &UnrealImGuiLibrary::ClassPickerSettings);
 }

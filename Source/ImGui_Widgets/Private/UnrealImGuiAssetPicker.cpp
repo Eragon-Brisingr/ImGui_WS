@@ -149,7 +149,7 @@ namespace UnrealImGui
 				ImGui::CloseCurrentPopup();
 			}
 		}
-		else if (FilterString.IsEmpty() == false)
+		else
 		{
 			FilterString.Reset();
 			CachedAssetClass = nullptr;
@@ -532,7 +532,7 @@ namespace UnrealImGui
 				ImGui::CloseCurrentPopup();
 			}
 		}
-		else if (FilterString.IsEmpty() == false)
+		else
 		{
 			FilterString.Reset();
 			CachedClass = nullptr;
