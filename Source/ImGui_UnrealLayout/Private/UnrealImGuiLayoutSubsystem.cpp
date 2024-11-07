@@ -8,6 +8,10 @@
 
 FUnrealImGuiLayoutManager* FUnrealImGuiLayoutManager::Get(const UObject* WorldContextObject)
 {
+	if (WorldContextObject == nullptr)
+	{
+		return nullptr;
+	}
 	UWorld* World = WorldContextObject->GetWorld();
 	if (World == nullptr)
 	{
