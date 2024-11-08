@@ -3,6 +3,8 @@
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Input/HittestGrid.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
@@ -11,6 +13,13 @@ TAutoConsoleVariable<bool> CVar_ShowImGuiViewport
 	TEXT("ImGui.Viewport.Show"),
 	true,
 	TEXT("Set ImGui viewport visibility"),
+};
+
+TAutoConsoleVariable<int32> CVar_ImGuiViewportZOrder
+{
+	TEXT("ImGui.Viewport.ZOrder"),
+	10000,
+	TEXT("Set ImGui viewport Z order"),
 };
 
 FImGui_ViewportModule::FViewportLookup FImGui_ViewportModule::ViewportLookup;
@@ -77,7 +86,7 @@ void FImGui_ViewportModule::WhenViewportCreated()
 				}
 			}
 		});
-	Viewport->AddViewportWidgetContent(ImGuiPanel, 1);
+	Viewport->AddViewportWidgetContent(ImGuiPanel, CVar_ImGuiViewportZOrder.GetValueOnGameThread());
 }
 
 void SImGuiViewportOverlay::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
@@ -113,6 +122,54 @@ void SImGuiViewportOverlay::WhenImGuiTick(float DeltaSeconds)
 			}
 		}
 	}
+
+	// not block input when no panel clicked
+	HoverWindowBounds.Reset();
+	if (Context->IO.MouseDown[0])
+	{
+		HoverWindowBounds = FBox2f{ FVector2f::ZeroVector, FVector2f{ Context->IO.DisplaySize } };
+	}
+	else if (auto Window = Context->ActiveIdWindow ? Context->ActiveIdWindow : Context->HoveredWindow)
+	{
+		auto g = Context;
+		ImVec2 padding_regular = g->Style.TouchExtraPadding;
+		ImVec2 padding_for_resize = g->IO.ConfigWindowsResizeFromEdges ? g->WindowsHoverPadding : padding_regular;
+		ImVec2 hit_padding = (Window->Flags & (ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) ? padding_regular : padding_for_resize;
+		HoverWindowBounds = FBox2f{ FVector2f{ Window->OuterRectClipped.Min - hit_padding }, FVector2f{ Window->OuterRectClipped.Max + hit_padding } };
+	}
+	else
+	{
+		auto& IO = Context->IO;
+		const FVector2f Position = FSlateApplication::Get().GetCursorPos() - GetTickSpaceGeometry().GetAbsolutePosition();
+		IO.AddMousePosEvent(Position.X, Position.Y);
+	}
+}
+
+int32 SImGuiViewportOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
+{
+	FHittestGrid& PreviousGrid = Args.GetHittestGrid();
+	PreviousGrid.RemoveWidget(this);
+	if (HoverWindowBounds)
+	{
+		FSlateWidgetPersistentState& MutablePersistentState = const_cast<FSlateWidgetPersistentState&>(GetPersistentState());
+		const auto Scale = MutablePersistentState.AllottedGeometry.Scale;
+		const TGuardValue PersistentStateAllottedGeometryGuard{ MutablePersistentState.AllottedGeometry,
+			MutablePersistentState.AllottedGeometry.MakeChild(HoverWindowBounds->GetSize() / Scale, FSlateLayoutTransform{ HoverWindowBounds->Min / Scale }) };
+		PreviousGrid.AddWidget(this, 0, LayerId, GetProxyHandle().GetWidgetSortOrder());
+		
+		/* draw hit test area for debug
+		FSlateDrawElement::MakeBox
+		(
+			OutDrawElements,
+			LayerId,
+			MutablePersistentState.AllottedGeometry.ToPaintGeometry(),
+			FAppStyle::GetBrush("WhiteBrush"),
+			ESlateDrawEffect::None,
+			FLinearColor(0, 0, 0, 0.4f)
+		);*/
+	}
+
+	return Super::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 }
 
 namespace ImGui::Viewport
@@ -146,7 +203,7 @@ namespace ImGui::Viewport
 
 	EVisibility GetVisibility()
 	{
-		return CVar_ShowImGuiViewport.GetValueOnGameThread() ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+		return CVar_ShowImGuiViewport.GetValueOnGameThread() ? EVisibility::Visible : EVisibility::Collapsed;
 	}
 }
 

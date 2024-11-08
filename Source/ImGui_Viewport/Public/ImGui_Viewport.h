@@ -32,7 +32,11 @@ class IMGUI_VIEWPORT_API SImGuiViewportOverlay : public SImGuiPanel
     using Super = SImGuiPanel;
 protected:
     void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
-    void WhenImGuiTick(float DeltaSeconds);
+    void WhenImGuiTick(float DeltaSeconds) override;
+	int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
+
+	TOptional<FBox2f> HoverWindowBounds;
+	double LastRenderSeconds = -1.f;
 public:
     static constexpr auto FloatingContextName = "FloatingContext";
 };

@@ -49,8 +49,45 @@ FORCEINLINE MemberType& Class##_##Member(Class& Inst) { return Inst.*Access(Clas
 #undef ROB_MEMBER
 }
 
+class SImGuiEditorViewportOverlay : public SImGuiViewportOverlay
+{
+	using Super = SImGuiViewportOverlay;
+public:
+	void Construct(const FArguments& Args, const TSharedRef<ILevelEditor>& LevelEditor)
+	{
+		WeakLevelEditor = LevelEditor;
+		Super::Construct(Args);
+	}
+	void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override
+	{
+		auto LevelEditor = WeakLevelEditor.Pin();
+		if (LevelEditor == nullptr)
+		{
+			return;
+		}
+		auto World = LevelEditor->GetWorld();
+		if (World == nullptr)
+		{
+			return;
+		}
+		if (World->LastRenderTime == WorldLastRenderTime)
+		{
+			return;
+		}
+		WorldLastRenderTime = World->LastRenderTime;
+		Super::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+	}
+private:
+	TWeakPtr<ILevelEditor> WeakLevelEditor;
+	double WorldLastRenderTime = -1.f;
+};
+
 void FImGui_ViewportEditorModule::WhenLevelEditorCreated(TSharedPtr<ILevelEditor> LevelEditor)
 {
+	if (LevelEditor == nullptr)
+	{
+		return;
+	}
 	auto ActiveViewport = LevelEditor->GetActiveViewportInterface();
 	if (!ActiveViewport)
 	{
@@ -62,7 +99,7 @@ void FImGui_ViewportEditorModule::WhenLevelEditorCreated(TSharedPtr<ILevelEditor
 		return;
 	}
 
-	auto Content = SNew(SImGuiViewportOverlay)
+	auto Content = SNew(SImGuiEditorViewportOverlay, LevelEditor.ToSharedRef())
 		.Visibility_Lambda([]
 		{
 			if (GEditor->IsPlayingSessionInEditor() && !GEditor->bIsSimulatingInEditor)

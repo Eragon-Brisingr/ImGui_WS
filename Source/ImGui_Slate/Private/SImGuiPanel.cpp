@@ -304,8 +304,7 @@ FVector2D SImGuiPanel::ComputeDesiredSize(float LayoutScaleMultiplier) const
 
 FReply SImGuiPanel::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
 	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
 	IO.AddMousePosEvent(Position.X, Position.Y);
 	return IO.WantCaptureMouse ? FReply::Handled() : FReply::Unhandled();
@@ -313,8 +312,11 @@ FReply SImGuiPanel::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent
 
 FReply SImGuiPanel::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
+	if (!Context->IO.WantCaptureMouse)
+	{
+		return FReply::Unhandled();
+	}
 	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
 	IO.AddMousePosEvent(Position.X, Position.Y);
 	const FKey Button = MouseEvent.GetEffectingButton();
@@ -330,13 +332,16 @@ FReply SImGuiPanel::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointe
 	{
 		IO.AddMouseButtonEvent(ImGuiMouseButton_Middle, true);
 	}
-	return IO.WantCaptureMouse ? FReply::Handled() : FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply SImGuiPanel::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
+	if (!Context->IO.WantCaptureMouse)
+	{
+		return FReply::Unhandled();
+	}
 	const FVector2f Position = MouseEvent.GetScreenSpacePosition() - MyGeometry.GetAbsolutePosition();
 	IO.AddMousePosEvent(Position.X, Position.Y);
 	const FKey Button = MouseEvent.GetEffectingButton();
@@ -352,7 +357,7 @@ FReply SImGuiPanel::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerE
 	{
 		IO.AddMouseButtonEvent(ImGuiMouseButton_Middle, false);
 	}
-	return IO.WantCaptureMouse ? FReply::Handled() : FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply SImGuiPanel::OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
@@ -363,63 +368,73 @@ FReply SImGuiPanel::OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const 
 
 FReply SImGuiPanel::OnMouseWheel(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
+	if (!Context->IO.WantCaptureMouse)
+	{
+		return FReply::Unhandled();
+	}
 	IO.AddMouseWheelEvent(0.0f, MouseEvent.GetWheelDelta());
-	return IO.WantCaptureMouse ? FReply::Handled() : FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply SImGuiPanel::OnAnalogValueChanged(const FGeometry& MyGeometry, const FAnalogInputEvent& InAnalogInputEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
+	if (!Context->IO.WantCaptureKeyboard)
+	{
+		return FReply::Unhandled();
+	}
 	const float Value = InAnalogInputEvent.GetAnalogValue();
 	IO.AddKeyAnalogEvent(UnrealImGui::ConvertKey(InAnalogInputEvent.GetKey()), FMath::Abs(Value) > 0.1f, Value);
-	return IO.WantCaptureKeyboard ? FReply::Handled() : FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply SImGuiPanel::OnKeyChar(const FGeometry& MyGeometry, const FCharacterEvent& Event)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
+	if (!Context->IO.WantCaptureKeyboard)
+	{
+		return FReply::Unhandled();
+	}
 	IO.AddInputCharacter(CharCast<ANSICHAR>(Event.GetCharacter()));
-	return IO.WantCaptureKeyboard ? FReply::Handled() : FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply SImGuiPanel::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
+	if (!Context->IO.WantCaptureKeyboard)
+	{
+		return FReply::Unhandled();
+	}
 	IO.AddKeyEvent(UnrealImGui::ConvertKey(InKeyEvent.GetKey()), true);
 	const FModifierKeysState& ModifierKeys = InKeyEvent.GetModifierKeys();
 	IO.AddKeyEvent(ImGuiMod_Ctrl, ModifierKeys.IsControlDown());
 	IO.AddKeyEvent(ImGuiMod_Shift, ModifierKeys.IsShiftDown());
 	IO.AddKeyEvent(ImGuiMod_Alt, ModifierKeys.IsAltDown());
 	IO.AddKeyEvent(ImGuiMod_Super, ModifierKeys.IsCommandDown());
-	return IO.WantCaptureKeyboard ? FReply::Handled() : FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply SImGuiPanel::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
+	if (!Context->IO.WantCaptureKeyboard)
+	{
+		return FReply::Unhandled();
+	}
 	IO.AddKeyEvent(UnrealImGui::ConvertKey(InKeyEvent.GetKey()), false);
 	const FModifierKeysState& ModifierKeys = InKeyEvent.GetModifierKeys();
 	IO.AddKeyEvent(ImGuiMod_Ctrl, ModifierKeys.IsControlDown());
 	IO.AddKeyEvent(ImGuiMod_Shift, ModifierKeys.IsShiftDown());
 	IO.AddKeyEvent(ImGuiMod_Alt, ModifierKeys.IsAltDown());
 	IO.AddKeyEvent(ImGuiMod_Super, ModifierKeys.IsCommandDown());
-	return IO.WantCaptureKeyboard ? FReply::Handled() : FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply SImGuiPanel::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-	ImGuiIO& IO = ImGui::GetIO();
+	ImGuiIO& IO = Context->IO;
 	IO.AddFocusEvent(true);
 
 	return Super::OnFocusReceived(MyGeometry, InFocusEvent);
@@ -430,17 +445,16 @@ void SImGuiPanel::OnFocusLost(const FFocusEvent& InFocusEvent)
 	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.AddFocusEvent(false);
-	ImGui::SetWindowFocus(nullptr);
+	ImGui::FocusWindow(nullptr);
 	DisableVirtualInput();
 }
 
 FCursorReply SImGuiPanel::OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const
 {
-	const FScopedContext ScopedContext{ ImGuiScopedContext() };
-	const ImGuiIO& IO = ImGui::GetIO();
+	const ImGuiIO& IO = Context->IO;
 	if (IO.WantCaptureMouse && !(IO.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange))
 	{
-		const ImGuiMouseCursor CursorType = ImGui::GetMouseCursor();
+		const ImGuiMouseCursor CursorType = Context->MouseCursor;
 
 		if (IO.MouseDrawCursor || CursorType == ImGuiMouseCursor_None)
 		{

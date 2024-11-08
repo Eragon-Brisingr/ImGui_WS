@@ -98,7 +98,7 @@ public:
 	};
 
 	FScopedContext ImGuiScopedContext() const { return { Context, PlotContext }; }
-private:
+protected:
 	FOnImGuiTick OnImGuiTick;
 	TAttribute<FVector2D> DesiredSize;
 
