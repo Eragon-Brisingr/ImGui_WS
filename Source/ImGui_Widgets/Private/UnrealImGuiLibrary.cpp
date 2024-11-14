@@ -122,66 +122,78 @@ namespace UnrealImGuiLibrary
 
 bool UUnrealImGuiLibrary::ComboObjectPicker(FName Label, UClass* BaseClass, UObject*& ObjectPtr)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	return UnrealImGui::ComboObjectPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, ObjectPtr, &UnrealImGuiLibrary::ObjectPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboSoftObjectPicker(FName Label, UClass* BaseClass, TSoftObjectPtr<UObject>& SoftObjectPtr)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	return UnrealImGui::ComboSoftObjectPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftObjectPtr, &UnrealImGuiLibrary::ObjectPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboObjectPickerEx(FName Label, UClass* BaseClass, UObject*& ObjectPtr, const FUnrealImGuiObjectPickerSettings& Settings)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	auto Scope = UnrealImGuiLibrary::FObjectPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboObjectPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, ObjectPtr, &UnrealImGuiLibrary::ObjectPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboSoftObjectPickerEx(FName Label, UClass* BaseClass, TSoftObjectPtr<UObject>& SoftObjectPtr, const FUnrealImGuiObjectPickerSettings& Settings)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	auto Scope = UnrealImGuiLibrary::FObjectPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboSoftObjectPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftObjectPtr, &UnrealImGuiLibrary::ObjectPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboActorPicker(UObject* WorldContextObject, FName Label, TSubclassOf<AActor> BaseClass, AActor*& ActorPtr)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	return UnrealImGui::ComboActorPicker(WorldContextObject ? WorldContextObject->GetWorld() : nullptr, TCHAR_TO_UTF8(*Label.ToString()), BaseClass, ActorPtr, &UnrealImGuiLibrary::ActorPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboSoftActorPicker(UObject* WorldContextObject, FName Label, TSubclassOf<AActor> BaseClass, TSoftObjectPtr<AActor>& SoftActorPtr)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	return UnrealImGui::ComboSoftActorPicker(WorldContextObject ? WorldContextObject->GetWorld() : nullptr, TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftActorPtr, &UnrealImGuiLibrary::ActorPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboActorPickerEx(UObject* WorldContextObject, FName Label, TSubclassOf<AActor> BaseClass, AActor*& ActorPtr, const FUnrealImGuiActorPickerSettings& Settings)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	auto Scope = UnrealImGuiLibrary::FActorPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboActorPicker(WorldContextObject ? WorldContextObject->GetWorld() : nullptr, TCHAR_TO_UTF8(*Label.ToString()), BaseClass, ActorPtr, &UnrealImGuiLibrary::ActorPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboSoftActorPickerEx(UObject* WorldContextObject, FName Label, TSubclassOf<AActor> BaseClass, TSoftObjectPtr<AActor>& SoftActorPtr, const FUnrealImGuiActorPickerSettings& Settings)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	auto Scope = UnrealImGuiLibrary::FActorPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboSoftActorPicker(WorldContextObject ? WorldContextObject->GetWorld() : nullptr, TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftActorPtr, &UnrealImGuiLibrary::ActorPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboClassPicker(FName Label, UClass* BaseClass, TSubclassOf<UObject>& ClassPtr, bool bAllowAbstract)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	return UnrealImGui::ComboClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, ClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, &UnrealImGuiLibrary::ClassPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboSoftClassPicker(FName Label, UClass* BaseClass, TSoftClassPtr<UObject>& SoftClassPtr, bool bAllowAbstract)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	return UnrealImGui::ComboSoftClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, &UnrealImGuiLibrary::ClassPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboClassPickerEx(FName Label, UClass* BaseClass, TSubclassOf<UObject>& ClassPtr, bool bAllowAbstract, const FUnrealImGuiClassPickerSettings& Settings)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	auto Scope = UnrealImGuiLibrary::FClassPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, ClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, &UnrealImGuiLibrary::ClassPickerSettings);
 }
 
 bool UUnrealImGuiLibrary::ComboSoftClassPickerEx(FName Label, UClass* BaseClass, TSoftClassPtr<UObject>& SoftClassPtr, bool bAllowAbstract, const FUnrealImGuiClassPickerSettings& Settings)
 {
+	if (!CheckImGuiContextThrowError()) { return false; }
 	auto Scope = UnrealImGuiLibrary::FClassPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboSoftClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, &UnrealImGuiLibrary::ClassPickerSettings);
 }

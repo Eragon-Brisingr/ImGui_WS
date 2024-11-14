@@ -7,7 +7,7 @@
 #include "BlueprintNodeSpawner.h"
 #include "EdGraphSchema_K2.h"
 #include "KismetCompiler.h"
-#include "ImGuiLibrary.h"
+#include "ImGuiNodeUtils.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
@@ -25,22 +25,25 @@ void UBPNode_ImGuiFunction::GetMenuActions(FBlueprintActionDatabaseRegistrar& Ac
 	}
 
 	const static FName MD_ImGuiFunction = TEXT("ImGuiFunction");
-	for (TFieldIterator<UFunction> It{ UImGuiLibrary::StaticClass() }; It; ++It)
+	for (UClass* Class : ImGuiNodeUtils::GetImGuiLibraryClasses())
 	{
-		const UFunction* Function = *It;
-		if (Function->HasMetaData(MD_ImGuiFunction) == false)
+		for (TFieldIterator<UFunction> It{ Class }; It; ++It)
 		{
-			continue;
-		}
-		ensure(Function->HasMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
+			const UFunction* Function = *It;
+			if (Function->HasMetaData(MD_ImGuiFunction) == false)
+			{
+				continue;
+			}
+			ensure(Function->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
 
-		UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
-		NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda([Function](UEdGraphNode* NewNode, bool bIsTemplateNode)
-		{
-			UBPNode_ImGuiFunction* ImGuiBoolTrigger = CastChecked<UBPNode_ImGuiFunction>(NewNode);
-			ImGuiBoolTrigger->SetFromFunction(Function);
-		});
-		ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
+			UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
+			NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda([Function](UEdGraphNode* NewNode, bool bIsTemplateNode)
+			{
+				UBPNode_ImGuiFunction* Node = CastChecked<UBPNode_ImGuiFunction>(NewNode);
+				Node->SetFromFunction(Function);
+			});
+			ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
+		}
 	}
 }
 

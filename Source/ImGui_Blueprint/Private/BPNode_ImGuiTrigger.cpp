@@ -9,7 +9,7 @@
 #include "K2Node_ExecutionSequence.h"
 #include "K2Node_IfThenElse.h"
 #include "KismetCompiler.h"
-#include "ImGuiLibrary.h"
+#include "ImGuiNodeUtils.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
@@ -40,26 +40,29 @@ void UBPNode_ImGuiTrigger::GetMenuActions(FBlueprintActionDatabaseRegistrar& Act
 	}
 
 	const static FName MD_ImGuiTrigger = TEXT("ImGuiTrigger");
-	for (TFieldIterator<UFunction> It{ UImGuiLibrary::StaticClass() }; It; ++It)
+	for (UClass* Class : ImGuiNodeUtils::GetImGuiLibraryClasses())
 	{
-		const UFunction* Function = *It;
-		if (Function->HasMetaData(MD_ImGuiTrigger) == false)
+		for (TFieldIterator<UFunction> It{ Class }; It; ++It)
 		{
-			continue;
-		}
-		if (!ensure(CastField<FBoolProperty>(Function->GetReturnProperty())))
-		{
-			continue;
-		}
-		ensure(Function->HasMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
+			const UFunction* Function = *It;
+			if (Function->HasMetaData(MD_ImGuiTrigger) == false)
+			{
+				continue;
+			}
+			if (!ensure(CastField<FBoolProperty>(Function->GetReturnProperty())))
+			{
+				continue;
+			}
+			ensure(Function->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
 
-		UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
-		NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda([Function](UEdGraphNode* NewNode, bool bIsTemplateNode)
-		{
-			UBPNode_ImGuiTrigger* ImGuiBoolTrigger = CastChecked<UBPNode_ImGuiTrigger>(NewNode);
-			ImGuiBoolTrigger->SetFromFunction(Function);
-		});
-		ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
+			UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
+			NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda([Function](UEdGraphNode* NewNode, bool bIsTemplateNode)
+			{
+				UBPNode_ImGuiTrigger* Node = CastChecked<UBPNode_ImGuiTrigger>(NewNode);
+				Node->SetFromFunction(Function);
+			});
+			ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
+		}
 	}
 }
 

@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ImGuiLibraryBase.h"
 #include "UnrealImGuiComboEnum.h"
 #include "UnrealImGuiPropertyDetails.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SubclassOf.h"
 #include "UnrealImGuiLibrary.generated.h"
 
@@ -56,7 +56,7 @@ struct FUnrealImGuiClassPickerSettings
 };
 
 UCLASS()
-class IMGUI_WIDGETS_API UUnrealImGuiLibrary : public UBlueprintFunctionLibrary
+class IMGUI_WIDGETS_API UUnrealImGuiLibrary : public UImGuiLibraryBase
 {
 	GENERATED_BODY()
 public:

@@ -5,22 +5,20 @@
 #include "CoreMinimal.h"
 #include "imgui.h"
 #include "ImGuiEx.h"
+#include "ImGuiLibraryBase.h"
 #include "InputCoreTypes.h"
 #include "UnrealImGuiKeyUtils.h"
 #include "UnrealImGuiString.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGuiTypes.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
 #include "ImGuiLibrary.generated.h"
 
 static_assert(std::is_same_v<FVector2D::FReal, double>);
 
 UCLASS()
-class IMGUI_API UImGuiLibrary : public UBlueprintFunctionLibrary
+class IMGUI_API UImGuiLibrary : public UImGuiLibraryBase
 {
 	GENERATED_BODY()
-private:
-	static bool CheckImGuiContextThrowError();
 public:
 	UFUNCTION(BlueprintCallable, Category="ImGui|Windows", meta = (ImGuiScopeExit = End, ImGuiAlwaysExit, DisplayName = "Window", Name = "Untitle", AdvancedDisplay = 1), BlueprintInternalUseOnly)
 	static bool Begin(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"))int32 Flags = 0)

@@ -9,7 +9,7 @@
 #include "K2Node_ExecutionSequence.h"
 #include "K2Node_IfThenElse.h"
 #include "KismetCompiler.h"
-#include "ImGuiLibrary.h"
+#include "ImGuiNodeUtils.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
@@ -44,32 +44,35 @@ void UBPNode_ImGuiScope::GetMenuActions(FBlueprintActionDatabaseRegistrar& Actio
 	}
 
 	const static FName MD_ImGuiScopeExit = TEXT("ImGuiScopeExit");
-	for (TFieldIterator<UFunction> It{ UImGuiLibrary::StaticClass() }; It; ++It)
+	for (UClass* Class : ImGuiNodeUtils::GetImGuiLibraryClasses())
 	{
-		const UFunction* Function = *It;
-		const FString ScopeExitFuncName = Function->GetMetaData(MD_ImGuiScopeExit);
-		if (ScopeExitFuncName.Len() == 0)
+		for (TFieldIterator<UFunction> It{ Class }; It; ++It)
 		{
-			continue;
-		}
-		ensure(Function->HasMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
+			const UFunction* Function = *It;
+			const FString ScopeExitFuncName = Function->GetMetaData(MD_ImGuiScopeExit);
+			if (ScopeExitFuncName.Len() == 0)
+			{
+				continue;
+			}
+			ensure(Function->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
 
-		const UFunction* ExitFunction = UImGuiLibrary::StaticClass()->FindFunctionByName(*ScopeExitFuncName);
-		if (!ensure(ExitFunction))
-		{
-			continue;
-		}
-		ensure(ExitFunction->HasMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
+			const UFunction* ExitFunction = Class->FindFunctionByName(*ScopeExitFuncName);
+			if (!ensure(ExitFunction))
+			{
+				continue;
+			}
+			ensure(ExitFunction->GetBoolMetaData(FBlueprintMetadata::MD_BlueprintInternalUseOnly));
 
-		UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
-		NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda(
-			[Function, ExitFunction](UEdGraphNode* NewNode, bool bIsTemplateNode)
-		{
-			UBPNode_ImGuiScope* ImGuiScope = CastChecked<UBPNode_ImGuiScope>(NewNode);
-			ImGuiScope->SetFromFunction(Function);
-			ImGuiScope->ExitFunctionReference.SetFromField<UFunction>(ExitFunction, ImGuiScope->GetBlueprintClassFromNode());
-		});
-		ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
+			UBlueprintNodeSpawner* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
+			NodeSpawner->CustomizeNodeDelegate = UBlueprintNodeSpawner::FCustomizeNodeDelegate::CreateLambda(
+				[Function, ExitFunction](UEdGraphNode* NewNode, bool bIsTemplateNode)
+			{
+				UBPNode_ImGuiScope* Node = CastChecked<UBPNode_ImGuiScope>(NewNode);
+				Node->SetFromFunction(Function);
+				Node->ExitFunctionReference.SetFromField<UFunction>(ExitFunction, Node->GetBlueprintClassFromNode());
+			});
+			ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
+		}
 	}
 }
 
