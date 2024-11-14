@@ -107,6 +107,20 @@ void UBPNode_ImGuiScope::ExpandNode(FKismetCompilerContext& CompilerContext, UEd
 	UK2Node_CallFunction* ExitFunctionNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 	ExitFunctionNode->FunctionReference = ExitFunctionReference;
 	ExitFunctionNode->AllocateDefaultPins();
+	auto Schema = CompilerContext.GetSchema();
+	for (auto Pin : ExitFunctionNode->Pins)
+	{
+		if (Pin->Direction != EGPD_Input || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec || Schema->IsSelfPin(*Pin))
+		{
+			continue;
+		}
+		auto BeginPin = FunctionNode->FindPin(Pin->GetName());
+		if (!ensure(BeginPin && BeginPin->PinType == Pin->PinType))
+		{
+			continue;
+		}
+		Schema->CopyPinLinks(*BeginPin, *Pin, true);
+	}
 
 	UK2Node_ExecutionSequence* SequenceNode = CompilerContext.SpawnIntermediateNode<UK2Node_ExecutionSequence>(this, SourceGraph);
 	SequenceNode->AllocateDefaultPins();

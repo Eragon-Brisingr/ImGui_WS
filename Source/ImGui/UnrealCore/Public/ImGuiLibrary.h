@@ -502,13 +502,13 @@ public:
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::Dummy(ImVec2{ Size });
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Layout", meta = (ImGuiFunction, AdvancedDisplay = 0), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Layout", meta = (ImGuiScopeExit = Unindent, AdvancedDisplay = IndentW), BlueprintInternalUseOnly)
 	static void Indent(float IndentW = 0.0f)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::Indent(IndentW);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Layout", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Layout", BlueprintInternalUseOnly)
 	static void Unindent(float IndentW = 0.0f)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }

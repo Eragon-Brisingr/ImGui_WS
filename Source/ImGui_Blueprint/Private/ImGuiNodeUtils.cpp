@@ -3,12 +3,12 @@
 
 #include "ImGuiNodeUtils.h"
 
-#include "ImGuiLibrary.h"
+#include "ImGuiLibraryBase.h"
 #include "UObject/UObjectHash.h"
 
 TArray<UClass*> ImGuiNodeUtils::GetImGuiLibraryClasses()
 {
 	TArray<UClass*> Classes;
-	GetDerivedClasses(UImGuiLibrary::StaticClass(), Classes);
+	GetDerivedClasses(UImGuiLibraryBase::StaticClass(), Classes);
 	return Classes;
 }
