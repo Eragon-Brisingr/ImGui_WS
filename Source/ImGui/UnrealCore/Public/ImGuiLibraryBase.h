@@ -12,4 +12,6 @@ class IMGUI_API UImGuiLibraryBase : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 protected:
 	static bool CheckImGuiContextThrowError();
+
+	void PostCDOContruct() override;
 };

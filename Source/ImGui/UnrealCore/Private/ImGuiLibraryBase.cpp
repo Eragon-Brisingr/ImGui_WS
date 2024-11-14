@@ -23,3 +23,28 @@ bool UImGuiLibraryBase::CheckImGuiContextThrowError()
 	}
 	return false;
 }
+
+void UImGuiLibraryBase::PostCDOContruct()
+{
+	Super::PostCDOContruct();
+	
+#if WITH_EDITOR
+	static const FName MD_CustomThunk(TEXT("CustomThunk"));
+	static const FName MD_BlueprintInternalUseOnly(TEXT("BlueprintInternalUseOnly"));
+	static const FName MD_ScriptCallable("ScriptCallable");
+
+	// Support script call internal function, for angelscript
+	for (TFieldIterator<UFunction> It{ GetClass() }; It; ++It)
+	{
+		if (!It->GetBoolMetaData(MD_BlueprintInternalUseOnly))
+		{
+			continue;
+		}
+		if (It->HasMetaData(MD_CustomThunk))
+		{
+			continue;
+		}
+		It->SetMetaData(MD_ScriptCallable, TEXT(""));
+	}
+#endif
+}

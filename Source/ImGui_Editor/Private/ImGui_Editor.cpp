@@ -111,13 +111,6 @@ void FImGui_EditorModule::StartupModule()
 		Notification->SetCompletionState(SNotificationItem::CS_Pending);
 		NotificationPtr = Notification;
 	}
-
-	for (TFieldIterator<UFunction> It{ UImGuiLibrary::StaticClass() }; It; ++It)
-	{
-		// Support script call internal function
-		static const FName NAME_Function_ScriptCallable("ScriptCallable");
-		It->SetMetaData(NAME_Function_ScriptCallable, TEXT(""));
-	}
 }
 
 void FImGui_EditorModule::ShutdownModule()
