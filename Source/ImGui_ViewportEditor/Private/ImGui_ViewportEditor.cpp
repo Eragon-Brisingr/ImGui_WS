@@ -102,7 +102,7 @@ void FImGui_ViewportEditorModule::WhenLevelEditorCreated(TSharedPtr<ILevelEditor
 	auto Content = SNew(SImGuiEditorViewportOverlay, LevelEditor.ToSharedRef())
 		.Visibility_Lambda([]
 		{
-			if (GEditor->IsPlayingSessionInEditor() && !GEditor->bIsSimulatingInEditor)
+			if (GEditor->IsPlayingSessionInEditor())
 			{
 				return EVisibility::Collapsed;
 			}
