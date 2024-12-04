@@ -713,6 +713,7 @@ void SImGuiPanel::DisableVirtualInput()
 		return;
 	}
 
+	Context->IO.ClearInputKeys();
 	VirtualInput.bEnable = false;
 	if (FPlatformApplicationMisc::RequiresVirtualKeyboard())
 	{
