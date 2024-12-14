@@ -13,11 +13,11 @@
 
 #ifdef IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS
 typedef IFileHandle* ImFileHandle;
-ImFileHandle ImFileOpen(const char* FileName, const char* Mode);
-bool ImFileClose(ImFileHandle File);
-uint64 ImFileGetSize(ImFileHandle File);
-uint64 ImFileRead(void* Data, uint64 Size, uint64 Count, ImFileHandle File);
-uint64 ImFileWrite(const void* Data, uint64 Size, uint64 Count, ImFileHandle File);
+IMGUI_API ImFileHandle ImFileOpen(const char* FileName, const char* Mode);
+IMGUI_API bool ImFileClose(ImFileHandle File);
+IMGUI_API uint64 ImFileGetSize(ImFileHandle File);
+IMGUI_API uint64 ImFileRead(void* Data, uint64 Size, uint64 Count, ImFileHandle File);
+IMGUI_API uint64 ImFileWrite(const void* Data, uint64 Size, uint64 Count, ImFileHandle File);
 #endif
 
 #define ImDrawIdx unsigned int
