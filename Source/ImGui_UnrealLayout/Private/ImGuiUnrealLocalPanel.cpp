@@ -33,6 +33,11 @@
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
+void UImGuiLocalPanelManagerConfig::SaveSettings()
+{
+	SaveConfig(CPF_Config, nullptr, GConfig, false);
+}
+
 namespace ImGui_WS::LocalPanel
 {
 TAutoConsoleVariable<int32> CVarLocalPanelMode
@@ -87,6 +92,7 @@ const auto& GetTextBlockStyles()
 	static FTextBlockStyles Styles;
 	return Styles;
 }
+
 class SDragResizeContainer : public SCompoundWidget
 {
 public:
@@ -601,17 +607,17 @@ public:
 			.OnDragged_Lambda([this, Panel](const FVector2f& Pos)
 			{
 				Config->PanelConfigMap.FindOrAdd(Panel->GetClass()).Pos = Pos;
-				Config->SaveConfig();
+				Config->SaveSettings();
 			})
 			.OnResized_Lambda([this, Panel](const FVector2f& Size)
 			{
 				Config->PanelConfigMap.FindOrAdd(Panel->GetClass()).Size = Size;
-				Config->SaveConfig();
+				Config->SaveSettings();
 			})
 			.OnMaximizeChanged_Lambda([this, Panel](bool bMaximize)
 			{
 				Config->PanelConfigMap.FindOrAdd(Panel->GetClass()).bMaximize = bMaximize;
-				Config->SaveConfig();
+				Config->SaveSettings();
 			});
 
 		TitleContent->AddSlot()
@@ -694,13 +700,13 @@ public:
 	SLATE_BEGIN_ARGS(SPanelManager)
 	{}
 	SLATE_END_ARGS()
-	SImGuiLocalPanelOverlay* Overlay;
-	UWorld* World;
+	TSharedPtr<SImGuiLocalPanelOverlay> Overlay;
+	TWeakObjectPtr<UWorld> WorldPtr;
 	TWeakObjectPtr<UImGuiLocalPanelManagerWidget> LocalPanelManagerWidget = nullptr;
-	void Construct(const FArguments& Args, SImGuiLocalPanelOverlay* InOverlay, UWorld* InWorld, const TSharedRef<int32>& ContextIndex)
+	void Construct(const FArguments& Args, const TSharedRef<SImGuiLocalPanelOverlay>& InOverlay, UWorld* InWorld, const TSharedRef<int32>& ContextIndex)
 	{
 		Overlay = InOverlay;
-		World = InWorld;
+		WorldPtr = InWorld;
 		auto ImGuiSettings = GetDefault<UImGuiSettings>();
 		TSharedPtr<SWidget> FloatButton;
 		if (UClass* Class = ImGuiSettings->LocalPanelManagerWidget.LoadSynchronous())
@@ -764,6 +770,10 @@ public:
 			SNew(SImGuiPanel)
 			.Visibility_Lambda([this]
 			{
+				if (Overlay->Config == nullptr)
+				{
+					return EVisibility::Collapsed;
+				}
 				return Overlay->Config->bManagerCollapsed ? EVisibility::Collapsed : EVisibility::Visible;
 			})
 			.OnImGuiTick_Lambda([this, ContextIndex](float DeltaSeconds)
@@ -775,13 +785,13 @@ public:
 		{
 			CachedPos = Pos;
 			Overlay->Config->ManagerConfig.Pos = Pos;
-			Overlay->Config->SaveConfig();
+			Overlay->Config->SaveSettings();
 		})
 		.OnResized_Lambda([this](const FVector2f& Size)
 		{
 			CachedSize = Size;
 			Overlay->Config->ManagerConfig.Size = Size;
-			Overlay->Config->SaveConfig();
+			Overlay->Config->SaveSettings();
 		});
 
 		Super::Construct(SuperArgs);
@@ -857,6 +867,12 @@ public:
 	{
 		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiLocalPanelManager_Tick"), STAT_LocalPanelManager_Tick, STATGROUP_ImGui);
 
+		UWorld* World = WorldPtr.Get();
+		if (World == nullptr)
+		{
+			return;
+		}
+		
 		FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(World);
 		if (LayoutManager == nullptr)
 		{
@@ -881,7 +897,7 @@ public:
 						{
 							RecentlyPanels.RemoveAt(MaxRecentlyPanelNum, RecentlyPanels.Num() - MaxRecentlyPanelNum);
 						}
-						InOverlay->Config->SaveConfig();
+						InOverlay->Config->SaveSettings();
 
 						InOverlay->OpenPanel(InWorld, Builder, Panel);
 					}
@@ -952,7 +968,7 @@ public:
 							}
 						}
 					};
-					const FLocal Local{ World, Overlay };
+					const FLocal Local{ World, Overlay.Get() };
 					for (const auto& [_, Child] : Builder->CategoryPanels.Children)
 					{
 						Local.DrawCategory(Builder, *Child);
@@ -1006,7 +1022,7 @@ public:
 							}
 							if (ImGui::TableSetColumnIndex(ColumnIdx))
 							{
-								DrawPanelCheckBox(World, Overlay, Builder, Panel);
+								DrawPanelCheckBox(World, Overlay.Get(), Builder, Panel);
 								ItemCounter += 1;
 							}
 						}
@@ -1045,7 +1061,7 @@ public:
 									}
 									PanelIdx -= PanelBuilder->Panels.Num();
 								}
-								DrawPanelCheckBox(World, Overlay, Builder, Builder->Panels[PanelIdx]);
+								DrawPanelCheckBox(World, Overlay.Get(), Builder, Builder->Panels[PanelIdx]);
 								ImGui::PopID();
 							}
 						}
@@ -1074,7 +1090,7 @@ public:
 								UUnrealImGuiPanelBuilder* Builder = Cast<UUnrealImGuiPanelBuilder>(FilteredPanels[Idx]->GetOuter());
 								if (ensure(Builder))
 								{
-									DrawPanelCheckBox(World, Overlay, Builder, FilteredPanels[Idx]);
+									DrawPanelCheckBox(World, Overlay.Get(), Builder, FilteredPanels[Idx]);
 								}
 								ImGui::PopID();
 							}
@@ -1122,7 +1138,7 @@ public:
 				if (LayoutManager->PanelBuilders.Num() == 1)
 				{
 					auto Builder = LayoutManager->PanelBuilders[0];
-					FLocal{ ColumnsNum, World, Overlay }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
+					FLocal{ ColumnsNum, World, Overlay.Get() }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
 				}
 				else
 				{
@@ -1132,7 +1148,7 @@ public:
 						{
 							if (ImGui::FTreeNodeEx TreeNodeEx{ TCHAR_TO_UTF8(*Builder->GetOuter()->GetClass()->GetName()), TreeNodeFlags })
 							{
-								FLocal{ ColumnsNum, World, Overlay }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
+								FLocal{ ColumnsNum, World, Overlay.Get() }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
 							}
 						}
 					}
@@ -1173,12 +1189,12 @@ public:
 				.OnDragged_Lambda([this](const FVector2f& Pos)
 				{
 					Overlay->Config->ViewportConfig.Pos = Pos;
-					Overlay->Config->SaveConfig();
+					Overlay->Config->SaveSettings();
 				})
 				.OnResized_Lambda([this](const FVector2f& Size)
 				{
 					Overlay->Config->ViewportConfig.Size = Size;
-					Overlay->Config->SaveConfig();
+					Overlay->Config->SaveSettings();
 				})
 				.OnMaximizeChanged_Lambda([this](bool bMaximize)
 				{
@@ -1255,7 +1271,7 @@ public:
 			return;
 		}
 		Overlay->Config->bManagerCollapsed = false;
-		Overlay->Config->SaveConfig();
+		Overlay->Config->SaveSettings();
 		Slot->SetAnchors(FAnchors{ 0.f, 0.f, 1.f, 1.f });
 		Slot->SetAutoSize(false);
 		WidgetSwitcher->SetActiveWidgetIndex(0);
@@ -1268,7 +1284,7 @@ public:
 			return;
 		}
 		Overlay->Config->bManagerCollapsed = true;
-		Overlay->Config->SaveConfig();
+		Overlay->Config->SaveSettings();
 		ForceMinimize();
 	}
 	void ForceMinimize()
@@ -1397,7 +1413,7 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 		});
 
 		const TSharedRef<SImGuiLocalPanelOverlay> Overlay = SNew(SImGuiLocalPanelOverlay, World);
-		const auto PanelManager = SNew(SPanelManager, &Overlay.Get(), World, ViewportPanel.ContextIndex);
+		const auto PanelManager = SNew(SPanelManager, Overlay, World, ViewportPanel.ContextIndex);
 		PanelManager->CachedPos = Overlay->Config->ManagerConfig.Pos;
 		PanelManager->CachedSize = Overlay->Config->ManagerConfig.Size;
 		Overlay->AddChild(PanelManager, PanelManager->CachedPos, PanelManager->CachedSize, false);
