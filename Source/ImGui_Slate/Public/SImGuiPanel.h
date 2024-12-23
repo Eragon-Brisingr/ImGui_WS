@@ -98,8 +98,9 @@ public:
 	};
 
 	FScopedContext ImGuiScopedContext() const { return { Context, PlotContext }; }
-protected:
+
 	FOnImGuiTick OnImGuiTick;
+protected:
 	TAttribute<FVector2D> DesiredSize;
 
 	struct IMGUI_SLATE_API FImGuiDrawData
