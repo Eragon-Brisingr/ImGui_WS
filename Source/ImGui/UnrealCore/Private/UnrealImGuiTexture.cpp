@@ -126,7 +126,7 @@ namespace UnrealImGui
 
 					constexpr uint32 SrcBpp = sizeof(uint32);
 					const uint32 SrcPitch = RT->SizeX * SrcBpp;
-					FRHITexture2D* Texture = RenderTargetResource->GetTexture2DRHI();
+					FRHITexture* Texture = RenderTargetResource->GetTexture2DRHI();
 					const FUpdateTextureRegion2D Region{ 0, 0, 0, 0, uint32(RT->SizeX), uint32(RT->SizeY) };
 					RHIUpdateTexture2D(
 						Texture,
