@@ -59,6 +59,8 @@ public:
 
 	UPROPERTY(Config)
 	TArray<TSoftClassPtr<UUnrealImGuiPanelBase>> RecentlyPanels;
+
+	void SaveSettings();
 };
 
 UCLASS(Abstract)

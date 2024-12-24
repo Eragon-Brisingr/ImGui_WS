@@ -33,6 +33,11 @@
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
+void UImGuiLocalPanelManagerConfig::SaveSettings()
+{
+	SaveConfig(CPF_Config, nullptr, GConfig, false);
+}
+
 namespace ImGui_WS::LocalPanel
 {
 TAutoConsoleVariable<int32> CVarLocalPanelMode
@@ -87,6 +92,7 @@ const auto& GetTextBlockStyles()
 	static FTextBlockStyles Styles;
 	return Styles;
 }
+
 class SDragResizeContainer : public SCompoundWidget
 {
 public:
@@ -443,7 +449,7 @@ struct FViewportPanel
 	TWeakPtr<SWidget> Overlay;
 	TSharedRef<int32> ContextIndex = MakeShared<int32>();
 };
-TMap<TWeakObjectPtr<UWorld>, FViewportPanel> ViewportPanelMap;
+TMap<TWeakObjectPtr<UGameViewportClient>, FViewportPanel> ViewportPanelMap;
 
 const FName WindowTabId = TEXT("ImGui_WS_Window");
 bool IsLocalWindowOpened(const UWorld* World)
@@ -452,7 +458,7 @@ bool IsLocalWindowOpened(const UWorld* World)
 	{
 		return true;
 	}
-	if (const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(World))
+	if (const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(World ? World->GetGameViewport() : nullptr))
 	{
 		return ViewportPanel->Overlay.IsValid();
 	}
@@ -465,7 +471,7 @@ bool IsLocalWindowOpened(const UWorld* World, EImGuiLocalPanelMode PanelMode)
 	{
 	case EImGuiLocalPanelMode::GameViewport:
 		{
-			const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(World);
+			const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(World ? World->GetGameViewport() : nullptr);
 			return ViewportPanel ? ViewportPanel->Overlay.IsValid() : false;
 		}
 	case EImGuiLocalPanelMode::SingleWindow:
@@ -526,9 +532,9 @@ class SImGuiLocalPanelOverlay : public SDragResizeContainer, public FGCObject
 {
 	using Super = SDragResizeContainer;
 public:
-	void Construct(const FArguments& Args, UWorld* World)
+	void Construct(const FArguments& Args, UGameViewportClient* GameViewport)
 	{
-		Config = NewObject<UImGuiLocalPanelManagerConfig>(World, TEXT("ImGuiLocalPanelOverlayConfig"));
+		Config = NewObject<UImGuiLocalPanelManagerConfig>(GameViewport, TEXT("ImGuiLocalPanelOverlayConfig"));
 		Super::Construct(Args);
 		FImGuiDelegates::OnImGuiLocalPanelEnable.Broadcast();
 	}
@@ -536,7 +542,7 @@ public:
 	{
 		FImGuiDelegates::OnImGuiLocalPanelDisable.Broadcast();
 	}
-	TMap<TObjectPtr<UUnrealImGuiPanelBase>, TSharedRef<SDragResizeBox>> PanelBoxMap;
+	TMap<TWeakObjectPtr<UUnrealImGuiPanelBase>, TSharedRef<SDragResizeBox>> PanelBoxMap;
 	TSharedPtr<SDragResizeBox> ViewportPtr;
 	TObjectPtr<UImGuiLocalPanelManagerConfig> Config;
 	UnrealImGui::FUTF8String FilterString;
@@ -544,24 +550,7 @@ public:
 	void OpenPanel(UWorld* World, UUnrealImGuiPanelBuilder* Builder, UUnrealImGuiPanelBase* Panel)
 	{
 		ensure(PanelBoxMap.Contains(Panel) == false);
-		const TSharedRef<SImGuiPanel> ImGuiPanel = SNew(SImGuiPanel)
-			.OnImGuiTick_Lambda([World, Builder, PanelPtr = TWeakObjectPtr<UUnrealImGuiPanelBase>(Panel)](float DeltaSeconds)
-			{
-				UUnrealImGuiPanelBase* Panel = PanelPtr.Get();
-				if (Panel == nullptr)
-				{
-					return;
-				}
-				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiLocalPanel_Tick"), STAT_ImGuiLocalPanel_Tick, STATGROUP_ImGui);
-				ImGui::SetNextWindowPos(ImVec2{ 0, 0 });
-				ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
-				if (ImGui::FWindow Window{ TCHAR_TO_UTF8(*Panel->Title.ToString()), nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
-				{
-					UImGuiUnrealContextManager::OnPreDraw.Broadcast(World);
-					Panel->Draw(World, Builder, DeltaSeconds);
-					UImGuiUnrealContextManager::OnPostDraw.Broadcast(World);
-				}
-			});
+		const TSharedRef<SImGuiPanel> ImGuiPanel = SNew(SImGuiPanel);
 		const FImGuiLocalPanelConfig PanelConfig = Config->PanelConfigMap.FindRef(Panel->GetClass());
 		ImGuiPanel->GetContext()->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
 		class SImGuiPanelBox : public SDragResizeBox
@@ -601,18 +590,45 @@ public:
 			.OnDragged_Lambda([this, Panel](const FVector2f& Pos)
 			{
 				Config->PanelConfigMap.FindOrAdd(Panel->GetClass()).Pos = Pos;
-				Config->SaveConfig();
+				Config->SaveSettings();
 			})
 			.OnResized_Lambda([this, Panel](const FVector2f& Size)
 			{
 				Config->PanelConfigMap.FindOrAdd(Panel->GetClass()).Size = Size;
-				Config->SaveConfig();
+				Config->SaveSettings();
 			})
 			.OnMaximizeChanged_Lambda([this, Panel](bool bMaximize)
 			{
 				Config->PanelConfigMap.FindOrAdd(Panel->GetClass()).bMaximize = bMaximize;
-				Config->SaveConfig();
+				Config->SaveSettings();
 			});
+
+		ImGuiPanel->OnImGuiTick.BindLambda([this, DragResizeBox = &DragResizeBox.Get(), World, Builder, PanelPtr = TWeakObjectPtr<UUnrealImGuiPanelBase>(Panel)](float DeltaSeconds)
+		{
+			UUnrealImGuiPanelBase* Panel = PanelPtr.Get();
+			if (Panel == nullptr)
+			{
+				for (auto It = PanelBoxMap.CreateIterator(); It; ++It)
+				{
+					if (&It.Value().Get() == DragResizeBox)
+					{
+						RemoveChild(It.Value());
+						It.RemoveCurrent();
+						break;
+					}
+				}
+				return;
+			}
+			DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiLocalPanel_Tick"), STAT_ImGuiLocalPanel_Tick, STATGROUP_ImGui);
+			ImGui::SetNextWindowPos(ImVec2{ 0, 0 });
+			ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
+			if (ImGui::FWindow Window{ TCHAR_TO_UTF8(*Panel->Title.ToString()), nullptr, Panel->ImGuiWindowFlags | SinglePanelFlags })
+			{
+				UImGuiUnrealContextManager::OnPreDraw.Broadcast(World);
+				Panel->Draw(World, Builder, DeltaSeconds);
+				UImGuiUnrealContextManager::OnPostDraw.Broadcast(World);
+			}
+		});
 
 		TitleContent->AddSlot()
 		.Padding(20.f, 2.f, 2.f, 2.f)
@@ -679,7 +695,6 @@ public:
 	void AddReferencedObjects(FReferenceCollector& Collector) override
 	{
 		Collector.AddReferencedObject(Config);
-		Collector.AddReferencedObjects(PanelBoxMap);
 	}
 	FString GetReferencerName() const override
 	{
@@ -694,20 +709,20 @@ public:
 	SLATE_BEGIN_ARGS(SPanelManager)
 	{}
 	SLATE_END_ARGS()
-	SImGuiLocalPanelOverlay* Overlay;
-	UWorld* World;
+	TSharedPtr<SImGuiLocalPanelOverlay> Overlay;
+	TWeakObjectPtr<UGameViewportClient> GameViewportPtr;
 	TWeakObjectPtr<UImGuiLocalPanelManagerWidget> LocalPanelManagerWidget = nullptr;
-	void Construct(const FArguments& Args, SImGuiLocalPanelOverlay* InOverlay, UWorld* InWorld, const TSharedRef<int32>& ContextIndex)
+	void Construct(const FArguments& Args, const TSharedRef<SImGuiLocalPanelOverlay>& InOverlay, UGameViewportClient* GameViewport, const TSharedRef<int32>& ContextIndex)
 	{
 		Overlay = InOverlay;
-		World = InWorld;
+		GameViewportPtr = GameViewport;
 		auto ImGuiSettings = GetDefault<UImGuiSettings>();
 		TSharedPtr<SWidget> FloatButton;
 		if (UClass* Class = ImGuiSettings->LocalPanelManagerWidget.LoadSynchronous())
 		{
 			if (ensure(Class->IsChildOf(UImGuiLocalPanelManagerWidget::StaticClass())))
 			{
-				UImGuiLocalPanelManagerWidget* PanelManagerWidget = CreateWidget<UImGuiLocalPanelManagerWidget>(InWorld, Class);
+				UImGuiLocalPanelManagerWidget* PanelManagerWidget = CreateWidget<UImGuiLocalPanelManagerWidget>(GameViewport->GetGameInstance(), Class);
 				if (ensure(PanelManagerWidget))
 				{
 					LocalPanelManagerWidget = PanelManagerWidget;
@@ -764,6 +779,10 @@ public:
 			SNew(SImGuiPanel)
 			.Visibility_Lambda([this]
 			{
+				if (Overlay->Config == nullptr)
+				{
+					return EVisibility::Collapsed;
+				}
 				return Overlay->Config->bManagerCollapsed ? EVisibility::Collapsed : EVisibility::Visible;
 			})
 			.OnImGuiTick_Lambda([this, ContextIndex](float DeltaSeconds)
@@ -775,13 +794,13 @@ public:
 		{
 			CachedPos = Pos;
 			Overlay->Config->ManagerConfig.Pos = Pos;
-			Overlay->Config->SaveConfig();
+			Overlay->Config->SaveSettings();
 		})
 		.OnResized_Lambda([this](const FVector2f& Size)
 		{
 			CachedSize = Size;
 			Overlay->Config->ManagerConfig.Size = Size;
-			Overlay->Config->SaveConfig();
+			Overlay->Config->SaveSettings();
 		});
 
 		Super::Construct(SuperArgs);
@@ -857,6 +876,12 @@ public:
 	{
 		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiLocalPanelManager_Tick"), STAT_LocalPanelManager_Tick, STATGROUP_ImGui);
 
+		UWorld* World = GameViewportPtr->GetWorld();
+		if (World == nullptr)
+		{
+			return;
+		}
+		
 		FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(World);
 		if (LayoutManager == nullptr)
 		{
@@ -881,7 +906,7 @@ public:
 						{
 							RecentlyPanels.RemoveAt(MaxRecentlyPanelNum, RecentlyPanels.Num() - MaxRecentlyPanelNum);
 						}
-						InOverlay->Config->SaveConfig();
+						InOverlay->Config->SaveSettings();
 
 						InOverlay->OpenPanel(InWorld, Builder, Panel);
 					}
@@ -952,7 +977,7 @@ public:
 							}
 						}
 					};
-					const FLocal Local{ World, Overlay };
+					const FLocal Local{ World, Overlay.Get() };
 					for (const auto& [_, Child] : Builder->CategoryPanels.Children)
 					{
 						Local.DrawCategory(Builder, *Child);
@@ -1006,7 +1031,7 @@ public:
 							}
 							if (ImGui::TableSetColumnIndex(ColumnIdx))
 							{
-								DrawPanelCheckBox(World, Overlay, Builder, Panel);
+								DrawPanelCheckBox(World, Overlay.Get(), Builder, Panel);
 								ItemCounter += 1;
 							}
 						}
@@ -1045,7 +1070,7 @@ public:
 									}
 									PanelIdx -= PanelBuilder->Panels.Num();
 								}
-								DrawPanelCheckBox(World, Overlay, Builder, Builder->Panels[PanelIdx]);
+								DrawPanelCheckBox(World, Overlay.Get(), Builder, Builder->Panels[PanelIdx]);
 								ImGui::PopID();
 							}
 						}
@@ -1074,7 +1099,7 @@ public:
 								UUnrealImGuiPanelBuilder* Builder = Cast<UUnrealImGuiPanelBuilder>(FilteredPanels[Idx]->GetOuter());
 								if (ensure(Builder))
 								{
-									DrawPanelCheckBox(World, Overlay, Builder, FilteredPanels[Idx]);
+									DrawPanelCheckBox(World, Overlay.Get(), Builder, FilteredPanels[Idx]);
 								}
 								ImGui::PopID();
 							}
@@ -1122,7 +1147,7 @@ public:
 				if (LayoutManager->PanelBuilders.Num() == 1)
 				{
 					auto Builder = LayoutManager->PanelBuilders[0];
-					FLocal{ ColumnsNum, World, Overlay }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
+					FLocal{ ColumnsNum, World, Overlay.Get() }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
 				}
 				else
 				{
@@ -1132,7 +1157,7 @@ public:
 						{
 							if (ImGui::FTreeNodeEx TreeNodeEx{ TCHAR_TO_UTF8(*Builder->GetOuter()->GetClass()->GetName()), TreeNodeFlags })
 							{
-								FLocal{ ColumnsNum, World, Overlay }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
+								FLocal{ ColumnsNum, World, Overlay.Get() }.DrawCategory(TreeNodeFlags, Builder, Builder->CategoryPanels);
 							}
 						}
 					}
@@ -1173,12 +1198,12 @@ public:
 				.OnDragged_Lambda([this](const FVector2f& Pos)
 				{
 					Overlay->Config->ViewportConfig.Pos = Pos;
-					Overlay->Config->SaveConfig();
+					Overlay->Config->SaveSettings();
 				})
 				.OnResized_Lambda([this](const FVector2f& Size)
 				{
 					Overlay->Config->ViewportConfig.Size = Size;
-					Overlay->Config->SaveConfig();
+					Overlay->Config->SaveSettings();
 				})
 				.OnMaximizeChanged_Lambda([this](bool bMaximize)
 				{
@@ -1255,7 +1280,7 @@ public:
 			return;
 		}
 		Overlay->Config->bManagerCollapsed = false;
-		Overlay->Config->SaveConfig();
+		Overlay->Config->SaveSettings();
 		Slot->SetAnchors(FAnchors{ 0.f, 0.f, 1.f, 1.f });
 		Slot->SetAutoSize(false);
 		WidgetSwitcher->SetActiveWidgetIndex(0);
@@ -1268,7 +1293,7 @@ public:
 			return;
 		}
 		Overlay->Config->bManagerCollapsed = true;
-		Overlay->Config->SaveConfig();
+		Overlay->Config->SaveSettings();
 		ForceMinimize();
 	}
 	void ForceMinimize()
@@ -1291,6 +1316,11 @@ void OpenLocalWindow(UWorld* World)
 
 void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 {
+	if (IsLocalWindowOpened(World, PanelMode))
+	{
+		return;
+	}
+
 	class SImGuiPanelLifetime : public SCompoundWidget
 	{
 		SLATE_BEGIN_ARGS(SImGuiPanelLifetime)
@@ -1376,13 +1406,13 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 			}
 			It.RemoveCurrent();
 		}
-		FViewportPanel& ViewportPanel = ViewportPanelMap.FindOrAdd(World);
-		if (ViewportPanel.Overlay.IsValid())
+		UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr;
+		if (GameViewport == nullptr)
 		{
 			return;
 		}
-		UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr;
-		if (GameViewport == nullptr)
+		FViewportPanel& ViewportPanel = ViewportPanelMap.FindOrAdd(GameViewport);
+		if (ViewportPanel.Overlay.IsValid())
 		{
 			return;
 		}
@@ -1396,8 +1426,8 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 			return E && E->GetWorld() == World;
 		});
 
-		const TSharedRef<SImGuiLocalPanelOverlay> Overlay = SNew(SImGuiLocalPanelOverlay, World);
-		const auto PanelManager = SNew(SPanelManager, &Overlay.Get(), World, ViewportPanel.ContextIndex);
+		const TSharedRef<SImGuiLocalPanelOverlay> Overlay = SNew(SImGuiLocalPanelOverlay, GameViewport);
+		const auto PanelManager = SNew(SPanelManager, Overlay, GameViewport, ViewportPanel.ContextIndex);
 		PanelManager->CachedPos = Overlay->Config->ManagerConfig.Pos;
 		PanelManager->CachedSize = Overlay->Config->ManagerConfig.Size;
 		Overlay->AddChild(PanelManager, PanelManager->CachedPos, PanelManager->CachedSize, false);
@@ -1434,14 +1464,16 @@ void CloseLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 	}
 	else
 	{
-		const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(World);
+		UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr;
+		if (GameViewport == nullptr)
+		{
+			return;
+		}
+		const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(GameViewport);
 		if (ViewportPanel && ViewportPanel->Overlay.IsValid())
 		{
-			if (UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr)
-			{
-				GameViewport->RemoveViewportWidgetContent(ViewportPanel->Overlay.Pin().ToSharedRef());
-			}
-			ViewportPanelMap.Remove(World);
+			GameViewport->RemoveViewportWidgetContent(ViewportPanel->Overlay.Pin().ToSharedRef());
+			ViewportPanelMap.Remove(GameViewport);
 		}
 	}
 }
