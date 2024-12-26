@@ -53,9 +53,7 @@ public:
 
 	~SImGuiGameViewportOverlay() override
 	{
-		UGameInstance* GameInstance = WeakGameInstance.Get();
-		ensure(GameInstance);
-		ViewportLookup.Remove(GameInstance);
+		ViewportLookup.Remove(WeakGameInstance);
 	}
 };
 

@@ -60,7 +60,7 @@ void UImGuiWorldDebuggerOutlinerPanel::Unregister(UObject* Owner, UUnrealImGuiPa
 	if (UWorld* World = GetWorld())
 	{
 		World->RemoveOnActorSpawnedHandler(OnActorSpawnedHandler);
-		World->RemoveOnActorDestroyededHandler(OnActorDestroyedHandler);
+		World->RemoveOnActorDestroyedHandler(OnActorDestroyedHandler);
 	}
 	FWorldDelegates::LevelAddedToWorld.Remove(OnLevelAdd_DelegateHandle);
 }

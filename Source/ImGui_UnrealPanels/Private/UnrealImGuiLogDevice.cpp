@@ -103,7 +103,7 @@ namespace UnrealImGui
 				{
 					SIZE_T RemoveLogSize = 0;
 					int32 RemoveLogCounter = 0;
-					RemoveLogCounter += PreChunkLogCount;
+					RemoveLogCounter += FMath::Min(PreChunkLogCount, Logs.Num());
 					for (int32 Idx = 0; Idx < PreChunkLogCount; ++Idx)
 					{
 						RemoveLogSize += sizeof(FLog) + Logs[Idx].LogString.GetAllocatedSize();

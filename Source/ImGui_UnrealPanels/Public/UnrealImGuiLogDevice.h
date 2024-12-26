@@ -27,7 +27,7 @@ namespace UnrealImGui
 			FDateTime Time;
 			uint64 Frame;
 		};
-		static constexpr int32 PreChunkLogCount = 1024 * 1024 / sizeof(FLog);
+		static constexpr int32 PreChunkLogCount = 1024 / sizeof(FLog);
 		struct FLogChunkedArray : TChunkedArray<FLog, sizeof(FLog) * PreChunkLogCount>
 		{
 			void RemoveFirstChunk()

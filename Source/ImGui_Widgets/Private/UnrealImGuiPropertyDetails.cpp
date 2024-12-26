@@ -430,7 +430,7 @@ void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& 
 		{
 			for (int32 ArrayIndex = 0; ArrayIndex < Property->ArrayDim; ++ArrayIndex)
 			{
-				const int32 ElementOffset = Offset + Property->ElementSize * ArrayIndex;
+				const int32 ElementOffset = Offset + Property->GetElementSize() * ArrayIndex;
 				ImGui::FIdScope ArrayIdScope{ ArrayIndex };
 				
 				bool IsElementShowChildren = false;
