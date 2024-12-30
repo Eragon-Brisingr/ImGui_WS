@@ -713,7 +713,20 @@ void SImGuiPanel::DisableVirtualInput()
 		return;
 	}
 
-	Context->IO.ClearInputKeys();
+	auto ClearInputChars = [](ImGuiIO& IO)
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(IO.KeysData); n++)
+		{
+			IO.KeysData[n].Down             = false;
+			IO.KeysData[n].DownDuration     = -1.0f;
+			IO.KeysData[n].DownDurationPrev = -1.0f;
+		}
+		IO.KeyCtrl = IO.KeyShift = IO.KeyAlt = IO.KeySuper = false;
+		IO.KeyMods = ImGuiMod_None;
+		IO.InputQueueCharacters.resize(0); // Behavior of old ClearInputCharacters().	
+	};
+
+	ClearInputChars(Context->IO);
 	VirtualInput.bEnable = false;
 	if (FPlatformApplicationMisc::RequiresVirtualKeyboard())
 	{
