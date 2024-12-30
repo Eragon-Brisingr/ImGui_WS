@@ -15,6 +15,7 @@ namespace UnrealImGui
 		const char* FilterHint = "Filter";
 		bool bShowDeveloperContent = false;
 		bool bShowEngineContent = false;
+		bool bShowNonAssetRegistry = false;
 		TFunction<bool(const FAssetData&)> CustomFilter;
 	};
 	struct FObjectPickerData
@@ -26,9 +27,9 @@ namespace UnrealImGui
 	IMGUI_WIDGETS_API bool ComboObjectPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const FAssetData&)>& IsSelectedFunc, const TFunctionRef<void(const FAssetData&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, FObjectPickerSettings* Settings, FObjectPickerData* Data = nullptr);
 	IMGUI_WIDGETS_API bool ComboObjectPicker(const char* Label, UClass* BaseClass, UObject*& ObjectPtr, FObjectPickerSettings* Settings, FObjectPickerData* Data = nullptr);
 	template<typename T> requires std::is_base_of_v<UObject, T>
-	bool ComboObjectPicker(const char* Label, T*& ObjectPtr, const FObjectPickerSettings& Settings, FObjectPickerData* Data = nullptr)
+	bool ComboObjectPicker(const char* Label, T*& ObjectPtr, FObjectPickerSettings* Settings, FObjectPickerData* Data = nullptr)
 	{
-		return ComboObjectPicker(Label, T::StaticClass(), ObjectPtr, Settings, Data);
+		return ComboObjectPicker(Label, T::StaticClass(), reinterpret_cast<UObject*&>(ObjectPtr), Settings, Data);
 	}
 	IMGUI_WIDGETS_API bool ComboSoftObjectPicker(const char* Label, UClass* BaseClass, TSoftObjectPtr<UObject>& SoftObjectPtr, FObjectPickerSettings* Settings, FObjectPickerData* Data = nullptr);
 	template<typename T> requires std::is_base_of_v<UObject, T>
@@ -53,7 +54,7 @@ namespace UnrealImGui
 	template<typename T> requires std::is_base_of_v<AActor, T>
 	bool ComboActorPicker(UWorld* World, const char* Label, T*& ActorPtr, FActorPickerSettings* Settings = nullptr, FActorPickerData* Data = nullptr)
 	{
-		return ComboActorPicker(World, Label, T::StaticClass(), ActorPtr, Settings, Data);
+		return ComboActorPicker(World, Label, T::StaticClass(), reinterpret_cast<AActor*&>(ActorPtr), Settings, Data);
 	}
 	IMGUI_WIDGETS_API bool ComboSoftActorPicker(UWorld* World, const char* Label, const TSubclassOf<AActor>& BaseClass, TSoftObjectPtr<AActor>& SoftActorPtr, FActorPickerSettings* Settings = nullptr, FActorPickerData* Data = nullptr);
 	template<typename T> requires std::is_base_of_v<AActor, T>

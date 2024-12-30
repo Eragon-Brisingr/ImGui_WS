@@ -11,6 +11,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Blueprint/BlueprintSupport.h"
+#include "UObject/UObjectIterator.h"
 
 namespace UnrealImGui
 {
@@ -109,6 +110,31 @@ namespace UnrealImGui
 					}
 					return false;
 				});
+
+				if (Settings->bShowNonAssetRegistry)
+				{
+					const TSet<FAssetData> ExistAssetList{ CachedAssetList };
+					TArray<UObject*> Objects;
+					GetObjectsOfClass(BaseClass, Objects, true, RF_ClassDefaultObject | RF_ArchetypeObject | RF_NewerVersionExists);
+					for (UObject* Object : Objects)
+					{
+						const FAssetData Asset{ Object };
+						if (ExistAssetList.Contains(Asset))
+						{
+							continue;
+						}
+						if (Filter.IsEmpty() == false && Asset.AssetName.ToString().Contains(Filter) == false)
+						{
+							continue;
+						}
+						if (Settings->CustomFilter && Settings->CustomFilter(Asset))
+						{
+							continue;
+						}
+						CachedAssetList.Add(Asset);
+					}
+				}
+
 				CachedAssetList.Sort([](const FAssetData& LHS, const FAssetData& RHS)
 				{
 					return LHS.AssetName.FastLess(RHS.AssetName);
