@@ -41,7 +41,7 @@ UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
 enum class EImGuiChildFlags : int32
 {
 	None                   = ImGuiChildFlags_None                    ,
-	Border                 = ImGuiChildFlags_Border                  ,   // Show an outer border and enable WindowPadding. (IMPORTANT: this is always == 1 == true for legacy reason)
+	Borders                = ImGuiChildFlags_Borders                 ,   // Show an outer border and enable WindowPadding. (IMPORTANT: this is always == 1 == true for legacy reason)
 	AlwaysUseWindowPadding = ImGuiChildFlags_AlwaysUseWindowPadding  ,   // Pad with style.WindowPadding even if no border are drawn (no padding by default for non-bordered child windows because it makes more sense)
 	ResizeX                = ImGuiChildFlags_ResizeX                 ,   // Allow resize from right border (layout direction). Enable .ini saving (unless ImGuiWindowFlags_NoSavedSettings passed to window flags)
 	ResizeY                = ImGuiChildFlags_ResizeY                 ,   // Allow resize from bottom border (layout direction). "
@@ -51,6 +51,19 @@ enum class EImGuiChildFlags : int32
 	FrameStyle             = ImGuiChildFlags_FrameStyle              ,   // Style the child window like a framed item: use FrameBg, FrameRounding, FrameBorderSize, FramePadding instead of ChildBg, ChildRounding, ChildBorderSize, WindowPadding.
 };
 ENUM_CLASS_FLAGS(EImGuiChildFlags);
+
+UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
+enum class EImGuiItemFlags : int32
+{
+	None              = ImGuiItemFlags_None                     ,   // (Default)
+	NoTabStop         = ImGuiItemFlags_NoTabStop                ,   // false    // Disable keyboard tabbing. This is a "lighter" version of ImGuiItemFlags_NoNav.
+	NoNav             = ImGuiItemFlags_NoNav                    ,   // false    // Disable any form of focusing (keyboard/gamepad directional navigation and SetKeyboardFocusHere() calls).
+	NoNavDefaultFocus = ImGuiItemFlags_NoNavDefaultFocus        ,   // false    // Disable item being a candidate for default focus (e.g. used by title bar items).
+	ButtonRepeat      = ImGuiItemFlags_ButtonRepeat             ,   // false    // Any button-like behavior will have repeat mode enabled (based on io.KeyRepeatDelay and io.KeyRepeatRate values). Note that you can also call IsItemActive() after any button to tell if it is being held.
+	AutoClosePopups   = ImGuiItemFlags_AutoClosePopups          ,   // true     // MenuItem()/Selectable() automatically close their parent popup window.
+	AllowDuplicateId  = ImGuiItemFlags_AllowDuplicateId         ,   // false    // Allow submitting an item with the same identifier as an item already submitted this frame without triggering a warning tooltip if io.ConfigDebugHighlightIdConflicts is set.
+};
+ENUM_CLASS_FLAGS(EImGuiItemFlags);
 
 UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
 enum class EImGuiFocusedFlags : int32
@@ -150,11 +163,13 @@ enum class EImGuiCol : uint8
     ResizeGrip = ImGuiCol_ResizeGrip,            // Resize grip in lower-right and lower-left corners of windows.
     ResizeGripHovered = ImGuiCol_ResizeGripHovered,
     ResizeGripActive = ImGuiCol_ResizeGripActive,
-    Tab = ImGuiCol_Tab,                   // TabItem in a TabBar
-    TabHovered = ImGuiCol_TabHovered,
-    TabActive = ImGuiCol_TabActive,
-    TabUnfocused = ImGuiCol_TabUnfocused,
-    TabUnfocusedActive = ImGuiCol_TabUnfocusedActive,
+    TabHovered = ImGuiCol_TabHovered,            // Tab background, when hovered
+    Tab = ImGuiCol_Tab,                   // Tab background, when tab-bar is focused & tab is unselected
+    TabSelected = ImGuiCol_TabSelected,           // Tab background, when tab-bar is focused & tab is selected
+    TabSelectedOverline = ImGuiCol_TabSelectedOverline,   // Tab horizontal overline, when tab-bar is focused & tab is selected
+    TabDimmed = ImGuiCol_TabDimmed,             // Tab background, when tab-bar is unfocused & tab is unselected
+    TabDimmedSelected = ImGuiCol_TabDimmedSelected,     // Tab background, when tab-bar is unfocused & tab is selected
+    TabDimmedSelectedOverliImGuiCol_TabDimmedSelectedOverline,//..horizontal overline, when tab-bar is unfocused & tab is selected
     DockingPreview = ImGuiCol_DockingPreview,        // Preview overlay color when about to docking something
     DockingEmptyBg = ImGuiCol_DockingEmptyBg,        // Background color for empty node (e.g. CentralNode with no window docked into it)
     PlotLines = ImGuiCol_PlotLines,
@@ -166,9 +181,10 @@ enum class EImGuiCol : uint8
     TableBorderLight = ImGuiCol_TableBorderLight,      // Table inner borders (prefer using Alpha=1.0 here)
     TableRowBg = ImGuiCol_TableRowBg,            // Table row background (even rows)
     TableRowBgAlt = ImGuiCol_TableRowBgAlt,         // Table row background (odd rows)
+    TextLink = ImGuiCol_TextLink,              // Hyperlink color
     TextSelectedBg = ImGuiCol_TextSelectedBg,
     DragDropTarget = ImGuiCol_DragDropTarget,        // Rectangle highlighting a drop target
-    NavHighlight = ImGuiCol_NavHighlight,          // Gamepad/keyboard: current highlighted item
+    NavCursor = ImGuiCol_NavCursor,             // Color of keyboard/gamepad navigation cursor/rectangle, when visible
     NavWindowingHighlight = ImGuiCol_NavWindowingHighlight, // Highlight window when using CTRL+TAB
     NavWindowingDimBg = ImGuiCol_NavWindowingDimBg,     // Darken/colorize entire screen behind the CTRL+TAB window list, when active
     ModalWindowDimBg = ImGuiCol_ModalWindowDimBg,      // Darken/colorize entire screen behind a modal window, when one is active
@@ -331,7 +347,7 @@ UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
 enum class EImGuiSelectableFlags : int32
 {
 	None             = ImGuiSelectableFlags_None               ,
-	DontClosePopups  = ImGuiSelectableFlags_DontClosePopups    ,   // Clicking this doesn't close parent popup window
+	NoAutoClosePopups= ImGuiSelectableFlags_NoAutoClosePopups  ,   // Clicking this doesn't close parent popup window (overrides ImGuiItemFlags_AutoClosePopups)
 	SpanAllColumns   = ImGuiSelectableFlags_SpanAllColumns     ,   // Frame will span all columns of its container table (text will still fit in current column)
 	AllowDoubleClick = ImGuiSelectableFlags_AllowDoubleClick   ,   // Generate press events on double clicks too
 	Disabled         = ImGuiSelectableFlags_Disabled           ,   // Cannot be selected, display grayed out text
@@ -498,7 +514,6 @@ enum class EImGuiModKey
 	Shift    = ImGuiMod_Shift                  , // Shift
 	Alt      = ImGuiMod_Alt                    , // Option/Menu
 	Super    = ImGuiMod_Super                  , // Cmd/Super/Windows
-	Shortcut = ImGuiMod_Shortcut               , // Alias for Ctrl (non-macOS) _or_ Super (macOS).
 };
 ENUM_CLASS_FLAGS(EImGuiModKey);
 

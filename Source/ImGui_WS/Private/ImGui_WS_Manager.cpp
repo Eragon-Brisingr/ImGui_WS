@@ -168,7 +168,7 @@ public:
 
 	ImGuiContext* Context;
 	ImPlotContext* PlotContext;
-	decltype(ImGuiIO::SetClipboardTextFn) SetClipboardTextFn_DefaultImpl = nullptr;
+	decltype(ImGuiPlatformIO::Platform_SetClipboardTextFn) SetClipboardTextFn_DefaultImpl = nullptr;
 
 	FCriticalSection RecordCriticalSection;
 	TSharedPtr<ImGuiWS_Record::Session, ESPMode::ThreadSafe> RecordSession;
@@ -201,8 +201,8 @@ public:
 		ImGuiIO& IO = ImGui::GetIO();
 
 		IO.MouseDrawCursor = false;
-		SetClipboardTextFn_DefaultImpl = IO.SetClipboardTextFn;
-		IO.SetClipboardTextFn = [](void* user_data, const char* text)
+		SetClipboardTextFn_DefaultImpl = ImGui::GetPlatformIO().Platform_SetClipboardTextFn;
+		ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text)
 		{
 			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
 			const int32 Len = FCStringAnsi::Strlen(text);

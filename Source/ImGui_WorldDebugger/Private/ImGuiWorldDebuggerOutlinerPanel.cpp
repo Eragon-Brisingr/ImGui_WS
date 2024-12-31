@@ -208,7 +208,7 @@ void UImGuiWorldDebuggerOutlinerPanel::RefreshSortOrder()
 		for (int32 Idx = 0; Idx < Orders.Num() / 2; ++Idx)
 		{
 			const EOutlinerTableColumnID OutlinerTableColumnID = static_cast<EOutlinerTableColumnID>(Orders[Idx * 2]);
-			const ImGuiSortDirection_ SortDirection = static_cast<ImGuiSortDirection_>(Orders[Idx * 2 + 1]);
+			const ImGuiSortDirection SortDirection = static_cast<ImGuiSortDirection>(Orders[Idx * 2 + 1]);
 			if (SortDirection == ImGuiSortDirection_None)
 			{
 				continue;

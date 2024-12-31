@@ -265,7 +265,7 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 
 							constexpr uint32 SrcBpp = sizeof(uint32);
 							const uint32 SrcPitch = RT->SizeX * SrcBpp;
-							FRHITexture2D* Texture = RenderTargetResource->GetTexture2DRHI();
+							FRHITexture* Texture = RenderTargetResource->GetTexture2DRHI();
 							const FUpdateTextureRegion2D Region{ 0, 0, 0, 0, uint32(RT->SizeX), uint32(RT->SizeY) };
 							RHIUpdateTexture2D(
 								Texture,
@@ -510,19 +510,20 @@ void SImGuiPanel::SetTextFromVirtualKeyboard(const FText& InNewText, ETextEntryT
 
 void SImGuiPanel::SetSelectionFromVirtualKeyboard(int InSelStart, int SelEnd)
 {
-	ImGuiInputTextState& InputTextState = Context->InputTextState;
-	InputTextState.Stb.select_start = InSelStart;
-	InputTextState.Stb.select_end = SelEnd;
-	InputTextState.Stb.cursor = SelEnd;
-	InputTextState.CursorClamp();
+	// TODO: support virtual select
+	// ImGuiInputTextState& InputTextState = Context->InputTextState;
+	// InputTextState.Stb->select_start = InSelStart;
+	// InputTextState.Stb->select_end = SelEnd;
+	// InputTextState.Stb->cursor = SelEnd;
+	// InputTextState.CursorClamp();
 }
 
 FText SImGuiPanel::GetText() const
 {
 	const ImGuiInputTextState& InputTextState = Context->InputTextState;
-	TArray<ImWchar> WCharArray{ InputTextState.TextW.Data, InputTextState.TextW.size() };
-	WCharArray.Add(0);
-	const FString InputText{ WCharArray.GetData() };
+	TArray<char> WCharArray{ InputTextState.TextA.Data, InputTextState.TextA.size() };
+	WCharArray.Add('\0');
+	const FString InputText{ UTF8_TO_TCHAR(WCharArray.GetData()) };
 	return FText::FromString(InputText);
 }
 

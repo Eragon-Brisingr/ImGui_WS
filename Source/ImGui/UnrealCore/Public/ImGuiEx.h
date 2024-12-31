@@ -61,18 +61,11 @@ namespace ImGui
 		FORCEINLINE ~FStyleVar() { ImGui::PopStyleVar(); }
 	};
 
-	struct FTabStop : FNoncopyable
+	struct FItemFlagScope : FNoncopyable
 	{
 		[[nodiscard]]
-		FORCEINLINE FTabStop(bool tab_stop) { ImGui::PushTabStop(tab_stop); }
-		FORCEINLINE ~FTabStop() { ImGui::PopTabStop(); }
-	};
-
-	struct FButtonRepeat : FNoncopyable
-	{
-		[[nodiscard]]
-		FORCEINLINE FButtonRepeat(bool repeat) { ImGui::PushButtonRepeat(repeat); }
-		FORCEINLINE ~FButtonRepeat() { ImGui::PopButtonRepeat(); }
+		FORCEINLINE FItemFlagScope(ImGuiItemFlags option, bool enabled) { ImGui::PushItemFlag(option, enabled); }
+		FORCEINLINE ~FItemFlagScope() { ImGui::PopItemFlag(); }
 	};
 
 	struct FItemWidth : FNoncopyable

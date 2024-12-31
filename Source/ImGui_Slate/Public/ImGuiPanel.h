@@ -14,8 +14,6 @@ enum class EImGuiConfigFlags : int32
     None                 = ImGuiConfigFlags_None                   ,
     NavEnableKeyboard    = ImGuiConfigFlags_NavEnableKeyboard      ,   // Master keyboard navigation enable flag. Enable full Tabbing + directional arrows + space/enter to activate.
     NavEnableGamepad     = ImGuiConfigFlags_NavEnableGamepad       ,   // Master gamepad navigation enable flag. Backend also needs to set ImGuiBackendFlags_HasGamepad.
-    NavEnableSetMousePos = ImGuiConfigFlags_NavEnableSetMousePos   ,   // Instruct navigation to move the mouse cursor. May be useful on TV/console systems where moving a virtual mouse is awkward. Will update io.MousePos and set io.WantSetMousePos=true. If enabled you MUST honor io.WantSetMousePos requests in your backend, otherwise ImGui will react as if the mouse is jumping around back and forth.
-    NavNoCaptureKeyboard = ImGuiConfigFlags_NavNoCaptureKeyboard   ,   // Instruct navigation to not set the io.WantCaptureKeyboard flag when io.NavActive is set.
     NoMouse              = ImGuiConfigFlags_NoMouse                ,   // Instruct imgui to clear mouse position/buttons in NewFrame(). This allows ignoring the mouse information set by the backend.
     NoMouseCursorChange  = ImGuiConfigFlags_NoMouseCursorChange    ,   // Instruct backend to not alter mouse cursor shape and visibility. Use if the backend cursor changes are interfering with yours and you don't want to use SetMouseCursor() to change mouse cursor. You may want to honor requests from imgui by reading GetMouseCursor() yourself instead.
 

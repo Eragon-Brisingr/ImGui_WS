@@ -371,7 +371,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 			ImGui::OpenPopup("##CmdPopup");
 			if (ImGui::BeginPopup("##CmdPopup", ImGuiWindowFlags_ChildWindow))
 			{
-				ImGui::PushTabStop(false);
+				ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, false);
 
 				if (ImGui::BeginTable("##CmdPopupTable", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
 				{
@@ -403,7 +403,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 						ImGui::SetScrollHereY(1.f);
 					}
 				}
-				ImGui::PopTabStop();
+				ImGui::PopItemFlag();
 				ImGui::EndPopup();
 			}
 		}

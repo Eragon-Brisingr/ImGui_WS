@@ -115,7 +115,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealI
 				char DriveCh = Drives[Idx];
 				char NewDrive[] = { DriveCh, ':', '/', '\0' };
 
-				if (ImGui::Selectable(NewDrive, Idx == FileDialogState.FolderSelectIndex, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, 0)))
+				if (ImGui::Selectable(NewDrive, Idx == FileDialogState.FolderSelectIndex, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(-1, 0)))
 				{
 					FileDialogState.CurrentFile = "";
 					if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -154,7 +154,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealI
 
 			for (int32 Idx = 0; Idx < Folders.Num(); ++Idx)
 			{
-				if (ImGui::Selectable(Folders[Idx].path().stem().string().c_str(), Idx == FileDialogState.FolderSelectIndex, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, 0)))
+				if (ImGui::Selectable(Folders[Idx].path().stem().string().c_str(), Idx == FileDialogState.FolderSelectIndex, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(-1, 0)))
 				{
 					FileDialogState.CurrentFile = "";
 					if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -298,7 +298,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealI
 
 		for (int32 Idx = 0; Idx < Files.Num(); ++Idx)
 		{
-			if (ImGui::Selectable(Files[Idx].path().filename().string().c_str(), Idx == FileDialogState.FileSelectIndex, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, 0)))
+			if (ImGui::Selectable(Files[Idx].path().filename().string().c_str(), Idx == FileDialogState.FileSelectIndex, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(-1, 0)))
 			{
 				FileDialogState.FileSelectIndex = Idx;
 				FileDialogState.CurrentFile = UTF8_TO_TCHAR(Files[Idx].path().filename().string().c_str());

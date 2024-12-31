@@ -225,24 +225,6 @@ public:
 		if (!CheckImGuiContextThrowError()) { return {}; }
 		return FVector2D{ ImGui::GetContentRegionAvail() };
 	}
-	UFUNCTION(BlueprintPure, Category="ImGui|Content region", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static FVector2D GetContentRegionMax()
-	{
-		if (!CheckImGuiContextThrowError()) { return {}; }
-		return FVector2D{ ImGui::GetContentRegionMax() };
-	}
-	UFUNCTION(BlueprintPure, Category="ImGui|Content region", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static FVector2D GetWindowContentRegionMin()
-	{
-		if (!CheckImGuiContextThrowError()) { return {}; }
-		return FVector2D{ ImGui::GetWindowContentRegionMin() };
-	}
-	UFUNCTION(BlueprintPure, Category="ImGui|Content region", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static FVector2D GetWindowContentRegionMax()
-	{
-		if (!CheckImGuiContextThrowError()) { return {}; }
-		return FVector2D{ ImGui::GetWindowContentRegionMax() };
-	}
 
 	UFUNCTION(BlueprintPure, Category="ImGui|Content region", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static float GetScrollX()
@@ -336,28 +318,16 @@ public:
 		ImGui::PopStyleVar(Count);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Parameters stacks", meta=(ImGuiScopeExit = PopTabStop, DisplayName = "Tab Stop"), BlueprintInternalUseOnly)
-	static void PushTabStop(bool TabStop)
+	static void PushItemFlag(EImGuiItemFlags Option, bool TabStop)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::PushTabStop(TabStop);
+		ImGui::PushItemFlag((ImGuiItemFlags)Option, TabStop);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Parameters stacks", BlueprintInternalUseOnly)
-	static void PopTabStop()
+	static void PopItemFlag()
 	{
 		if (!ImGui::GetCurrentContext()) { return; }
-		ImGui::PopTabStop();
-	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Parameters stacks", meta=(ImGuiScopeExit = PopButtonRepeat, DisplayName = "Button Repeat"), BlueprintInternalUseOnly)
-	static void PushButtonRepeat(bool Repeat)
-	{
-		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::PushButtonRepeat(Repeat);
-	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Parameters stacks", BlueprintInternalUseOnly)
-	static void PopButtonRepeat()
-	{
-		if (!ImGui::GetCurrentContext()) { return; }
-		ImGui::PopButtonRepeat();
+		ImGui::PopItemFlag();
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Parameters stacks", meta=(ImGuiScopeExit = PopItemWidth, DisplayName = "Item Width"), BlueprintInternalUseOnly)
