@@ -162,9 +162,9 @@ void UUnrealImGuiViewportNavMeshExtent::DrawViewportContent(UObject* Owner, cons
 			{
 				for (int32 TileIdx = 0; TileIdx < DetourNavMesh->getMaxTiles(); ++TileIdx)
 				{
-					const FBox TileBounds = RecastNavMesh->GetNavMeshTileBounds(TileIdx);
-
 					dtMeshTile const* const Tile = DetourNavMesh->getTile(TileIdx);
+					const FBox TileBounds = RecastNavMesh->GetNavMeshTileBounds(FNavTileRef{ DetourNavMesh->getTileRef(Tile) });
+
 					if (Tile != nullptr && Tile->header != nullptr)
 					{
 						dtMeshHeader const* const Header = Tile->header;

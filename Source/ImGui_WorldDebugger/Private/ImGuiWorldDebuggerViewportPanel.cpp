@@ -176,7 +176,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Unregister(UObject* Owner, UUnrealI
 	if (const UWorld* World = Owner->GetWorld())
 	{
 		World->RemoveOnActorSpawnedHandler(OnActorSpawnedHandle);
-		World->RemoveOnActorDestroyededHandler(OnActorDestroyedHandle);
+		World->RemoveOnActorDestroyedHandler(OnActorDestroyedHandle);
 	}
 	FWorldDelegates::LevelAddedToWorld.Remove(OnLevelAddHandle);
 }

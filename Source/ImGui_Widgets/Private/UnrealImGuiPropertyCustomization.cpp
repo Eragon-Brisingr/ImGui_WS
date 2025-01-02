@@ -913,7 +913,7 @@ namespace UnrealImGui
 			if (ImGui::Button("+"))
 			{
 				TArray<uint8> AddElem;
-				AddElem.SetNumUninitialized(SetProperty->ElementProp->ElementSize);
+				AddElem.SetNumUninitialized(SetProperty->ElementProp->GetElementSize());
 				SetProperty->ElementProp->InitializeValue(AddElem.GetData());
 				for (const uint8* Container : Containers)
 				{
@@ -1086,10 +1086,10 @@ namespace UnrealImGui
 			if (ImGui::Button("+"))
 			{
 				TArray<uint8> KeyElem;
-				KeyElem.SetNumUninitialized(MapProperty->KeyProp->ElementSize);
+				KeyElem.SetNumUninitialized(MapProperty->KeyProp->GetElementSize());
 				MapProperty->KeyProp->InitializeValue(KeyElem.GetData());
 				TArray<uint8> ValueElem;
-				ValueElem.SetNumUninitialized(MapProperty->ValueProp->ElementSize);
+				ValueElem.SetNumUninitialized(MapProperty->ValueProp->GetElementSize());
 				MapProperty->ValueProp->InitializeValue(ValueElem.GetData());
 				for (const uint8* Container : Containers)
 				{
