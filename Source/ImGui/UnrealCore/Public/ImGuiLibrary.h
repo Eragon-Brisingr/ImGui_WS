@@ -317,7 +317,7 @@ public:
 		if (!ImGui::GetCurrentContext()) { return; }
 		ImGui::PopStyleVar(Count);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Parameters stacks", meta=(ImGuiScopeExit = PopTabStop, DisplayName = "Tab Stop"), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Parameters stacks", meta=(ImGuiScopeExit = PopItemFlag, DisplayName = "Tab Stop"), BlueprintInternalUseOnly)
 	static void PushItemFlag(EImGuiItemFlags Option, bool TabStop)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
