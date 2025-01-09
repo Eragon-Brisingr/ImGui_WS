@@ -170,7 +170,7 @@ private:
 	FData* Data;
 };
 
-UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig)
+UCLASS(Abstract, Config = GameUserSettings, PerObjectConfig)
 class IMGUI_UNREALLAYOUT_API UUnrealImGuiViewportExtentBase : public UObject
 {
 	GENERATED_BODY()

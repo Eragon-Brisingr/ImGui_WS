@@ -41,7 +41,7 @@ public:
 	bool bMaximize = false;
 };
 
-UCLASS(Config = ImGuiPanelUserConfig, PerObjectConfig)
+UCLASS(Config = GameUserSettings, PerObjectConfig)
 class UImGuiLocalPanelManagerConfig : public UObject
 {
 	GENERATED_BODY()

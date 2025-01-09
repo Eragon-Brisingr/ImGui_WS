@@ -19,7 +19,7 @@ namespace ImGuiWorldDebuggerBootstrap
 	void RequireDestroyDebugger();
 }
 
-UCLASS(Transient, Config = ImGuiPanelUserConfig)
+UCLASS(Transient, Config = GameUserSettings)
 class IMGUI_WORLDDEBUGGER_API AImGuiWorldDebuggerBase : public AActor
 {
 	GENERATED_BODY()

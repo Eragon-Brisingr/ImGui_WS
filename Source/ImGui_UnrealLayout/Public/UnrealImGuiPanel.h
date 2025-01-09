@@ -41,7 +41,7 @@ struct FImGuiDefaultDockLayout : public FImGuiDefaultPanelState
 	int32 DockId = 0;
 };
 
-UCLASS(Abstract, Config = ImGuiPanelUserConfig, PerObjectConfig, Blueprintable)
+UCLASS(Abstract, Config = GameUserSettings, PerObjectConfig, Blueprintable)
 class IMGUI_UNREALLAYOUT_API UUnrealImGuiPanelBase : public UObject
 {
 	GENERATED_BODY()
@@ -122,7 +122,7 @@ protected:
 	void ReceiveDraw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
 };
 
-UCLASS(Abstract, Config = ImGuiPanelUserConfig, Blueprintable)
+UCLASS(Abstract, Config = GameUserSettings, Blueprintable)
 class IMGUI_UNREALLAYOUT_API UUnrealImGuiPanelGlobalConfig : public UObject
 {
 	GENERATED_BODY()
