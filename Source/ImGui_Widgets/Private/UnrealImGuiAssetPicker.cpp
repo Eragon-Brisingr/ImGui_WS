@@ -15,6 +15,24 @@
 
 namespace UnrealImGui
 {
+	template<typename TActivatedFunc>
+	struct FComboEx : FNoncopyable
+	{
+		[[nodiscard]]
+		FORCEINLINE FComboEx(const char* label, const char* preview_value, TActivatedFunc&& ActivatedFunc)
+			: State{ ImGui::BeginCombo(label, preview_value) }
+		{
+			if (ImGui::IsItemActivated())
+			{
+				ActivatedFunc();
+			}
+		}
+		FORCEINLINE ~FComboEx() { if (State) { ImGui::EndCombo(); } }
+		explicit operator bool() const noexcept { return State; }
+	private:
+		bool State;
+	};
+	
 	bool FilterByPath(const FString& PackagePath, bool bShowDeveloperContent, bool bShowEngineContent)
 	{
 		if (!bShowDeveloperContent)
@@ -51,7 +69,12 @@ namespace UnrealImGui
 		auto& CachedAssetClass = Data->CachedAssetClass;
 		auto& CachedAssetList = Data->CachedAssetList;
 		bool bValueChanged = false;
-		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
+		if (auto Combo = FComboEx(Label, PreviewValue, [&]
+		{
+			FilterString.Reset();
+			CachedAssetClass = nullptr;
+			CachedAssetList.Empty();
+		}))
 		{
 			ImGui::FIdScope IdScope{ Label };
 			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 7.f);
@@ -175,12 +198,6 @@ namespace UnrealImGui
 				ImGui::CloseCurrentPopup();
 			}
 		}
-		else
-		{
-			FilterString.Reset();
-			CachedAssetClass = nullptr;
-			CachedAssetList.Empty();
-		}
 		return bValueChanged;
 	}
 
@@ -240,7 +257,12 @@ namespace UnrealImGui
 		auto& CachedActorClass = Data->CachedActorClass;
 		auto& CachedActorList = Data->CachedActorList;
 		bool bValueChanged = false;
-		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
+		if (auto Combo = FComboEx(Label, PreviewValue, [&]
+		{
+			FilterString.Reset();
+			CachedActorClass = nullptr;
+			CachedActorList.Empty();
+		}))
 		{
 			ImGui::FIdScope IdScope{ Label };
 			ImGui::SetNextItemWidth(-1);
@@ -318,12 +340,6 @@ namespace UnrealImGui
 			{
 				ImGui::CloseCurrentPopup();
 			}
-		}
-		else
-		{
-			FilterString.Reset();
-			CachedActorClass = nullptr;
-			CachedActorList.Empty();
 		}
 		return bValueChanged;
 	}
@@ -422,7 +438,12 @@ namespace UnrealImGui
 		auto& CachedClass = Data->CachedClass;
 		auto& CachedClassList = Data->CachedClassList;
 		bool bValueChanged = false;
-		if (auto Combo = ImGui::FCombo(Label, PreviewValue))
+		if (auto Combo = FComboEx(Label, PreviewValue, [&]
+		{
+			FilterString.Reset();
+			CachedClass = nullptr;
+			CachedClassList.Empty();
+		}))
 		{
 			ImGui::FIdScope IdScope{ Label };
 			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 7.f);
@@ -557,12 +578,6 @@ namespace UnrealImGui
 			{
 				ImGui::CloseCurrentPopup();
 			}
-		}
-		else
-		{
-			FilterString.Reset();
-			CachedClass = nullptr;
-			CachedClassList.Empty();
 		}
 		return bValueChanged;
 	}
