@@ -28,12 +28,12 @@ namespace UnrealImGui
 
 	struct IMGUI_WIDGETS_API FBoolPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FNumericPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FObjectPropertyBaseCustomization : IUnrealPropertyCustomization
@@ -43,10 +43,10 @@ namespace UnrealImGui
 			bOverrideHasChildProperties = true;
 		}
 
-		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FObjectPropertyCustomization : FObjectPropertyBaseCustomization {};
@@ -55,37 +55,37 @@ namespace UnrealImGui
 
 	struct IMGUI_WIDGETS_API FSoftObjectPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FClassPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FSoftClassPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FStringPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FNamePropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FTextPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FEnumPropertyCustomization : IUnrealPropertyCustomization
 	{
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FArrayPropertyCustomization : IUnrealPropertyCustomization
@@ -95,10 +95,10 @@ namespace UnrealImGui
 			bOverrideHasChildProperties = true;
 		}
 
-		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FSetPropertyCustomization : IUnrealPropertyCustomization
@@ -108,10 +108,10 @@ namespace UnrealImGui
 			bOverrideHasChildProperties = true;
 		}
 
-		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FMapPropertyCustomization : IUnrealPropertyCustomization
@@ -121,10 +121,10 @@ namespace UnrealImGui
 			bOverrideHasChildProperties = true;
 		}
 
-		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 
 	struct IMGUI_WIDGETS_API FStructPropertyCustomization : IUnrealPropertyCustomization
@@ -134,8 +134,8 @@ namespace UnrealImGui
 			bHasChildProperties = true;
 		}
 
-		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
-		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const override;
+		bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
+		void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override;
 	};
 }

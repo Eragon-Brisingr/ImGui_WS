@@ -12,12 +12,14 @@ namespace UnrealImGui
 	struct IUnrealStructCustomization;
 	struct IUnrealPropertyCustomization;
 
+	DECLARE_DELEGATE_OneParam(FPostPropertyValueChanged, const FProperty*);
+	
 	namespace GlobalValue
 	{
 		IMGUI_WIDGETS_API extern bool GEnableEditVisibleProperty;
 		IMGUI_WIDGETS_API extern bool GDisplayAllProperties;
 	}
-	
+
 	constexpr int32 ArrayInlineAllocateSize = 1;
 	using FPtrArray = TArray<uint8*, TInlineAllocator<ArrayInlineAllocateSize>>;
 	template<typename T>
@@ -56,9 +58,6 @@ namespace UnrealImGui
 		constexpr float ValueRightBaseWidth = -10.f;
 		constexpr float ContainerValueRightWidth = ValueRightBaseWidth - 30.f;
 
-		extern FObjectArray GOuters;
-		extern const FDetailsFilter* GFilter;
-
 		struct FFilterCacheKey
 		{
 			const void* MemoryKey;
@@ -67,11 +66,18 @@ namespace UnrealImGui
 			friend uint32 GetTypeHash(const FFilterCacheKey& Key) { return PointerHash(Key.MemoryKey); }
 		};
 		extern TMap<FFilterCacheKey, bool> FilterCacheMap;
-		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization, const TSharedPtr<IUnrealStructCustomization>& Customization);
-		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization);
+		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization, const TSharedPtr<IUnrealStructCustomization>& Customization);
+		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization);
 	}
+	
+	DECLARE_DELEGATE_FiveParams(FPostPropertyNameWidgetCreated, const FProperty* /*Property*/, const FPtrArray& /*Containers*/, int32 /*Offset*/, bool /*bIsIdentical*/, bool /*bHasChildProperties*/);
+	struct IMGUI_WIDGETS_API FPostPropertyNameCreatedScope
+	{
+		FPostPropertyNameCreatedScope(const FPostPropertyNameWidgetCreated& PostPropertyNameCreated);
+		TGuardValue<FPostPropertyNameWidgetCreated> Guard;
+	};
 
-	struct IMGUI_WIDGETS_API IUnrealPropertyCustomization : public TSharedFromThis<IUnrealPropertyCustomization>
+	struct IMGUI_WIDGETS_API IUnrealPropertyCustomization : TSharedFromThis<IUnrealPropertyCustomization>
 	{
 		IUnrealPropertyCustomization()
 			: bHasChildProperties(false)
@@ -83,33 +89,33 @@ namespace UnrealImGui
 		uint8 bHasChildProperties : 1;
 		uint8 bOverrideHasChildProperties : 1;
 
-		virtual bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const;
-		bool HasChildProperties(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const
+		virtual bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const;
+		bool HasChildProperties(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const
 		{
-			return bOverrideHasChildProperties ? HasChildPropertiesOverride(Property, Containers, Offset, IsIdentical) : bHasChildProperties;
+			return bOverrideHasChildProperties ? HasChildPropertiesOverride(Property, Containers, Offset, bIsIdentical) : bHasChildProperties;
 		}
 		
-		virtual bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const { return false; }
-		virtual void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const = 0;
-		virtual void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const {}
+		virtual bool HasChildPropertiesOverride(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const { return false; }
+		virtual void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const = 0;
+		virtual void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const {}
 
 		virtual ~IUnrealPropertyCustomization() {}
 	};
 
-	struct IMGUI_WIDGETS_API IUnrealStructCustomization : public TSharedFromThis<IUnrealStructCustomization>
+	struct IMGUI_WIDGETS_API IUnrealStructCustomization : TSharedFromThis<IUnrealStructCustomization>
 	{
 		// 值控件右侧剩余空间
 		int32 ValueAdditiveRightWidth = 0;
 
-		virtual bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const;
-		virtual void CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool& IsShowChildren) const;
-		virtual void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const = 0;
-		virtual void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical) const {}
+		virtual bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const;
+		virtual void CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool& bIsShowChildren) const;
+		virtual void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const = 0;
+		virtual void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const {}
 
 		virtual ~IUnrealStructCustomization() {}
 	};
 
-	struct IMGUI_WIDGETS_API IUnrealDetailsCustomization : public TSharedFromThis<IUnrealDetailsCustomization>
+	struct IMGUI_WIDGETS_API IUnrealDetailsCustomization : TSharedFromThis<IUnrealDetailsCustomization>
 	{
 		virtual void CreateClassDetails(const UClass* Class, const FObjectArray& Containers, int32 Offset) const;
 
@@ -139,12 +145,12 @@ namespace UnrealImGui
 			ClassCustomizeMap.Add(Class, Customization);
 		}
 
-		struct FPropertyCustomizerScoped
+		struct FPropertyCustomizerScope
 		{
 			FFieldClass* FieldClass;
 			TSharedPtr<IUnrealPropertyCustomization> Customization;
 
-			FPropertyCustomizerScoped(FFieldClass* FieldClass, const TSharedRef<IUnrealPropertyCustomization>& InCustomization)
+			FPropertyCustomizerScope(FFieldClass* FieldClass, const TSharedRef<IUnrealPropertyCustomization>& InCustomization)
 				: FieldClass(FieldClass)
 			{
 				if (const TSharedRef<IUnrealPropertyCustomization>* ExistedCustomization = PropertyCustomizeMap.Find(FieldClass))
@@ -153,7 +159,7 @@ namespace UnrealImGui
 				}
 				PropertyCustomizeMap.Add(FieldClass, InCustomization);
 			}
-			~FPropertyCustomizerScoped()
+			~FPropertyCustomizerScope()
 			{
 				if (Customization.IsValid())
 				{
@@ -166,12 +172,12 @@ namespace UnrealImGui
 			}
 		};
 
-		struct FStructCustomizerScoped
+		struct FStructCustomizerScope
 		{
 			UStruct* Struct;
 			TSharedPtr<IUnrealStructCustomization> Customization;
 
-			FStructCustomizerScoped(UStruct* Struct, const TSharedRef<IUnrealStructCustomization>& InCustomization)
+			FStructCustomizerScope(UStruct* Struct, const TSharedRef<IUnrealStructCustomization>& InCustomization)
 				: Struct(Struct)
 			{
 				if (const TSharedRef<IUnrealStructCustomization>* ExistedCustomization = StructCustomizeMap.Find(Struct))
@@ -180,7 +186,7 @@ namespace UnrealImGui
 				}
 				StructCustomizeMap.Add(Struct, InCustomization);
 			}
-			~FStructCustomizerScoped()
+			~FStructCustomizerScope()
 			{
 				if (Customization.IsValid())
 				{
@@ -193,12 +199,12 @@ namespace UnrealImGui
 			}
 		};
 
-		struct FClassCustomizerScoped
+		struct FClassCustomizerScope
 		{
 			UClass* Class;
 			TSharedPtr<IUnrealDetailsCustomization> Customization;
 
-			FClassCustomizerScoped(UClass* Class, const TSharedRef<IUnrealDetailsCustomization>& InCustomization)
+			FClassCustomizerScope(UClass* Class, const TSharedRef<IUnrealDetailsCustomization>& InCustomization)
 				: Class(Class)
 			{
 				if (const TSharedRef<IUnrealDetailsCustomization>* ExistedCustomization = ClassCustomizeMap.Find(Class))
@@ -207,7 +213,7 @@ namespace UnrealImGui
 				}
 				ClassCustomizeMap.Add(Class, InCustomization);
 			}
-			~FClassCustomizerScoped()
+			~FClassCustomizerScope()
 			{
 				if (Customization.IsValid())
 				{
@@ -226,8 +232,6 @@ namespace UnrealImGui
 		static TMap<UClass*, TSharedRef<IUnrealDetailsCustomization>> ClassCustomizeMap;
 	};
 
-	DECLARE_DELEGATE_OneParam(FPostPropertyValueChanged, const FProperty*);
-	
 	inline bool IsPropertyShow(const FProperty* Property)
 	{
 		if (GlobalValue::GDisplayAllProperties)
@@ -237,12 +241,12 @@ namespace UnrealImGui
 		return Property->HasAllPropertyFlags(CPF_Edit) && Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance) == false;
 	}
 
-	IMGUI_WIDGETS_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool IsIdentical, bool HasChildProperties, bool& IsShowChildren, const FString* NameOverride = nullptr);
+	IMGUI_WIDGETS_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool bHasChildProperties, bool& bIsShowChildren, const FString* NameOverride = nullptr);
 	
 	IMGUI_WIDGETS_API void AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
 
-	IMGUI_WIDGETS_API void DrawDefaultStructDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
-	IMGUI_WIDGETS_API void DrawDefaultClassDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);
+	IMGUI_WIDGETS_API void DrawStructDefaultDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
+	IMGUI_WIDGETS_API void DrawClassDefaultDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);
 	
 	IMGUI_WIDGETS_API void DrawStructCustomizationDetails(const TSharedPtr<IUnrealStructCustomization>& Customization, const UScriptStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 
@@ -264,6 +268,6 @@ namespace UnrealImGui
 	IMGUI_WIDGETS_API const UStruct* GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct = nullptr);
 	
 	IMGUI_WIDGETS_API bool IsAllPropertiesIdentical(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
-	IMGUI_WIDGETS_API inline FString GetPropertyValueLabel(const FProperty* Property, bool IsIdentical) { return IsIdentical ? TEXT("##") + Property->GetName() : TEXT("*##") + Property->GetName(); }
+	IMGUI_WIDGETS_API inline FString GetPropertyValueLabel(const FProperty* Property, bool bIsIdentical) { return bIsIdentical ? TEXT("##") + Property->GetName() : TEXT("*##") + Property->GetName(); }
 	IMGUI_WIDGETS_API void NotifyPostPropertyValueChanged(const FProperty* Property);
 }
