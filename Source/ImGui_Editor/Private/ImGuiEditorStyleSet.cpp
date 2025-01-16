@@ -38,8 +38,8 @@ FImGuiEditorStyleSet::FImGuiEditorStyleSet()
 	: FSlateStyleSet(StyleName)
 {
 	SetParentStyleName(FAppStyle::GetAppStyleSetName());
-	FString Path = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir() / TEXT("Resources");
-	FSlateStyleSet::SetContentRoot(IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir() / TEXT("Resources"));
+	const FString Path = IPluginManager::Get().FindPlugin(TEXT("ImGui_WS"))->GetBaseDir() / TEXT("Resources");
+	FSlateStyleSet::SetContentRoot(Path);
 
 	Set(ImGuiIconName, new FSlateVectorImageBrush(FSlateStyleSet::RootToContentDir(TEXT("ImGui.svg")), CoreStyleConstants::Icon16x16));
 	
