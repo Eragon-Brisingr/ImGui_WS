@@ -16,7 +16,6 @@ enum ImGuiToastType_
 
 namespace ImGui
 {
-	IMGUI_API void MergeIconsWithLatestFont(ImFontAtlas& FontAtlas, float font_size, float dpi, bool FontDataOwnedByAtlas = false);
 	IMGUI_API void RenderNotifications();
 
 	IMGUI_API void InsertNotification(ImGuiToastType type, const char* format, ...);

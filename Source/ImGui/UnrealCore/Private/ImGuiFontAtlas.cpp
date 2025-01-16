@@ -3,9 +3,10 @@
 
 #include "ImGuiFontAtlas.h"
 
+#include "fa-solid-900.h"
+#include "IconsFontAwesome.h"
 #include "imgui.h"
 #include "ImGuiSettings.h"
-#include "imgui_notify.h"
 #include "UnrealImGuiString.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Interfaces/IPluginManager.h"
@@ -65,8 +66,14 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 		FCStringAnsi::Strcpy(FontConfig.Name, FontName.Len() + 1, FontName.GetData());
 		FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), Settings->FontSize, &FontConfig);
 
-		// Initialize notify
-		ImGui::MergeIconsWithLatestFont(FontAtlas, Settings->FontSize, FontConfig.RasterizerDensity, false);
+		// FontAwesome Icon
+		const int32 IconFontSize = Settings->FontSize;
+		static constexpr ImWchar iconsRanges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+		ImFontConfig IconsConfig;
+		IconsConfig.MergeMode = true;
+		IconsConfig.PixelSnapH = true;
+		IconsConfig.GlyphMinAdvanceX = IconFontSize;
+		FontAtlas.AddFontFromMemoryCompressedTTF(fa_solid_900_compressed_data, fa_solid_900_compressed_size, IconFontSize, &IconsConfig, iconsRanges);
 
 		// build font
 		FontAtlas.Build();

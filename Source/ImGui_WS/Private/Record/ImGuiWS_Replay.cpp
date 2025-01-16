@@ -3,7 +3,7 @@
 
 #include "ImGuiWS_Replay.h"
 
-#include "font_awesome_5.h"
+#include "IconsFontAwesome.h"
 #include "imgui.h"
 
 namespace ImGuiWS_Record

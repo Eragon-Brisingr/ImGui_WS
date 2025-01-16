@@ -9,8 +9,7 @@
 
 #include <vector>
 #include <string>
-#include "font_awesome_5.h"
-#include "fa_solid_900.h"
+#include "IconsFontAwesome.h"
 #include "imgui.h"
 #include "HAL/PlatformTime.h"
 
@@ -133,13 +132,13 @@ public:
 		case ImGuiToastType_None:
 			return NULL;
 		case ImGuiToastType_Success:
-			return ICON_FA_CHECK_CIRCLE;
+			return ICON_FA_CIRCLE;
 		case ImGuiToastType_Warning:
-			return ICON_FA_EXCLAMATION_TRIANGLE;
+			return ICON_FA_TRIANGLE_EXCLAMATION;
 		case ImGuiToastType_Error:
-			return ICON_FA_TIMES_CIRCLE;
+			return ICON_FA_CIRCLE_EXCLAMATION;
 		case ImGuiToastType_Info:
-			return ICON_FA_INFO_CIRCLE;
+			return ICON_FA_CIRCLE_INFO;
 		}
 		return nullptr;
 	}
@@ -339,23 +338,6 @@ namespace ImGui
 			// End
 			End();
 		}
-	}
-
-	/// <summary>
-	/// Adds font-awesome font, must be called ONCE on initialization
-	/// <param name="FontDataOwnedByAtlas">Fonts are loaded from read-only memory, should be set to false!</param>
-	/// </summary>
-	void MergeIconsWithLatestFont(ImFontAtlas& FontAtlas, float font_size, float dpi, bool FontDataOwnedByAtlas)
-	{
-		static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-
-		ImFontConfig icons_config;
-		icons_config.MergeMode = true;
-		icons_config.PixelSnapH = true;
-		icons_config.FontDataOwnedByAtlas = FontDataOwnedByAtlas;
-		icons_config.RasterizerDensity = dpi;
-
-		FontAtlas.AddFontFromMemoryTTF((void*)fa_solid_900, sizeof(fa_solid_900), font_size, &icons_config, icons_ranges);
 	}
 }
 
