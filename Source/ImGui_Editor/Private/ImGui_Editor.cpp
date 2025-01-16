@@ -3,6 +3,7 @@
 #include "ImGui_Editor.h"
 
 #include "Editor.h"
+#include "ImGuiEditorStyleSet.h"
 #include "ImGui_WS_Manager.h"
 #include "Selection.h"
 #include "ToolMenus.h"
@@ -21,6 +22,8 @@ void FImGui_EditorModule::StartupModule()
 		return;
 	}
 
+	FImGuiEditorStyleSet::Initialize();
+	
 	const FMargin Padding{ 0.f, 0.f, 2.f, 0.f };
 	static FButtonStyle ButtonStyle = FButtonStyle{ FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("Button") }
 		.SetNormalPadding(Padding)
@@ -115,7 +118,7 @@ void FImGui_EditorModule::StartupModule()
 
 void FImGui_EditorModule::ShutdownModule()
 {
-
+	FImGuiEditorStyleSet::Shutdown();
 }
 
 #undef LOCTEXT_NAMESPACE

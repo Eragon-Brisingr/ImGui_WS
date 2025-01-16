@@ -15,7 +15,6 @@
 #include "WorkspaceMenuStructure.h"
 #include "WorkspaceMenuStructureModule.h"
 #include "HAL/PlatformFileManager.h"
-#include "Styling/AppStyle.h"
 #include "Textures/SlateIcon.h"
 #include "Widgets/Docking/SDockTab.h"
 
@@ -27,7 +26,7 @@ void FImGui_UnrealPanelsEditorModule::StartupModule()
 		TEXT("ImGuiPanelsGroup"),
 		LOCTEXT("WorkspaceMenu_ImGuiPanelsGroup", "ImGui Panels"),
 		LOCTEXT("ImGuiPanelsGroupTooltipText", "Custom UI created with ImGui panel."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("WidgetReflector.TabIcon")),
+		FSlateIcon(FSlateIcon("ImGuiEditorStyle", TEXT("ImGui.Icon"))),
 		false);
 
 	if (FLevelEditorModule* LevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>(TEXT("LevelEditor")))
@@ -391,7 +390,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 				.SetDisplayName(FText::FromName(Panel.Name))
 				.SetTooltipText(FText::FromString(Panel.Class.ToString()))
 				.SetGroup(Group)
-				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("WidgetReflector.TabIcon")));
+				.SetIcon(FSlateIcon("ImGuiEditorStyle", TEXT("ImGui.Icon")));
 			}
 		}
 	};
