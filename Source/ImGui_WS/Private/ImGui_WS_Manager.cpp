@@ -194,11 +194,12 @@ public:
 		ImGuiContext* PrevContext = ImGui::GetCurrentContext();
 		Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
 		ImGui::SetCurrentContext(Context);
+		ImGuiIO& IO = Context->IO;
+		IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
 		ON_SCOPE_EXIT
 		{
 			ImGui::SetCurrentContext(PrevContext);
 		};
-		ImGuiIO& IO = ImGui::GetIO();
 
 		IO.MouseDrawCursor = false;
 		SetClipboardTextFn_DefaultImpl = ImGui::GetPlatformIO().Platform_SetClipboardTextFn;
@@ -623,6 +624,8 @@ public:
 				{
 					ImGui::Checkbox("ImGui Demo", &State.bShowImGuiDemo);
 					ImGui::Checkbox("ImPlot Demo", &State.bShowPlotDemo);
+
+					UnrealImGui::DrawGlobalDPISettings();
 
 					ImGui::Separator();
 					if (RecordSession.IsValid() == false)

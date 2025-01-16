@@ -10,4 +10,9 @@ namespace UnrealImGui
 {
 	IMGUI_API ImFontAtlas& GetDefaultFontAtlas();
 	constexpr uint32 FontTextId = 0;
+
+	IMGUI_API float GetSystemDPIScale();
+	IMGUI_API float GetGlobalDPIScale();
+
+	IMGUI_API void DrawGlobalDPISettings();
 }

@@ -39,7 +39,10 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = PerUserSettings, meta = (ConfigRestartRequired = true))
 	bool bOverrideDPIScale = false;
 	UPROPERTY(EditAnywhere, Config, Category = PerUserSettings, meta = (ConfigRestartRequired = true, EditCondition = bOverrideDPIScale))
-	float DPIScale = 1.5f;
+	float OverrideDPIScale = 1.5f;
+
+	UPROPERTY(Config)
+	TMap<TSoftClassPtr<UObject>, float> CustomPanelDPIScaleMap;
 
 #if WITH_EDITOR
 	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

@@ -16,29 +16,14 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 	static ImFontAtlas DefaultFontAtlas = []
 	{
 		const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
-		const UImGuiPerUserSettingsSettings* PreUserSettings = Settings->PreUserSettings;
 
-		const bool bIsDedicatedServer = !GIsClient && GIsServer;
-		const bool bOverrideDPIScale = PreUserSettings->bOverrideDPIScale || bIsDedicatedServer;
-		const float DPIScale = bOverrideDPIScale ? PreUserSettings->DPIScale : FPlatformApplicationMisc::GetDPIScaleFactorAtPoint(0, 0);
-#if WITH_EDITOR
-		if (GIsEditor && !bOverrideDPIScale)
-		{
-			UImGuiPerUserSettingsSettings* PreUser = GetMutableDefault<UImGuiPerUserSettingsSettings>();
-			if (PreUser->DPIScale != DPIScale)
-			{
-				PreUser->DPIScale = DPIScale;
-				PreUser->SaveConfig();
-			}
-		}
-#endif
-		
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT(UE_PLUGIN_NAME));
 		const FString PluginResourcesPath = Plugin->GetBaseDir() / TEXT("Resources");
 
 		ImFontAtlas FontAtlas;
 		ImFontConfig FontConfig;
 		FontConfig.FontDataOwnedByAtlas = false;
+		FontConfig.RasterizerDensity = GetGlobalDPIScale();
 		switch (Settings->FontGlyphRanges)
 		{
 		case EImGuiFontGlyphRanges::Default:
@@ -78,10 +63,10 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 		ensure(FFileHelper::LoadFileToArray(Bin, *FontPath));
 		FUTF8String FontName{ Settings->FontName };
 		FCStringAnsi::Strcpy(FontConfig.Name, FontName.Len() + 1, FontName.GetData());
-		FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), Settings->FontSize * DPIScale, &FontConfig);
+		FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), Settings->FontSize, &FontConfig);
 
 		// Initialize notify
-		ImGui::MergeIconsWithLatestFont(FontAtlas, Settings->FontSize * DPIScale, false);
+		ImGui::MergeIconsWithLatestFont(FontAtlas, Settings->FontSize, FontConfig.RasterizerDensity, false);
 
 		// build font
 		FontAtlas.Build();
@@ -89,4 +74,48 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 		return FontAtlas;
 	}();
 	return DefaultFontAtlas;
+}
+
+float UnrealImGui::GetSystemDPIScale()
+{
+	static const float SystemDPIScale = FPlatformApplicationMisc::GetDPIScaleFactorAtPoint(0, 0);
+	return SystemDPIScale;
+}
+
+float UnrealImGui::GetGlobalDPIScale()
+{
+	const UImGuiPerUserSettingsSettings* Settings = GetDefault<UImGuiPerUserSettingsSettings>();
+	static const bool bIsDedicatedServer = !GIsClient && GIsServer;
+	if (Settings->bOverrideDPIScale || bIsDedicatedServer)
+	{
+		return Settings->OverrideDPIScale;
+	}
+	return GetSystemDPIScale();
+}
+
+void UnrealImGui::DrawGlobalDPISettings()
+{
+	ImGuiIO& IO = ImGui::GetIO();
+	auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+	ImGui::SetNextItemWidth(ImGui::GetFontSize());
+	if (ImGui::Checkbox("##Override DPI Scale", &Settings->bOverrideDPIScale))
+	{
+		IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+		Settings->SaveConfig();
+	}
+	if (ImGui::BeginItemTooltip())
+	{
+		ImGui::Text("Override DPI Scale");
+		ImGui::EndTooltip();
+	}
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
+	ImGui::BeginDisabled(!Settings->bOverrideDPIScale);
+	if (ImGui::InputFloat("DPI Scale", &Settings->OverrideDPIScale, 0.01f))
+	{
+		Settings->OverrideDPIScale = FMath::Clamp(Settings->OverrideDPIScale, 0.5f, 3.f);
+		IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+		Settings->SaveConfig();
+	}
+	ImGui::EndDisabled();
 }

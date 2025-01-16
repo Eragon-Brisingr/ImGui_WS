@@ -61,14 +61,14 @@ SImGuiPanel::FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 
 void SImGuiPanel::Construct(const FArguments& Args)
 {
-	{
-		const FScopedContext ScopedContext{ nullptr, nullptr };
-		Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
-		Context->IO.IniFilename = nullptr;
-		PlotContext = ImPlot::CreateContext();
-		OnImGuiTick = Args._OnImGuiTick;
-		DesiredSize = Args._DesiredSize;
-	}
+	const FScopedContext ScopedContext{ nullptr, nullptr };
+	Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
+	ImGuiIO& IO = Context->IO;
+	IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+	IO.IniFilename = nullptr;
+	PlotContext = ImPlot::CreateContext();
+	OnImGuiTick = Args._OnImGuiTick;
+	DesiredSize = Args._DesiredSize;
 }
 
 SImGuiPanel::~SImGuiPanel()

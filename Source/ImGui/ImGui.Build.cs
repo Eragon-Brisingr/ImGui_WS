@@ -5,6 +5,8 @@ using UnrealBuildTool;
 
 public class ImGui : ModuleRules
 {
+	private readonly bool bEnableFreeType = true;
+
 	public ImGui(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
@@ -39,6 +41,12 @@ public class ImGui : ModuleRules
 			"IMGUI_USER_CONFIG=\"ImGuiConfig.h\"",
 			"IMPLOT_API=IMGUI_API",
 		});
+
+		if (bEnableFreeType)
+		{
+			PublicDefinitions.Add("IMGUI_ENABLE_FREETYPE");
+			PrivateDependencyModuleNames.Add("FreeType2");
+		}
 
 		string FontFileName;
 		{

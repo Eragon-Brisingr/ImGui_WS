@@ -6,6 +6,7 @@
 #include "ImGuiDelegates.h"
 #include "imgui_internal.h"
 #include "ImGuiEx.h"
+#include "ImGuiFontAtlas.h"
 #include "ImGuiSettings.h"
 #include "ImGuiUnrealContextManager.h"
 #include "UnrealImGuiLayoutSubsystem.h"
@@ -933,6 +934,7 @@ public:
 			{
 				if (ImGui::FMenu Menu{ "Viewport" })
 				{
+					UnrealImGui::DrawGlobalDPISettings();
 					bool IsOpen = Overlay->ViewportPtr.IsValid();
 					if (ImGui::Checkbox("ImGui Full Viewport", &IsOpen))
 					{

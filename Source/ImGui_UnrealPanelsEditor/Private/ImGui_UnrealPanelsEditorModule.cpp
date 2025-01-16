@@ -1,6 +1,7 @@
 ﻿#include "ImGui_UnrealPanelsEditorModule.h"
 
 #include "ImGuiEx.h"
+#include "ImGuiFontAtlas.h"
 #include "ImGuiSettings.h"
 #include "ImGuiUnrealContextManager.h"
 #include "imgui_internal.h"
@@ -183,12 +184,62 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					{
 						return;
 					}
+					
+					UClass* Class = PanelClass.Get();
+					if (Class && Class->HasAnyClassFlags(CLASS_NewerVersionExists))
+					{
+						PanelClass = PanelClass.ToSoftObjectPath();
+						Class = PanelClass.Get();
+					}
+
 					static int32 ContextIndex = 0;
 					if (auto MainMenuBar = ImGui::FMainMenuBar{})
 					{
 						if (ImGui::BeginMenu("World Context"))
 						{
 							ContextManager->DrawContextContent(ContextIndex);
+							ImGui::EndMenu();
+						}
+						if (Class && ImGui::BeginMenu("Settings"))
+						{
+							auto& IO = ImGui::GetIO();
+							auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+							ImGui::SetNextItemWidth(ImGui::GetFontSize());
+							float* DPIScaleSettings = Settings->CustomPanelDPIScaleMap.Find(Class);
+							bool bOverrideDPIScale = DPIScaleSettings ? true : false; 
+							if (ImGui::Checkbox("##Override DPI Scale", &bOverrideDPIScale))
+							{
+								if (bOverrideDPIScale)
+								{
+									DPIScaleSettings = &Settings->CustomPanelDPIScaleMap.Add(Class, UnrealImGui::GetGlobalDPIScale());
+									IO.FontGlobalScale = *DPIScaleSettings;
+								}
+								else
+								{
+									Settings->CustomPanelDPIScaleMap.Remove(Class);
+									DPIScaleSettings = nullptr;
+									IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+								}
+								Settings->SaveConfig();
+							}
+							if (ImGui::BeginItemTooltip())
+							{
+								ImGui::Text("Override DPI Scale");
+								ImGui::EndTooltip();
+							}
+							ImGui::SameLine();
+							ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
+							ImGui::BeginDisabled(!bOverrideDPIScale);
+							float DPIScale = DPIScaleSettings ? *DPIScaleSettings : UnrealImGui::GetGlobalDPIScale();
+							if (ImGui::InputFloat("DPI Scale", &DPIScale, 0.01f))
+							{
+								DPIScale = FMath::Clamp(DPIScale, 0.5f, 3.f);
+								IO.FontGlobalScale = DPIScale;
+								Settings->CustomPanelDPIScaleMap.Add(Class, DPIScale);
+								Settings->SaveConfig();
+							}
+							ImGui::EndDisabled();
+
 							ImGui::EndMenu();
 						}
 					}
@@ -199,12 +250,6 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					ImGui::SetNextWindowSize({ ViewportSize.x, ViewportSize.y - MenuSizeY });
 					static constexpr auto SinglePanelFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	
-					UClass* Class = PanelClass.Get();
-					if (Class && Class->HasAnyClassFlags(CLASS_NewerVersionExists))
-					{
-						PanelClass = PanelClass.ToSoftObjectPath();
-						Class = PanelClass.Get();
-					}
 					if (Class == nullptr)
 					{
 						if (ImGui::FWindow Window{ "Panel", nullptr, SinglePanelFlags })
@@ -262,14 +307,24 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					}
 				});
 			auto Context = ImGuiPanel->GetContext();
-			Context->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
+			auto& IO = Context->IO;
+			IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
+			auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+			if (auto DPIScale = Settings->CustomPanelDPIScaleMap.Find(Class))
+			{
+				IO.FontGlobalScale = *DPIScale;
+			}
+			else
+			{
+				IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+			}
 
 			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 			const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
 			// Make sure that directory is created.
 			PlatformFile.CreateDirectory(*IniDirectory);
 			static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_EditorPanels.ini");
-			Context->IO.IniFilename = IniFilePath.GetData();
+			IO.IniFilename = IniFilePath.GetData();
 
 			ChildSlot
 			[
