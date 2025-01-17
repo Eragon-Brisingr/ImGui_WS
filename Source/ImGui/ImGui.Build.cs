@@ -5,8 +5,6 @@ using UnrealBuildTool;
 
 public class ImGui : ModuleRules
 {
-	private readonly bool bEnableFreeType = true;
-
 	public ImGui(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
@@ -42,7 +40,8 @@ public class ImGui : ModuleRules
 			"IMPLOT_API=IMGUI_API",
 		});
 
-		if (bEnableFreeType)
+		bool bDisableFreeType = Target.IsInPlatformGroup(UnrealPlatformGroup.Unix) && Target.Type == TargetType.Server;	
+		if (!bDisableFreeType)
 		{
 			PublicDefinitions.Add("IMGUI_ENABLE_FREETYPE");
 			PrivateDependencyModuleNames.Add("FreeType2");
