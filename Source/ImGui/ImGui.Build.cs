@@ -44,7 +44,12 @@ public class ImGui : ModuleRules
 		if (!bDisableFreeType)
 		{
 			PublicDefinitions.Add("IMGUI_ENABLE_FREETYPE");
-			PrivateDependencyModuleNames.Add("FreeType2");
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"zlib",
+				"UElibPNG",
+				"FreeType2",
+			});
 		}
 
 		string FontFileName;
