@@ -4,12 +4,12 @@
 #include "ImGuiWorldDebuggerLayout.h"
 
 #include "imgui.h"
-#include "ImGuiWorldDebuggerBase.h"
+#include "ImGuiWorldDebuggerManager.h"
 #include "imgui_internal.h"
 
 bool UImGuiWorldDebuggerLayoutBase::ShouldCreateLayout(UObject* Owner) const
 {
-	return Owner && Owner->IsA<AImGuiWorldDebuggerBase>();
+	return Owner && Owner->IsA<UImGuiWorldDebuggerManager>();
 }
 
 UImGuiWorldDebuggerDefaultLayout::UImGuiWorldDebuggerDefaultLayout()

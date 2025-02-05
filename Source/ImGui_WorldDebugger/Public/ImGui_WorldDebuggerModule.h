@@ -10,8 +10,6 @@ public:
     void ShutdownModule() override;
 
 private:
-    FDelegateHandle OnPostWorldInitializationHandle;
-
     FDelegateHandle OnImGui_WS_EnableHandle;
     FDelegateHandle OnImGui_WS_DisableHandle;
     FDelegateHandle OnImGuiLocalPanelEnableHandle;

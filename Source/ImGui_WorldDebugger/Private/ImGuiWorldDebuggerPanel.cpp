@@ -3,9 +3,9 @@
 
 #include "ImGuiWorldDebuggerPanel.h"
 
-#include "ImGuiWorldDebuggerBase.h"
+#include "ImGuiWorldDebuggerManager.h"
 
 bool UImGuiWorldDebuggerPanelBase::ShouldCreatePanel(UObject* Owner) const
 {
-	return Owner && Owner->IsA<AImGuiWorldDebuggerBase>() && ReceiveShouldCreatePanel(Owner);
+	return Owner && Owner->IsA<UImGuiWorldDebuggerManager>() && ReceiveShouldCreatePanel(Owner);
 }

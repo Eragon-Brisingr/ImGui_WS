@@ -6,7 +6,7 @@
 #include "EngineUtils.h"
 #include "imgui.h"
 #include "ImGuiEx.h"
-#include "ImGuiWorldDebuggerBase.h"
+#include "ImGuiWorldDebuggerManager.h"
 #include "ImGuiWorldDebuggerDrawer.h"
 #include "ImGuiWorldDebuggerLayout.h"
 #include "ImGuiWorldDebuggerPanel.h"
@@ -29,7 +29,7 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 
 bool UImGuiWorldDebuggerViewportPanel::ShouldCreatePanel(UObject* Owner) const
 {
-	return Owner && Owner->IsA<AImGuiWorldDebuggerBase>();
+	return Owner && Owner->IsA<UImGuiWorldDebuggerManager>();
 }
 
 void UImGuiWorldDebuggerViewportPanel::DrawCurrentViewFrustum(UObject* Owner, const FUnrealImGuiViewportContext& Context)
@@ -120,7 +120,7 @@ void UImGuiWorldDebuggerViewportActorExtent::Register(UObject* Owner, UUnrealImG
 
 	auto TryAddActorToDraw = [this, Viewport](AActor* Actor)
 	{
-		if (Actor == nullptr || Actor->IsA<AImGuiWorldDebuggerBase>())
+		if (Actor == nullptr || Actor->IsA<UImGuiWorldDebuggerManager>())
 		{
 			return;
 		}

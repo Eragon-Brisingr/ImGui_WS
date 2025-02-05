@@ -6,7 +6,7 @@
 #include "UnrealImGuiPanel.h"
 #include "ImGuiWorldDebuggerPanel.generated.h"
 
-class AImGuiWorldDebuggerBase;
+class UImGuiWorldDebuggerManager;
 
 UCLASS(Abstract, Config = GameUserSettings, PerObjectConfig)
 class IMGUI_WORLDDEBUGGER_API UImGuiWorldDebuggerPanelBase : public UUnrealImGuiPanelBase

@@ -262,10 +262,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					UUnrealImGuiPanelBase* Panel = DrawPanel.Get();
 					if (Panel == nullptr || Panel->GetWorld() != World)
 					{
-						if (Panel && Panel->GetWorld() != World)
-						{
-							Panel->LocalPanelClosed();
-						}
+						Panel = nullptr;
 						FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(World);
 						if (LayoutManager == nullptr)
 						{

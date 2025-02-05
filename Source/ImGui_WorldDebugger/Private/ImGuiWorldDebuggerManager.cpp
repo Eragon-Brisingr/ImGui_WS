@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ImGuiWorldDebuggerBase.h"
+#include "ImGuiWorldDebuggerManager.h"
 
 #include "EngineUtils.h"
 #include "imgui.h"
@@ -14,40 +14,28 @@
 
 namespace ImGuiWorldDebuggerBootstrap
 {
-	TSubclassOf<AImGuiWorldDebuggerBase> DebuggerClass;
-	FName ImGuiWorldDebuggerName = TEXT("ImGuiWorldDebugger");
-
-	bool IsEnableDebugWorld(UWorld* World)
-	{
-		return World->IsPreviewWorld() == false && World->IsGameWorld();
-	}
-	
-	void SpawnDebugger(UWorld* World)
+	void EnableDebugger(UWorld* World)
 	{
 		check(World);
-		check(IsEnableDebugWorld(World));
-	
-		UClass* SpawnedDebuggerClass = DebuggerClass ? *DebuggerClass : AImGuiWorldDebuggerBase::StaticClass();
 
-		FActorSpawnParameters SpawnParameters;
-		SpawnParameters.Name = ImGuiWorldDebuggerName;
-		SpawnParameters.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
-		SpawnParameters.ObjectFlags = RF_Transient;
-#if WITH_EDITOR
-		SpawnParameters.bHideFromSceneOutliner = true;
-#endif
-		World->SpawnActor<AImGuiWorldDebuggerBase>(SpawnedDebuggerClass, SpawnParameters);
-	}
-
-	void DestroyDebugger(UWorld* World)
-	{
-		check(World);
-		check(IsEnableDebugWorld(World));
-
-		for (TActorIterator<AImGuiWorldDebuggerBase> It(World); It; ++It)
+		auto Manager = UImGuiWorldDebuggerManager::Get(World);
+		if (Manager == nullptr)
 		{
-			It->Destroy();
+			return;
 		}
+		Manager->EnableDebugger();
+	}
+
+	void DisableDebugger(UWorld* World)
+	{
+		check(World);
+
+		auto Manager = UImGuiWorldDebuggerManager::Get(World);
+		if (Manager == nullptr)
+		{
+			return;
+		}
+		Manager->DisableDebugger();
 	}
 
 	bool bLaunchImGuiWorldDebugger = false;
@@ -70,35 +58,19 @@ namespace ImGuiWorldDebuggerBootstrap
 			{
 				if (UWorld* World = WorldContext.World())
 				{
-					if (IsEnableDebugWorld(World))
+					if (Enable)
 					{
-						if (Enable)
-						{
-							SpawnDebugger(World);
-						}
-						else
-						{
-							DestroyDebugger(World);
-						}
+						EnableDebugger(World);
+					}
+					else
+					{
+						DisableDebugger(World);
 					}
 				}
 			}
 		}),
 		ECVF_Default
 	};
-
-	void PostWorldInitialization(UWorld* World, const UWorld::InitializationValues /*IVS*/)
-	{
-		if (bLaunchImGuiWorldDebugger == false)
-		{
-			return;
-		}
-
-		if (IsEnableDebugWorld(World))
-		{
-			SpawnDebugger(World);
-		}
-	}
 
 	int32 RequireDebuggerCounter = 0;
 	void RequireCreateDebugger()
@@ -115,10 +87,7 @@ namespace ImGuiWorldDebuggerBootstrap
 				{
 					continue;
 				}
-				if (IsEnableDebugWorld(World))
-				{
-					SpawnDebugger(World);
-				}
+				EnableDebugger(World);
 			}
 		}
 	}
@@ -136,50 +105,41 @@ namespace ImGuiWorldDebuggerBootstrap
 				{
 					continue;
 				}
-				if (IsEnableDebugWorld(World))
-				{
-					DestroyDebugger(World);
-				}
+				DisableDebugger(World);
 			}
 		}
 	}
 }
 
-AImGuiWorldDebuggerBase::AImGuiWorldDebuggerBase()
-	: bEnableImGuiWorldDebugger(true)
+bool UImGuiWorldDebuggerManager::DoesSupportWorldType(const EWorldType::Type WorldType) const
 {
-	PanelBuilder = CreateDefaultSubobject<UUnrealImGuiPanelBuilder>(GET_MEMBER_NAME_CHECKED(ThisClass, PanelBuilder));
-	PanelBuilder->DockSpaceName = TEXT("ImGuiWorldDebuggerDockSpace");
+	return WorldType == EWorldType::Game || WorldType == EWorldType::PIE;
 }
 
-void AImGuiWorldDebuggerBase::BeginPlay()
+void UImGuiWorldDebuggerManager::OnWorldBeginPlay(UWorld& InWorld)
 {
-	Super::BeginPlay();
+	Super::OnWorldBeginPlay(InWorld);
 
-	FImGuiUnrealContext* Context = UImGuiUnrealContextManager::GetImGuiContext(GetWorld());
-	if (ensure(Context))
+	if (ImGuiWorldDebuggerBootstrap::bLaunchImGuiWorldDebugger == false)
 	{
-		Context->OnDraw.AddUObject(this, &AImGuiWorldDebuggerBase::DrawDebugPanel);
-	}
-	PanelBuilder->Register(this);
-}
-
-void AImGuiWorldDebuggerBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	PanelBuilder->Unregister(this);
-	if (FImGuiUnrealContext* Context = UImGuiUnrealContextManager::GetImGuiContext(GetWorld()))
-	{
-		Context->OnDraw.RemoveAll(this);
+		return;
 	}
 
-	Super::EndPlay(EndPlayReason);
+	EnableDebugger();
 }
 
-void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
+void UImGuiWorldDebuggerManager::Deinitialize()
+{
+	DisableDebugger();
+	
+	Super::Deinitialize();
+}
+
+void UImGuiWorldDebuggerManager::DrawDebugPanel(float DeltaSeconds)
 {
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiWorldDebugger_DrawDebugPanel"), STAT_ImGuiWorldDebugger_DrawDebugPanel, STATGROUP_ImGui);
 
-	auto Config = GetMutableDefault<AImGuiWorldDebuggerBase>();
+	auto Config = GetMutableDefault<UImGuiWorldDebuggerManager>();
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("Windows"))
@@ -236,6 +196,41 @@ void AImGuiWorldDebuggerBase::DrawDebugPanel(float DeltaSeconds)
 	ImGui::End();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
+}
+
+void UImGuiWorldDebuggerManager::EnableDebugger()
+{
+	if (bIsEnable)
+	{
+		return;
+	}
+	bIsEnable = true;
+	
+	FImGuiUnrealContext* Context = UImGuiUnrealContextManager::GetImGuiContext(GetWorld());
+	if (ensure(Context))
+	{
+		Context->OnDraw.AddUObject(this, &UImGuiWorldDebuggerManager::DrawDebugPanel);
+	}
+	PanelBuilder = NewObject<UUnrealImGuiPanelBuilder>(this, GET_MEMBER_NAME_CHECKED(ThisClass, PanelBuilder));
+	PanelBuilder->DockSpaceName = TEXT("ImGuiWorldDebuggerDockSpace");
+	PanelBuilder->Register(this);
+}
+
+void UImGuiWorldDebuggerManager::DisableDebugger()
+{
+	if (bIsEnable == false)
+	{
+		return;
+	}
+	bIsEnable = false;
+
+	PanelBuilder->Unregister(this);
+	PanelBuilder->MarkAsGarbage();
+	PanelBuilder = nullptr;
+	if (FImGuiUnrealContext* Context = UImGuiUnrealContextManager::GetImGuiContext(GetWorld()))
+	{
+		Context->OnDraw.RemoveAll(this);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
