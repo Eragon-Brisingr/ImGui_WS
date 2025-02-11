@@ -15,6 +15,7 @@
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
+#include "UnrealImGuiStyles.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
@@ -505,10 +506,10 @@ TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 			}
 		});
 
-	ImGuiContext* OldContent = ImGui::GetCurrentContext();
+	ImGuiContext* OldContext = ImGui::GetCurrentContext();
 	ON_SCOPE_EXIT
 	{
-		ImGui::SetCurrentContext(OldContent);
+		ImGui::SetCurrentContext(OldContext);
 	};
 	ImGui::SetCurrentContext(Panel->GetContext());
 
@@ -517,7 +518,7 @@ TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 	// Enable Docking
 	IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-	ImGui::StyleColorsDark();
+	UnrealImGui::DefaultStyle();
 
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 	const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
@@ -554,6 +555,7 @@ public:
 		const TSharedRef<SImGuiPanel> ImGuiPanel = SNew(SImGuiPanel);
 		const FImGuiLocalPanelConfig PanelConfig = Config->PanelConfigMap.FindRef(Panel->GetClass());
 		ImGuiPanel->GetContext()->IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
+		UnrealImGui::DefaultStyle(&ImGuiPanel->GetContext()->Style);
 		class SImGuiPanelBox : public SDragResizeBox
 		{
 			using Super = SDragResizeBox;
@@ -732,6 +734,22 @@ public:
 			}
 		}
 
+		auto ImGuiContent = SNew(SImGuiPanel)
+			.Visibility_Lambda([this]
+			{
+				if (Overlay->Config == nullptr)
+				{
+					return EVisibility::Collapsed;
+				}
+				return Overlay->Config->bManagerCollapsed ? EVisibility::Collapsed : EVisibility::Visible;
+			})
+			.OnImGuiTick_Lambda([this, ContextIndex](float DeltaSeconds)
+			{
+				DrawContent(ContextIndex);
+			});
+
+		UnrealImGui::DefaultStyle(&ImGuiContent->GetContext()->Style);
+		
 		Super::FArguments SuperArgs;
 		SuperArgs.TitleContent()
 		[
@@ -777,19 +795,7 @@ public:
 		]
 		.Content()
 		[
-			SNew(SImGuiPanel)
-			.Visibility_Lambda([this]
-			{
-				if (Overlay->Config == nullptr)
-				{
-					return EVisibility::Collapsed;
-				}
-				return Overlay->Config->bManagerCollapsed ? EVisibility::Collapsed : EVisibility::Visible;
-			})
-			.OnImGuiTick_Lambda([this, ContextIndex](float DeltaSeconds)
-			{
-				DrawContent(ContextIndex);
-			})
+			ImGuiContent
 		]
 		.OnDragged_Lambda([this](const FVector2f& Pos)
 		{
@@ -934,7 +940,11 @@ public:
 			{
 				if (ImGui::FMenu Menu{ "Viewport" })
 				{
-					UnrealImGui::DrawGlobalDPISettings();
+					if (ImGui::FMenu SettingsMenu{ "Settings" })
+					{
+						UnrealImGui::ShowStyleSelector();
+						UnrealImGui::ShowGlobalDPISettings();
+					}
 					bool IsOpen = Overlay->ViewportPtr.IsValid();
 					if (ImGui::Checkbox("ImGui Full Viewport", &IsOpen))
 					{

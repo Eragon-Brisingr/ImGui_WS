@@ -14,5 +14,5 @@ namespace UnrealImGui
 	IMGUI_API float GetSystemDPIScale();
 	IMGUI_API float GetGlobalDPIScale();
 
-	IMGUI_API void DrawGlobalDPISettings();
+	IMGUI_API void ShowGlobalDPISettings();
 }

@@ -44,6 +44,9 @@ public:
 	UPROPERTY(Config)
 	TMap<TSoftClassPtr<UObject>, float> CustomPanelDPIScaleMap;
 
+	UPROPERTY(Config)
+	int32 StyleIndex = 0;
+
 #if WITH_EDITOR
 	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif

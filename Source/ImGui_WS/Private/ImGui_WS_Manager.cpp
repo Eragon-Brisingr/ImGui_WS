@@ -19,6 +19,7 @@
 #include "implot.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
+#include "UnrealImGuiStyles.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGui_Log.h"
 #include "WebKeyCodeToImGui.h"
@@ -216,7 +217,7 @@ public:
 		// Enable Docking
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-		ImGui::StyleColorsDark();
+		UnrealImGui::DefaultStyle();
 		ImGui::GetStyle().AntiAliasedFill = false;
 		ImGui::GetStyle().AntiAliasedLines = false;
 		ImGui::GetStyle().WindowRounding = 0.0f;
@@ -620,109 +621,126 @@ public:
 
 			if (ImGui::BeginMainMenuBar())
 			{
+				ImGui::Separator();
+				
 				if (ImGui::BeginMenu("ImGui_WS"))
 				{
-					ImGui::Checkbox("ImGui Demo", &State.bShowImGuiDemo);
-					ImGui::Checkbox("ImPlot Demo", &State.bShowPlotDemo);
-
-					UnrealImGui::DrawGlobalDPISettings();
-
-					ImGui::Separator();
-					if (RecordSession.IsValid() == false)
+					if (ImGui::BeginMenu("Settings"))
 					{
-						if (ImGui::Button("Start Record"))
-						{
-							ImGui::OpenPopup("RecordSettings");
-						}
-						if (ImGui::BeginPopupModal("RecordSettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-						{
-							static UnrealImGui::FUTF8String SaveFilePath = GRecordSaveDirPathString;
-							ImGui::Text("Save Path:");
-							ImGui::SameLine();
-							ImGui::SetNextItemWidth(600.f);
-							ImGui::InputText("##RecordSavePath", GRecordSaveDirPathString);
-
-							ImGui::SameLine();
-							if (ImGui::ArrowButton("SaveRecordFile", ImGuiDir_Down))
-							{
-								ImGui::OpenPopup("Select Save Record Directory");
-							}
-							static ImGui::FFileDialogState FileDialogState;
-							ImGui::ShowFileDialog("Select Save Record Directory", FileDialogState, SaveFilePath, nullptr, ImGui::FileDialogType::SelectFolder);
-
-							constexpr auto StartText = "Start";
-							constexpr auto CancelText = "Cancel";
-							ImGui::SetCursorPosX(ImGui::GetWindowWidth() - (ImGui::CalcTextSize(StartText).x + ImGui::CalcTextSize(CancelText).x + ImGui::GetTextLineHeightWithSpacing() * 2.f));
-							if (ImGui::Button(StartText))
-							{
-								if (FPaths::DirectoryExists(GRecordSaveDirPathString.ToString()))
-								{
-									StartRecord();
-									ImGui::InsertNotification(ImGuiToastType_Info, "Start Record ImGui");
-									ImGui::CloseCurrentPopup();
-								}
-								else
-								{
-									ImGui::InsertNotification(ImGuiToastType_Error, "Input Directory Not Exist");
-								}
-							}
-							ImGui::SameLine();
-							if (ImGui::Button(CancelText))
-							{
-								ImGui::CloseCurrentPopup();
-							}
-
-							ImGui::EndPopup();
-						}
-
-						if (ImGui::Button("Load Record"))
-						{
-							ImGui::OpenPopup("ReplaySettings");
-						}
-						if (ImGui::BeginPopupModal("ReplaySettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-						{
-							static UnrealImGui::FUTF8String LoadFilePath = GRecordSaveDirPathString;
-							ImGui::Text("File Path:");
-							ImGui::SameLine();
-							ImGui::SetNextItemWidth(600.f);
-							ImGui::InputText("##RecordFilePath", LoadFilePath);
-
-							ImGui::SameLine();
-							if (ImGui::ArrowButton("OpenRecordFile", ImGuiDir_Down))
-							{
-								ImGui::OpenPopup("Load Replay File");
-							}
-							static ImGui::FFileDialogState FileDialogState;
-							ImGui::ShowFileDialog("Load Replay File", FileDialogState, LoadFilePath, ".imgrcd", ImGui::FileDialogType::OpenFile);
-
-							ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.f);
-							if (ImGui::Button("Load"))
-							{
-								if (FPaths::FileExists(LoadFilePath.ToString()))
-								{
-									RecordReplay = MakeUnique<ImGuiWS_Record::FImGuiWS_Replay>(*LoadFilePath);
-									ImGui::CloseCurrentPopup();
-								}
-								else
-								{
-									ImGui::InsertNotification(ImGuiToastType_Error, "File Not Exist");
-								}
-							}
-							ImGui::SameLine();
-							if (ImGui::Button("Cancel"))
-							{
-								ImGui::CloseCurrentPopup();
-							}
-
-							ImGui::EndPopup();
-						}
+						UnrealImGui::ShowStyleSelector();
+						UnrealImGui::ShowGlobalDPISettings();
+						
+						ImGui::EndMenu();
 					}
-					else
+
+					if (ImGui::BeginMenu("Demo"))
 					{
-						if (ImGui::Button("End Record"))
+						ImGui::Checkbox("ImGui Demo", &State.bShowImGuiDemo);
+						ImGui::Checkbox("ImPlot Demo", &State.bShowPlotDemo);
+						
+						ImGui::EndMenu();
+					}
+
+					if (ImGui::BeginMenu("Recorder"))
+					{
+						if (RecordSession.IsValid() == false)
 						{
-							StopRecord();
+							if (ImGui::Button("Start Record"))
+							{
+								ImGui::OpenPopup("RecordSettings");
+							}
+							if (ImGui::BeginPopupModal("RecordSettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+							{
+								static UnrealImGui::FUTF8String SaveFilePath = GRecordSaveDirPathString;
+								ImGui::Text("Save Path:");
+								ImGui::SameLine();
+								ImGui::SetNextItemWidth(600.f);
+								ImGui::InputText("##RecordSavePath", GRecordSaveDirPathString);
+
+								ImGui::SameLine();
+								if (ImGui::ArrowButton("SaveRecordFile", ImGuiDir_Down))
+								{
+									ImGui::OpenPopup("Select Save Record Directory");
+								}
+								static ImGui::FFileDialogState FileDialogState;
+								ImGui::ShowFileDialog("Select Save Record Directory", FileDialogState, SaveFilePath, nullptr, ImGui::FileDialogType::SelectFolder);
+
+								constexpr auto StartText = "Start";
+								constexpr auto CancelText = "Cancel";
+								ImGui::SetCursorPosX(ImGui::GetWindowWidth() - (ImGui::CalcTextSize(StartText).x + ImGui::CalcTextSize(CancelText).x + ImGui::GetTextLineHeightWithSpacing() * 2.f));
+								if (ImGui::Button(StartText))
+								{
+									if (FPaths::DirectoryExists(GRecordSaveDirPathString.ToString()))
+									{
+										StartRecord();
+										ImGui::InsertNotification(ImGuiToastType_Info, "Start Record ImGui");
+										ImGui::CloseCurrentPopup();
+									}
+									else
+									{
+										ImGui::InsertNotification(ImGuiToastType_Error, "Input Directory Not Exist");
+									}
+								}
+								ImGui::SameLine();
+								if (ImGui::Button(CancelText))
+								{
+									ImGui::CloseCurrentPopup();
+								}
+
+								ImGui::EndPopup();
+							}
+
+							if (ImGui::Button("Load Record"))
+							{
+								ImGui::OpenPopup("ReplaySettings");
+							}
+							if (ImGui::BeginPopupModal("ReplaySettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+							{
+								static UnrealImGui::FUTF8String LoadFilePath = GRecordSaveDirPathString;
+								ImGui::Text("File Path:");
+								ImGui::SameLine();
+								ImGui::SetNextItemWidth(600.f);
+								ImGui::InputText("##RecordFilePath", LoadFilePath);
+
+								ImGui::SameLine();
+								if (ImGui::ArrowButton("OpenRecordFile", ImGuiDir_Down))
+								{
+									ImGui::OpenPopup("Load Replay File");
+								}
+								static ImGui::FFileDialogState FileDialogState;
+								ImGui::ShowFileDialog("Load Replay File", FileDialogState, LoadFilePath, ".imgrcd", ImGui::FileDialogType::OpenFile);
+
+								ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.f);
+								if (ImGui::Button("Load"))
+								{
+									if (FPaths::FileExists(LoadFilePath.ToString()))
+									{
+										RecordReplay = MakeUnique<ImGuiWS_Record::FImGuiWS_Replay>(*LoadFilePath);
+										ImGui::CloseCurrentPopup();
+									}
+									else
+									{
+										ImGui::InsertNotification(ImGuiToastType_Error, "File Not Exist");
+									}
+								}
+								ImGui::SameLine();
+								if (ImGui::Button("Cancel"))
+								{
+									ImGui::CloseCurrentPopup();
+								}
+
+								ImGui::EndPopup();
+							}
 						}
+						else
+						{
+							if (ImGui::Button("End Record"))
+							{
+								StopRecord();
+							}
+						}
+						
+						ImGui::EndMenu();
 					}
 					ImGui::EndMenu();
 				}

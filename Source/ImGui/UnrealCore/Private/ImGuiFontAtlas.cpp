@@ -100,7 +100,7 @@ float UnrealImGui::GetGlobalDPIScale()
 	return GetSystemDPIScale();
 }
 
-void UnrealImGui::DrawGlobalDPISettings()
+void UnrealImGui::ShowGlobalDPISettings()
 {
 	ImGuiIO& IO = ImGui::GetIO();
 	auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();

@@ -12,6 +12,7 @@
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiString.h"
+#include "UnrealImGuiStyles.h"
 #include "WorkspaceMenuStructure.h"
 #include "WorkspaceMenuStructureModule.h"
 #include "HAL/PlatformFileManager.h"
@@ -201,6 +202,8 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 						}
 						if (Class && ImGui::BeginMenu("Settings"))
 						{
+							UnrealImGui::ShowStyleSelector();
+
 							auto& IO = ImGui::GetIO();
 							auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
 							ImGui::SetNextItemWidth(ImGui::GetFontSize());
@@ -306,6 +309,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 			auto& IO = Context->IO;
 			IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
 			auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+			UnrealImGui::DefaultStyle(&Context->Style);
 			if (auto DPIScale = Settings->CustomPanelDPIScaleMap.Find(Class))
 			{
 				IO.FontGlobalScale = *DPIScale;
