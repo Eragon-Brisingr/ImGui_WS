@@ -8,27 +8,6 @@
 
 namespace UnrealImGui
 {
-#define FOR_EACH_STYLE(DO) \
-DO(Default) \
-DO(UnrealDark) \
-DO(ModernColors) \
-DO(MaterialYouColors) \
-DO(FluentUI) \
-DO(CatpuccinMochaColors) \
-DO(ImGuiDark) \
-DO(ImGuiLight) \
-DO(ImGuiClassic) \
-
-namespace EStyle
-{
-    enum Type : int32
-    {
-#define DO(Enum) Enum,
-        FOR_EACH_STYLE(DO)
-#undef DO
-    };
-}
-
 void StyleUnrealDark(ImGuiStyle* dst)
 {
 	ImGuiStyle& style = dst ? *dst : ImGui::GetStyle();
@@ -314,7 +293,7 @@ void StyleFluentUI(ImGuiStyle* dst)
     style.ScrollbarSize = 16.0f;
 }
 
-void StyleCatpuccinMochaColors(ImGuiStyle* dst)
+void StyleCatppuccinMochaColors(ImGuiStyle* dst)
 {
 	ImGuiStyle& style = dst ? *dst : ImGui::GetStyle();
     ImVec4 *colors = style.Colors;
@@ -397,17 +376,27 @@ void StyleCatpuccinMochaColors(ImGuiStyle* dst)
     style.AntiAliasedFill = true;
 }
 
+namespace EStyle
+{
+    const char* EnumNames[] =
+    {
+        "Default",
+        "Unreal Dark",
+        "Modern",
+        "Material You",
+        "Fluent UI",
+        "Catppuccin Mocha",
+        "ImGui Dark",
+        "ImGui Light",
+        "ImGui Classic",
+    };
+}
+
 bool ShowStyleSelector(const char* Label)
 {
     auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
 
-    const char* EnumItems[] =
-    {
-#define DO(Enum) #Enum,
-        FOR_EACH_STYLE(DO)
-#undef DO
-    };
-    if (ImGui::Combo(Label ? Label : "Style", &Settings->StyleIndex, EnumItems, UE_ARRAY_COUNT(EnumItems)))
+    if (ImGui::Combo(Label ? Label : "Style", &Settings->StyleIndex, EStyle::EnumNames, UE_ARRAY_COUNT(EStyle::EnumNames)))
     {
         Settings->SaveConfig();
         DefaultStyle();
@@ -416,11 +405,14 @@ bool ShowStyleSelector(const char* Label)
     return false;
 }
 
-#undef FOR_EACH_STYLE
-
 void DefaultStyle(ImGuiStyle* dst)
 {
-    switch (GetMutableDefault<UImGuiPerUserSettingsSettings>()->StyleIndex)
+    SetStyle(static_cast<EStyle::Type>(GetMutableDefault<UImGuiPerUserSettingsSettings>()->StyleIndex), dst);
+}
+
+void SetStyle(EStyle::Type Style, ImGuiStyle* dst)
+{
+    switch (Style)
     {
     case EStyle::Default:
         StyleUnrealDark(dst);
@@ -437,8 +429,8 @@ void DefaultStyle(ImGuiStyle* dst)
     case EStyle::FluentUI:
         StyleFluentUI(dst);
         break;
-    case EStyle::CatpuccinMochaColors:
-        StyleCatpuccinMochaColors(dst);
+    case EStyle::CatppuccinMochaColors:
+        StyleCatppuccinMochaColors(dst);
         break;
     case EStyle::ImGuiDark:
         ImGui::StyleColorsDark(dst);
@@ -453,5 +445,4 @@ void DefaultStyle(ImGuiStyle* dst)
         StyleUnrealDark(dst);
     }
 }
-
 }

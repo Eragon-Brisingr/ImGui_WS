@@ -621,10 +621,10 @@ public:
 
 			if (ImGui::BeginMainMenuBar())
 			{
-				ImGui::Separator();
-				
 				if (ImGui::BeginMenu("ImGui_WS"))
 				{
+					ImGui::Separator();
+
 					if (ImGui::BeginMenu("Settings"))
 					{
 						UnrealImGui::ShowStyleSelector();

@@ -125,14 +125,11 @@ void UImGuiUnrealContextManager::DrawViewport(int32& ContextIndex, float DeltaSe
 
 void UImGuiUnrealContextManager::DrawContextContent(int32& ContextIndex)
 {
+	ImGui::SeparatorText("Contexts");
 #if WITH_EDITOR
 	if (ImGui::RadioButton(TCHAR_TO_UTF8(*FString::Printf(TEXT("Editor"))), ContextIndex == EditorContextIndex || ContextIndex >= WorldSubsystems.Num()))
 	{
 		ContextIndex = EditorContextIndex;
-	}
-	if (WorldSubsystems.Num() > 0)
-	{
-		ImGui::Separator();
 	}
 #endif
 	for (int32 Idx = 0; Idx < WorldSubsystems.Num(); ++Idx)
@@ -149,7 +146,7 @@ void UImGuiUnrealContextManager::DrawContextContent(int32& ContextIndex)
 #endif
 			break;
 		case NM_DedicatedServer:
-			WorldDesc = TEXT("DedicatedServer");
+			WorldDesc = TEXT("Dedicated Server");
 			break;
 		case NM_ListenServer:
 			WorldDesc = TEXT("Server");
