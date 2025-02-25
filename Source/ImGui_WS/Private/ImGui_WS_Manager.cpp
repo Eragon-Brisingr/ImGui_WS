@@ -3,6 +3,7 @@
 
 #include "ImGui_WS_Manager.h"
 
+#include <chrono>
 #include <sstream>
 #include <thread>
 

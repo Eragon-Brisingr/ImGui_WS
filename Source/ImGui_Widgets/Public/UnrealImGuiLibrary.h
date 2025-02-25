@@ -6,6 +6,7 @@
 #include "ImGuiLibraryBase.h"
 #include "UnrealImGuiComboEnum.h"
 #include "UnrealImGuiPropertyDetails.h"
+#include "AssetRegistry/AssetData.h"
 #include "Templates/SubclassOf.h"
 #include "UnrealImGuiLibrary.generated.h"
 
@@ -16,10 +17,10 @@ struct FUnrealImGuiObjectPickerSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = ImGui)
 	FString FilterHint = TEXT("Filter");
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = ImGui)
 	FUnrealImGuiObjectPickerFilter Filter;
 };
 
@@ -30,10 +31,10 @@ struct FUnrealImGuiActorPickerSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = ImGui)
 	FString FilterHint = TEXT("Filter");
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = ImGui)
 	FUnrealImGuiActorPickerFilter Filter;
 };
 
@@ -45,13 +46,13 @@ struct FUnrealImGuiClassPickerSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = ImGui)
 	FString FilterHint = TEXT("Filter");
 	
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = ImGui)
 	FUnrealImGuiClassPickerFilter Filter;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Category = ImGui)
 	FUnrealImGuiClassPickerUnloadBpFilter FilterUnloadBp;
 };
 

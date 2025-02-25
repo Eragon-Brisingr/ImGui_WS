@@ -11,7 +11,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Blueprint/BlueprintSupport.h"
-#include "UObject/UObjectIterator.h"
+#include "Misc/Paths.h"
 
 namespace UnrealImGui
 {

@@ -347,9 +347,11 @@ void Demo_FilledLinePlots() {
         ImPlot::SetupAxesLimits(0,100,0,500);
         if (show_fills) {
             ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
-            ImPlot::PlotShaded("Stock 1", xs1, ys1, 101, shade_mode == 0 ? -INFINITY : shade_mode == 1 ? INFINITY : fill_ref, flags);
-            ImPlot::PlotShaded("Stock 2", xs1, ys2, 101, shade_mode == 0 ? -INFINITY : shade_mode == 1 ? INFINITY : fill_ref, flags);
-            ImPlot::PlotShaded("Stock 3", xs1, ys3, 101, shade_mode == 0 ? -INFINITY : shade_mode == 1 ? INFINITY : fill_ref, flags);
+			// IMGUI_WS MOD
+            ImPlot::PlotShaded("Stock 1", xs1, ys1, 101, shade_mode == 0 ? -std::numeric_limits<float>::infinity() : shade_mode == 1 ? std::numeric_limits<float>::infinity() : fill_ref, flags);
+            ImPlot::PlotShaded("Stock 2", xs1, ys2, 101, shade_mode == 0 ? -std::numeric_limits<float>::infinity() : shade_mode == 1 ? std::numeric_limits<float>::infinity() : fill_ref, flags);
+            ImPlot::PlotShaded("Stock 3", xs1, ys3, 101, shade_mode == 0 ? -std::numeric_limits<float>::infinity() : shade_mode == 1 ? std::numeric_limits<float>::infinity() : fill_ref, flags);
+			// IMGUI_WS MOD END
             ImPlot::PopStyleVar();
         }
         if (show_lines) {

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -55,38 +55,38 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 
 	UUnrealImGuiViewportBase* Viewport = nullptr;
 	ImDrawList* DrawList = nullptr;
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	FVector2D ContentMin{ ForceInit };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	FVector2D ContentSize{ ForceInit };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	FVector2D ViewLocation{ ForceInit };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	float Zoom = 0.f;
 	FTransform2D WorldToScreenTransform{ 0 };
 	FTransform2D ScreenToWorldTransform{ 0 };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	FBox2D ViewBounds{ ForceInit };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	FVector2D MousePos{ ForceInit };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	FVector2D MouseWorldPos{ ForceInit };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	uint8 bIsContentHovered : 1 = false;
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	uint8 bIsContentActive : 1 = false;
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	uint8 bIsViewDragEnd : 1 = false;
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	uint8 bIsSelectDragging : 1 = false;
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	FBox2D SelectDragBounds{ ForceInit };
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	float DeltaSeconds = 0.f;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	mutable uint8 bIsSelected : 1 = false;
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	mutable uint8 bIsTopSelected : 1 = false;
 
 	static constexpr auto FloatingContextName = "FloatingContext";

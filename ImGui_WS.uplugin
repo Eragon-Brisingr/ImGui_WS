@@ -51,6 +51,11 @@
 			"LoadingPhase": "Default"
 		},
 		{
+			"Name": "ImGui_Widgets",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "ImGui_UnrealPanels",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
