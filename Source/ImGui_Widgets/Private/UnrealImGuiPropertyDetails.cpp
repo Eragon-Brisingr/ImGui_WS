@@ -286,10 +286,14 @@ namespace UnrealImGui
 		};
 
 		static_assert(std::is_same_v<FVector::FReal, double>);
-		AddStructCustomizer(TBaseStructure<FVector>::Get(), MakeShared<FComponentPropertyCustomization<FVector::FReal, 3>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FRotator>::Get(), MakeShared<FComponentPropertyCustomization<FRotator::FReal, 3>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FVector2D>::Get(), MakeShared<FComponentPropertyCustomization<FVector2D::FReal, 2>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FVector4>::Get(), MakeShared<FComponentPropertyCustomization<FVector4::FReal, 4>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TBaseStructure<FVector2D>::Get(), MakeShared<FComponentPropertyCustomization<double, 2>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TBaseStructure<FVector>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TBaseStructure<FVector4>::Get(), MakeShared<FComponentPropertyCustomization<double, 4>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TBaseStructure<FRotator>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TVariantStructure<FVector2f>::Get(), MakeShared<FComponentPropertyCustomization<double, 2>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TVariantStructure<FVector3f>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TVariantStructure<FVector4f>::Get(), MakeShared<FComponentPropertyCustomization<double, 4>>(ImGuiDataType_Double, "%.3f"));
+		AddStructCustomizer(TVariantStructure<FRotator3f>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
 		AddStructCustomizer(StaticGetBaseStructure::Get(TEXT("IntVector")), MakeShared<FComponentPropertyCustomization<int32, 3>>(ImGuiDataType_S32));
 
 		struct FQuatCustomization : IUnrealStructCustomization
