@@ -449,11 +449,11 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 		ImGui::SetNextWindowPos(ImVec2{ ContentMin + 10.f }, ImGuiCond_Always);
 		ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
 		ImGui::SetNextWindowBgAlpha(0.5f);
-		if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
+		if (Context.BeginFloatingPanel())
 		{
 			// Construct
 		}
-		ImGui::End();
+		Context.EndFloatingPanel();
 	}
 
 	// Right click menu
@@ -522,7 +522,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 	ImGui::PopClipRect();
 
 	auto ViewportWindow = ImGui::GetCurrentWindow();
-	if (ImGui::Begin(Context.FloatingContextName, nullptr, FloatContextFlags))
+	if (Context.BeginFloatingPanel())
 	{
 		ImGui::BringWindowToDisplayBehind(ViewportWindow, ImGui::GetCurrentWindow());
 		for (const auto& Message : Context.Data->Messages)
@@ -532,7 +532,7 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 			ImGui::PopStyleColor();
 		}
 	}
-	ImGui::End();
+	Context.EndFloatingPanel();
 
 	bIsConfigDirty |= Context.Data->bIsConfigDirty;
 	if (bIsConfigDirty)

@@ -89,8 +89,6 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	UPROPERTY(BlueprintReadOnly, Category = ImGui)
 	mutable uint8 bIsTopSelected : 1 = false;
 
-	static constexpr auto FloatingContextName = "FloatingContext";
-
 	FBox GetViewBounds3D() const
 	{
 		return FBox{ FVector{ ViewBounds.Min, -MAX_flt }, FVector{ ViewBounds.Max, MAX_FLT } };
@@ -159,6 +157,23 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	void FDrawText(const FVector2f& Location, const FString& Text, const FColor& Color) const { DrawText(FVector2D{ Location }, Text, Color); }
 	void AddMessageText(const FString& Message, const FColor& Color = FColor::White) const { Data->Messages.Add(FMessage{ Message, Color }); }
 	void MarkConfigDirty() const { Data->bIsConfigDirty |= true; }
+
+	bool BeginFloatingPanel() const;
+	void EndFloatingPanel() const;
+	struct FFloatingPanel
+	{
+		[[nodiscard]]
+		FORCEINLINE FFloatingPanel(const FUnrealImGuiViewportContext& Context)
+			: Context{ Context }
+			, State{ Context.BeginFloatingPanel() }
+		{}
+		FORCEINLINE ~FFloatingPanel() { Context.EndFloatingPanel(); }
+		explicit operator bool() const noexcept { return State; }
+	private:
+		const FUnrealImGuiViewportContext& Context;
+		bool State;
+	};
+	[[nodiscard]] FORCEINLINE FFloatingPanel FloatingPanelScope() const { return FFloatingPanel{ *this }; }
 
 	FORCEINLINE static uint32 FColorToU32(const FColor& Color)
 	{

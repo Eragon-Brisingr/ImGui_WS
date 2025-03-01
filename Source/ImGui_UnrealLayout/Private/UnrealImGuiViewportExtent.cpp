@@ -283,3 +283,15 @@ void FUnrealImGuiViewportContext::DrawText(const FVector2D& Location, const FStr
 		DrawList->AddText(ImVec2{ WorldToScreenLocation(Location) }, FColorToU32(Color), TCHAR_TO_UTF8(*Text));
 	}
 }
+
+bool FUnrealImGuiViewportContext::BeginFloatingPanel() const
+{
+	static constexpr auto FloatingPanelName = "FloatingContext";
+	constexpr int32 FloatContextFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+	return ImGui::Begin(FloatingPanelName, nullptr, FloatContextFlags);
+}
+
+void FUnrealImGuiViewportContext::EndFloatingPanel() const
+{
+	ImGui::End();
+}
