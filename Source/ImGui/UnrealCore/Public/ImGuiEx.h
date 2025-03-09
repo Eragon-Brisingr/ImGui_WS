@@ -111,7 +111,9 @@ namespace ImGui
 		[[nodiscard]]
 		FORCEINLINE FIdScope(const void* ptr_id) { ImGui::PushID(ptr_id); }
 		[[nodiscard]]
-		FORCEINLINE FIdScope(int int_id) { ImGui::PushID(int_id); }
+		FORCEINLINE FIdScope(int32 int_id) { ImGui::PushID(int_id); }
+		[[nodiscard]]
+		FORCEINLINE FIdScope(uint32 int_id) { ImGui::PushID(int_id); }
 		FORCEINLINE ~FIdScope() { ImGui::PopID(); }
 	};
 

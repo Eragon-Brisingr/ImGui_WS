@@ -284,14 +284,13 @@ void FUnrealImGuiViewportContext::DrawText(const FVector2D& Location, const FStr
 	}
 }
 
-bool FUnrealImGuiViewportContext::BeginFloatingPanel() const
+bool FUnrealImGuiViewportContext::BeginFloatingPanel()
 {
-	static constexpr auto FloatingPanelName = "FloatingContext";
 	constexpr int32 FloatContextFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	return ImGui::Begin(FloatingPanelName, nullptr, FloatContextFlags);
 }
 
-void FUnrealImGuiViewportContext::EndFloatingPanel() const
+void FUnrealImGuiViewportContext::EndFloatingPanel()
 {
 	ImGui::End();
 }

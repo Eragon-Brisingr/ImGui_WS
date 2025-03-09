@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Engine/Texture.h"
-#include "UObject/Object.h"
 #include "Math/TransformCalculus2D.h"
 #include "UnrealImGuiViewportExtent.generated.h"
 
@@ -158,22 +157,21 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiViewportContext
 	void AddMessageText(const FString& Message, const FColor& Color = FColor::White) const { Data->Messages.Add(FMessage{ Message, Color }); }
 	void MarkConfigDirty() const { Data->bIsConfigDirty |= true; }
 
-	bool BeginFloatingPanel() const;
-	void EndFloatingPanel() const;
+	static bool BeginFloatingPanel();
+	static void EndFloatingPanel();
+	static constexpr auto FloatingPanelName = "__FloatingPanel";
 	struct FFloatingPanel
 	{
-		[[nodiscard]]
-		FORCEINLINE FFloatingPanel(const FUnrealImGuiViewportContext& Context)
-			: Context{ Context }
-			, State{ Context.BeginFloatingPanel() }
-		{}
-		FORCEINLINE ~FFloatingPanel() { Context.EndFloatingPanel(); }
-		explicit operator bool() const noexcept { return State; }
+		FORCEINLINE explicit operator bool() const noexcept { return State; }
+		FORCEINLINE ~FFloatingPanel() { EndFloatingPanel(); }
 	private:
-		const FUnrealImGuiViewportContext& Context;
+		friend FUnrealImGuiViewportContext;
+		FORCEINLINE FFloatingPanel()
+			: State{ BeginFloatingPanel() }
+		{}
 		bool State;
 	};
-	[[nodiscard]] FORCEINLINE FFloatingPanel FloatingPanelScope() const { return FFloatingPanel{ *this }; }
+	[[nodiscard]] FORCEINLINE FFloatingPanel FloatingPanelScope() const { return {}; }
 
 	FORCEINLINE static uint32 FColorToU32(const FColor& Color)
 	{
