@@ -37,7 +37,7 @@ void UUnrealImGuiObjectBrowserPanel::Unregister(UObject* Owner, UUnrealImGuiPane
 
 void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
 {
-	if (ImGui::FChildWindow ChildWindow{ "ObjectPathViewer", { 0.f, ImGui::GetFontSize() * 2.f }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar })
+	if (ImGui::FChildWindow ChildWindow{ "ObjectPathViewer", { 0.f, ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ScrollbarSize }, false, ImGuiWindowFlags_AlwaysHorizontalScrollbar })
 	{
 		if (ImGui::Button("Root"))
 		{
