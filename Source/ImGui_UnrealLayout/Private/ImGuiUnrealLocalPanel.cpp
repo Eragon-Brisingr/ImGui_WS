@@ -905,16 +905,7 @@ public:
 				{
 					if (IsOpen)
 					{
-						auto& RecentlyPanels = InOverlay->Config->RecentlyPanels;
-						const bool bRemoved = RecentlyPanels.RemoveSingle(Panel->GetClass()) > 0;
-						RecentlyPanels.Insert(Panel->GetClass(), 0);
-						constexpr int32 MaxRecentlyPanelNum = 20;
-						if (bRemoved == false && RecentlyPanels.Num() > MaxRecentlyPanelNum)
-						{
-							RecentlyPanels.RemoveAt(MaxRecentlyPanelNum, RecentlyPanels.Num() - MaxRecentlyPanelNum);
-						}
-						InOverlay->Config->SaveSettings();
-
+						GetMutableDefault<UImGuiPerUserSettings>()->RecordRecentlyOpenPanel(Panel->GetClass());
 						InOverlay->OpenPanel(InWorld, Builder, Panel);
 					}
 					else
@@ -1015,39 +1006,52 @@ public:
 			const float ItemWidth = ImGui::GetFontSize() * 10.f;
 			const int32 ColumnsNum = FMath::Max(FMath::FloorToInt32(ImGui::GetWindowSize().x / ItemWidth), 1);
 
+			auto DrawPanels = [&](const TArray<TSoftClassPtr<UObject>>& Panels)
+			{
+				int32 ItemCounter = 0;
+				for (int32 Idx = 0; Idx < Panels.Num(); ++Idx)
+				{
+					const auto& PanelClass = Panels[Idx];
+					UUnrealImGuiPanelBuilder* Builder = nullptr;
+					UUnrealImGuiPanelBase* Panel = nullptr;
+					for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
+					{
+						const int32 PanelIdx = PanelBuilder->Panels.IndexOfByPredicate([&](const UUnrealImGuiPanelBase* E){ return E->GetClass() == PanelClass; });
+						if (PanelIdx != INDEX_NONE)
+						{
+							Builder = PanelBuilder;
+							Panel = Builder->Panels[PanelIdx];
+						}
+					}
+					if (Panel)
+					{
+						const int32 ColumnIdx = ItemCounter % ColumnsNum;
+						if (ColumnIdx == 0)
+						{
+							ImGui::TableNextRow();
+						}
+						if (ImGui::TableSetColumnIndex(ColumnIdx))
+						{
+							DrawPanelCheckBox(World, Overlay.Get(), Builder, Panel);
+							ItemCounter += 1;
+						}
+					}
+				}
+			};
+
+			if (FTreeNodeSeparator TreeNodeSeparator{ "Favorite Panels", ImGuiTreeNodeFlags_DefaultOpen })
+			{
+				if (ImGui::FTable Table{ "FavoritePanels", ColumnsNum })
+				{
+					DrawPanels(GetDefault<UImGuiSettings>()->FavoritePanels);
+				}
+			}
+
 			if (FTreeNodeSeparator TreeNodeSeparator{ "Recently Panels", ImGuiTreeNodeFlags_DefaultOpen })
 			{
 				if (ImGui::FTable Table{ "RecentlyPanels", ColumnsNum })
 				{
-					int32 ItemCounter = 0;
-					for (int32 Idx = 0; Idx < Overlay->Config->RecentlyPanels.Num(); ++Idx)
-					{
-						const auto& RecentlyPanel = Overlay->Config->RecentlyPanels[Idx];
-						UUnrealImGuiPanelBuilder* Builder = nullptr;
-						UUnrealImGuiPanelBase* Panel = nullptr;
-						for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
-						{
-							const int32 PanelIdx = PanelBuilder->Panels.IndexOfByPredicate([&](const UUnrealImGuiPanelBase* E){ return E->GetClass() == RecentlyPanel; });
-							if (PanelIdx != INDEX_NONE)
-							{
-								Builder = PanelBuilder;
-								Panel = Builder->Panels[PanelIdx];
-							}
-						}
-						if (Panel)
-						{
-							const int32 ColumnIdx = ItemCounter % ColumnsNum;
-							if (ColumnIdx == 0)
-							{
-								ImGui::TableNextRow();
-							}
-							if (ImGui::TableSetColumnIndex(ColumnIdx))
-							{
-								DrawPanelCheckBox(World, Overlay.Get(), Builder, Panel);
-								ItemCounter += 1;
-							}
-						}
-					}
+					DrawPanels(GetDefault<UImGuiPerUserSettings>()->RecentlyOpenPanels);
 				}
 			}
 

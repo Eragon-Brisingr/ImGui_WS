@@ -144,8 +144,6 @@ void UImGuiWorldDebuggerManager::DrawDebugPanel(float DeltaSeconds)
 	{
 		if (ImGui::BeginMenu("Windows"))
 		{
-			ImGui::Separator();
-
 			bool bEnable = Config->bEnableImGuiWorldDebugger;
 			if (ImGui::Checkbox("ImGui World Debugger", &bEnable))
 			{

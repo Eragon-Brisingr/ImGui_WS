@@ -21,6 +21,7 @@ public class ImGui_UnrealPanelsEditor : ModuleRules
                 "Slate",
                 "SlateCore",
                 "WorkspaceMenuStructure",
+                "ToolMenus",
                 
                 "ImGui",
                 "ImGui_Slate",

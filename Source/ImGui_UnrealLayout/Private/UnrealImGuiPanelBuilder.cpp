@@ -258,6 +258,8 @@ void UUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 
 void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 {
+	ImGui::SeparatorText("Panels");
+
 	struct FLocal
 	{
 		static void DrawCategory(const UUnrealImGuiLayoutBase* Layout, const FCategoryPanels& Panels)
@@ -268,27 +270,35 @@ void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 				{
 					DrawCategory(Layout, *Child);
 				}
-				DrawPanelState(Layout, Panels);
+				DrawPanelsState(Layout, Panels);
 				ImGui::EndMenu();
 			}
 		}
-		static void DrawPanelState(const UUnrealImGuiLayoutBase* Layout, const FCategoryPanels& Panels)
+		static void DrawPanelsState(const UUnrealImGuiLayoutBase* Layout, const FCategoryPanels& Panels)
 		{
 			for (UUnrealImGuiPanelBase* Panel : Panels.Panels)
 			{
-				bool IsOpen = Panel->IsOpenedInLayout();
-				if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
+				DrawPanelState(Layout, Panel);
+			}
+		}
+		static void DrawPanelState(const UUnrealImGuiLayoutBase* Layout, UUnrealImGuiPanelBase* Panel)
+		{
+			bool IsOpen = Panel->IsOpenedInLayout();
+			if (ImGui::Checkbox(TCHAR_TO_UTF8(*FString::Printf(TEXT("%s##%s"), *Panel->Title.ToString(), *Panel->GetClass()->GetName())), &IsOpen))
+			{
+				Panel->SetOpenState(IsOpen);
+				if (IsOpen)
 				{
-					Panel->SetOpenState(IsOpen);
-					UUnrealImGuiPanelBase* ConfigObject = Panel->ConfigObjectPrivate;
-					ConfigObject->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
-					ConfigObject->SaveConfig();
+					GetMutableDefault<UImGuiPerUserSettings>()->RecordRecentlyOpenPanel(Panel->GetClass());
 				}
-				if (ImGui::BeginItemTooltip())
-				{
-					ImGui::TextUnformatted(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
-					ImGui::EndTooltip();
-				}
+				UUnrealImGuiPanelBase* ConfigObject = Panel->ConfigObjectPrivate;
+				ConfigObject->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
+				ConfigObject->SaveConfig();
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted(TCHAR_TO_UTF8(*Panel->GetClass()->GetName()));
+				ImGui::EndTooltip();
 			}
 		}
 	};
@@ -297,7 +307,47 @@ void UUnrealImGuiPanelBuilder::DrawPanelStateMenu(UObject* Owner)
 	{
 		FLocal::DrawCategory(Layout, *Child);
 	}
-	FLocal::DrawPanelState(Layout, CategoryPanels);
+	FLocal::DrawPanelsState(Layout, CategoryPanels);
+
+	ImGui::SeparatorText("Utility");
+	if (ImGui::BeginMenu("Favorite"))
+	{
+		bool bHasFavorite = false;
+		for (const auto& PanelClass : GetDefault<UImGuiSettings>()->FavoritePanels)
+		{
+			const int32 Idx = Panels.IndexOfByPredicate([&](const UUnrealImGuiPanelBase* E) { return E->GetClass() == PanelClass.Get(); });
+			if (Idx == INDEX_NONE)
+			{
+				continue;
+			}
+			FLocal::DrawPanelState(Layout, Panels[Idx]);
+			bHasFavorite = true;
+		}
+		if (!bHasFavorite)
+		{
+			ImGui::TextUnformatted("No favorite panel");
+		}
+		ImGui::EndMenu();
+	}
+	if (ImGui::BeginMenu("Recently"))
+	{
+		bool bHasRecently = false;
+		for (const auto& PanelClass : GetDefault<UImGuiPerUserSettings>()->RecentlyOpenPanels)
+		{
+			const int32 Idx = Panels.IndexOfByPredicate([&](const UUnrealImGuiPanelBase* E) { return E->GetClass() == PanelClass.Get(); });
+			if (Idx == INDEX_NONE)
+			{
+				continue;
+			}
+			FLocal::DrawPanelState(Layout, Panels[Idx]);
+			bHasRecently = true;
+		}
+		if (bHasRecently == false)
+		{
+			ImGui::TextUnformatted("No recently history");
+		}
+		ImGui::EndMenu();
+	}
 }
 
 void UUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)

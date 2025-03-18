@@ -7,6 +7,7 @@
 #include "imgui_internal.h"
 #include "LevelEditor.h"
 #include "SImGuiPanel.h"
+#include "ToolMenus.h"
 #include "UnrealImGuiLayoutSubsystem.h"
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
@@ -15,6 +16,7 @@
 #include "UnrealImGuiStyles.h"
 #include "WorkspaceMenuStructure.h"
 #include "WorkspaceMenuStructureModule.h"
+#include "Framework/Application/SlateApplication.h"
 #include "HAL/PlatformFileManager.h"
 #include "Textures/SlateIcon.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -47,6 +49,96 @@ void FImGui_UnrealPanelsEditorModule::StartupModule()
 			});
 		}
 	}
+
+	if (FSlateApplication::IsInitialized() && GetDefault<UImGuiSettings>()->bDisplayToolbarButton)
+	{
+		ToolMenusHandle = UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateLambda([]
+		{
+			UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
+			FToolMenuSection& Section = Menu->AddSection("PlayGameExtensions", TAttribute<FText>(), FToolMenuInsert("Play", EToolMenuInsertType::After));
+
+			FToolMenuEntry AssetValidationEntry = FToolMenuEntry::InitComboButton(
+				"ImGuiPanels",
+				FUIAction{},
+				FOnGetContent::CreateLambda([]
+				{
+					FMenuBuilder MenuBuilder(true, nullptr);
+					MenuBuilder.SetSearchable(true);
+
+					auto GetPanelName = [](const TSoftClassPtr<UObject>& PanelClass)
+					{
+						if (UClass* Class = PanelClass.Get())
+						{
+							auto CDO = Class->GetDefaultObject<UUnrealImGuiPanelBase>();
+							return CDO->Title != NAME_None ? CDO->Title.ToString() : CDO->GetName();
+						}
+						return PanelClass.GetAssetName();
+					};
+
+					auto CreateMenuEntry = [&](const TArray<TSoftClassPtr<UObject>>& Panels)
+					{
+						for (const auto& PanelClass : Panels)
+						{
+							const FName TabId = FName{ *FString::Printf(TEXT("%s_ImGuiPanel"), *PanelClass.ToString()) };
+						
+							MenuBuilder.AddMenuEntry(FText::FromString(GetPanelName(PanelClass)), FText::FromString(PanelClass.ToString()),
+								FSlateIcon("ImGuiEditorStyle", TEXT("ImGui.Icon")),
+								FUIAction(
+									FExecuteAction::CreateLambda([TabId]
+									{
+										FLevelEditorModule* LevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>(TEXT("LevelEditor"));
+										if (LevelEditorModule == nullptr)
+										{
+											return;
+										}
+
+										TSharedPtr<FTabManager> LevelEditorTabManager = LevelEditorModule->GetLevelEditorTabManager();
+										if (LevelEditorTabManager == nullptr)
+										{
+											return;
+										}
+
+										LevelEditorTabManager->TryInvokeTab(TabId);
+									}), FCanExecuteAction{}, FGetActionCheckState::CreateLambda([TabId]
+									{
+										FLevelEditorModule* LevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>(TEXT("LevelEditor"));
+										if (LevelEditorModule == nullptr)
+										{
+											return ECheckBoxState::Undetermined;
+										}
+										TSharedPtr<FTabManager> LevelEditorTabManager = LevelEditorModule->GetLevelEditorTabManager();
+										if (LevelEditorTabManager == nullptr)
+										{
+											return ECheckBoxState::Undetermined;
+										}
+										return LevelEditorTabManager->FindExistingLiveTab(TabId) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+									})), NAME_None, EUserInterfaceActionType::Check);
+						}
+					};
+					
+					MenuBuilder.BeginSection(TEXT("Recently"), LOCTEXT("Recently", "Recently"));
+					CreateMenuEntry(GetDefault<UImGuiPerUserSettings>()->RecentlyOpenPanels);
+					MenuBuilder.EndSection();
+
+					auto Settings = GetDefault<UImGuiSettings>();
+					if (Settings->FavoritePanels.Num() > 0)
+					{
+						MenuBuilder.BeginSection(TEXT("Favorite"), LOCTEXT("Favorite", "Favorite"));
+						CreateMenuEntry(Settings->FavoritePanels);
+						MenuBuilder.EndSection();
+					}
+
+					return MenuBuilder.MakeWidget();
+				}),
+				LOCTEXT("ToolbarImGuiPanels_Label", "ImGui Panels"),
+				LOCTEXT("ToolbarImGuiPanels_ToolTip", "Open ImGui Panels\nAdd Favorite Panels in ProjectSetting-Plugins-ImGui_WS settings"),
+				FSlateIcon("ImGuiEditorStyle", TEXT("ImGui.Icon"))
+			);
+
+			AssetValidationEntry.StyleNameOverride = "CalloutToolbar";
+			Section.AddEntry(AssetValidationEntry);
+		}));
+	}
 }
 
 void FImGui_UnrealPanelsEditorModule::ShutdownModule()
@@ -63,6 +155,11 @@ void FImGui_UnrealPanelsEditorModule::ShutdownModule()
 		{
 			ImGuiSettings->OnPostEditChangeProperty.Remove(OnPostEditChangePropertyHandle);
 		}
+	}
+	
+	if (UObjectInitialized() && ToolMenusHandle.IsValid())
+	{
+		UToolMenus::UnRegisterStartupCallback(ToolMenusHandle);
 	}
 }
 
@@ -205,7 +302,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 							UnrealImGui::ShowStyleSelector();
 
 							auto& IO = ImGui::GetIO();
-							auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+							auto Settings = GetMutableDefault<UImGuiPerUserSettings>();
 							ImGui::SetNextItemWidth(ImGui::GetFontSize());
 							float* DPIScaleSettings = Settings->CustomPanelDPIScaleMap.Find(Class);
 							bool bOverrideDPIScale = DPIScaleSettings ? true : false; 
@@ -308,7 +405,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 			auto Context = ImGuiPanel->GetContext();
 			auto& IO = Context->IO;
 			IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
-			auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+			auto Settings = GetMutableDefault<UImGuiPerUserSettings>();
 			UnrealImGui::DefaultStyle(&Context->Style);
 			if (auto DPIScale = Settings->CustomPanelDPIScaleMap.Find(Class))
 			{
@@ -361,7 +458,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 		{
 			for (const auto& Panel : Panels.Panels)
 			{
-				FName RegistrationName = *FString::Printf(TEXT("%s_ImGuiPanel"), *Panel.Class.ToString());
+				const FName RegistrationName = *FString::Printf(TEXT("%s_ImGuiPanel"), *Panel.Class.ToString());
 				if (TabManager->HasTabSpawner(RegistrationName))
 				{
 					TabManager->UnregisterTabSpawner(RegistrationName);
@@ -384,7 +481,13 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					{
 						EditorContext->InvokeCreateDebugger();
 					}
-										
+
+					// Ignore FTabManager::RestoreFrom case
+					if (GFrameCounter > 0)
+					{
+						GetMutableDefault<UImGuiPerUserSettings>()->RecordRecentlyOpenPanel(Class);
+					}
+
 					SpawnedTab->SetContent(SNew(SImGuiPanelContent, Class));
 					return SpawnedTab;
 				}))

@@ -32,7 +32,7 @@ enum class EImGuiFontGlyphRanges : uint8
 };
 
 UCLASS(Config = EditorPerProjectUserSettings)
-class IMGUI_API UImGuiPerUserSettingsSettings : public UObject
+class IMGUI_API UImGuiPerUserSettings : public UObject
 {
 	GENERATED_BODY()
 public:
@@ -46,6 +46,14 @@ public:
 
 	UPROPERTY(Config)
 	int32 StyleIndex = 0;
+
+	UPROPERTY(EditAnywhere, Config, Category = PerUserSettings)
+	int32 MaxRecordRecentlyNum = 8;
+
+	UPROPERTY(Config)
+	TArray<TSoftClassPtr<UObject>> RecentlyOpenPanels;
+
+	void RecordRecentlyOpenPanel(const TSoftClassPtr<UObject>& PanelClass);
 
 #if WITH_EDITOR
 	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -99,11 +107,19 @@ public:
 	TArray<TSoftClassPtr<UObject>> BlueprintPanels;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "ImGui WS", meta = (EditInline))
-	TObjectPtr<UImGuiPerUserSettingsSettings> PreUserSettings = nullptr;
+	TObjectPtr<UImGuiPerUserSettings> PreUserSettings = nullptr;
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.ImGuiLocalPanelManagerWidget"))
 	TSoftClassPtr<UObject> LocalPanelManagerWidget;
-	
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.UnrealImGuiPanelBase"))
+	TArray<TSoftClassPtr<UObject>> FavoritePanels;
+
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	bool bDisplayToolbarButton = true;
+#endif
+
 #if WITH_EDITOR
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPostEditChangeProperty, UImGuiSettings*, FPropertyChangedEvent&);
 	FOnPostEditChangeProperty OnPostEditChangeProperty;

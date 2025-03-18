@@ -91,7 +91,7 @@ float UnrealImGui::GetSystemDPIScale()
 
 float UnrealImGui::GetGlobalDPIScale()
 {
-	const UImGuiPerUserSettingsSettings* Settings = GetDefault<UImGuiPerUserSettingsSettings>();
+	const UImGuiPerUserSettings* Settings = GetDefault<UImGuiPerUserSettings>();
 	static const bool bIsDedicatedServer = !GIsClient && GIsServer;
 	if (Settings->bOverrideDPIScale || bIsDedicatedServer)
 	{
@@ -103,7 +103,7 @@ float UnrealImGui::GetGlobalDPIScale()
 void UnrealImGui::ShowGlobalDPISettings()
 {
 	ImGuiIO& IO = ImGui::GetIO();
-	auto Settings = GetMutableDefault<UImGuiPerUserSettingsSettings>();
+	auto Settings = GetMutableDefault<UImGuiPerUserSettings>();
 	ImGui::SetNextItemWidth(ImGui::GetFontSize());
 	if (ImGui::Checkbox("##Override DPI Scale", &Settings->bOverrideDPIScale))
 	{

@@ -57,9 +57,6 @@ public:
 	UPROPERTY(Config)
 	FImGuiLocalPanelConfig ViewportConfig{ { 0.1f, 0.1f }, { 0.8f, 0.8f } };
 
-	UPROPERTY(Config)
-	TArray<TSoftClassPtr<UUnrealImGuiPanelBase>> RecentlyPanels;
-
 	void SaveSettings();
 };
 
