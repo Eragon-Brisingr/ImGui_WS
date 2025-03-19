@@ -66,7 +66,7 @@ namespace UnrealImGui
 				checkNoEntry();
 				BytesPerPixel = 0;
 			}
-			ENQUEUE_RENDER_COMMAND(ImGuiFontAtlas)(
+			ENQUEUE_RENDER_COMMAND(ImGuiTexture)(
 				[TextureDataRaw = TArray<uint8>{ Data, Width * Height * BytesPerPixel },
 				TextureFormat,
 				RenderTargetPtr = TWeakObjectPtr<UTextureRenderTarget2D>(Texture)]
@@ -83,11 +83,11 @@ namespace UnrealImGui
 						return;
 					}
 
-					TArray<uint8> FontAtlasTextureData;
-					FontAtlasTextureData.SetNumUninitialized(TextureDataRaw.Num() * 4);
+					TArray<uint8> TextureData;
+					TextureData.SetNumUninitialized(TextureDataRaw.Num() * 4);
 					{
 						const uint8* Src = TextureDataRaw.GetData();
-						uint32* Dst = reinterpret_cast<uint32*>(FontAtlasTextureData.GetData());
+						uint32* Dst = reinterpret_cast<uint32*>(TextureData.GetData());
 						switch (TextureFormat)
 						{
 						case ETextureFormat::Alpha8:
@@ -133,7 +133,7 @@ namespace UnrealImGui
 						0,
 						Region,
 						SrcPitch,
-						FontAtlasTextureData.GetData());
+						TextureData.GetData());
 				});
 		}
 	}
