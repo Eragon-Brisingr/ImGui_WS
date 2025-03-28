@@ -15,6 +15,10 @@
 
 namespace UnrealImGui
 {
+	FObjectPickerSettings GObjectPickerSettings;
+	FActorPickerSettings GActorPickerSettings;
+	FClassPickerSettings GClassPickerSettings;
+	
 	template<typename TActivatedFunc>
 	struct FComboEx : FNoncopyable
 	{
@@ -57,8 +61,7 @@ namespace UnrealImGui
 	{
 		if (Settings == nullptr)
 		{
-			static FObjectPickerSettings GlobalSettings;
-			Settings = &GlobalSettings;
+			Settings = &GObjectPickerSettings;
 		}
 		if (Data == nullptr)
 		{
@@ -173,12 +176,20 @@ namespace UnrealImGui
 					{
 						const FAssetData& Asset = CachedAssetList[Idx];
 						const bool IsSelected = IsSelectedFunc(Asset);
-						ImGui::FIdScope AssetIdScope{ (int32)Asset.PackagePath.GetComparisonIndex().ToUnstableInt() };
+						if (auto Obj = Asset.FastGetAsset())
+						{
+							ImGui::PushID(Obj);
+						}
+						else
+						{
+							ImGui::PushID(Asset.PackageName.GetComparisonIndex().ToUnstableInt());
+						}
 						if (ImGui::Selectable(TCHAR_TO_UTF8(*Asset.AssetName.ToString()), IsSelected))
 						{
 							OnSetValue(Asset);
 							bValueChanged = true;
 						}
+						ImGui::PopID();
 						if (IsSelected)
 						{
 							ImGui::SetItemDefaultFocus();
@@ -245,8 +256,7 @@ namespace UnrealImGui
 	{
 		if (Settings == nullptr)
 		{
-			static FActorPickerSettings GlobalSettings;
-			Settings = &GlobalSettings;
+			Settings = &GActorPickerSettings;
 		}
 		if (Data == nullptr)
 		{
@@ -425,8 +435,7 @@ namespace UnrealImGui
 	{
 		if (Settings == nullptr)
 		{
-			static FClassPickerSettings GlobalSettings;
-			Settings = &GlobalSettings;
+			Settings = &GClassPickerSettings;
 		}
 		if (Data == nullptr)
 		{

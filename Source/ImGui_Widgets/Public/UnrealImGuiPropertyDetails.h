@@ -243,7 +243,7 @@ namespace UnrealImGui
 
 	IMGUI_WIDGETS_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool bHasChildProperties, bool& bIsShowChildren, const FString* NameOverride = nullptr);
 	
-	IMGUI_WIDGETS_API void AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
+	IMGUI_WIDGETS_API void DrawUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
 
 	IMGUI_WIDGETS_API void DrawStructDefaultDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 	IMGUI_WIDGETS_API void DrawClassDefaultDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);

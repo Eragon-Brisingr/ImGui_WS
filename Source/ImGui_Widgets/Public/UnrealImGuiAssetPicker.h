@@ -43,6 +43,7 @@ namespace UnrealImGui
 		const char* FilterHint = "Filter";
 		TFunction<bool(const AActor*)> CustomFilter;
 	};
+	IMGUI_WIDGETS_API extern FActorPickerSettings GActorPickerSettings;
 	struct FActorPickerData
 	{
 		FUTF8String FilterString;
@@ -71,6 +72,7 @@ namespace UnrealImGui
 		TFunction<bool(const UClass*)> CustomFilter;
 		TFunction<bool(const FAssetData&)> CustomFilterUnloadBp;
 	};
+	IMGUI_WIDGETS_API extern FObjectPickerSettings GObjectPickerSettings;
 	struct FClassPickerData
 	{
 		FUTF8String FilterString;

@@ -384,7 +384,7 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 	}
 }
 
-void UnrealImGui::AddUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
+void UnrealImGui::DrawUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
 {
 	FPropertyDisableScope ImGuiDisableScope{ Property };
 	ImGui::FIdScope IdScope{ Property };
@@ -499,7 +499,7 @@ void UnrealImGui::DrawStructDefaultDetails(const UStruct* TopStruct, const FPtrA
 		{
 			continue;
 		}
-		AddUnrealProperty(Property, Instances, Offset + Property->GetOffset_ForInternal());
+		DrawUnrealProperty(Property, Instances, Offset + Property->GetOffset_ForInternal());
 	}
 }
 
@@ -520,7 +520,7 @@ void UnrealImGui::DrawClassDefaultDetails(const UClass* TopClass, bool CollapseC
 					{
 						continue;
 					}
-					AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset + Property->GetOffset_ForInternal());
+					DrawUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset + Property->GetOffset_ForInternal());
 				}
 			}
 			else
@@ -583,7 +583,7 @@ void UnrealImGui::DrawClassDefaultDetails(const UClass* TopClass, bool CollapseC
 						{
 							continue;
 						}
-						AddUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset + Property->GetOffset_ForInternal());
+						DrawUnrealProperty(Property, reinterpret_cast<const FPtrArray&>(Instances), Offset + Property->GetOffset_ForInternal());
 					}
 					ImGui::TreePop();
 				}
