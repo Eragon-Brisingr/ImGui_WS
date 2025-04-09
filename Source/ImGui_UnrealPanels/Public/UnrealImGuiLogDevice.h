@@ -48,9 +48,9 @@ namespace UnrealImGui
 	private:
 		void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category) override;
 
-		std::atomic<bool> bIsFlushInvoked{ false };
+		std::atomic<bool> bIsConsumeInvoked{ false };
 		TQueue<FLog> PendingConsumeLogs;
-		void Flush();
+		void ConsumeLogs();
 	};
 
 	extern IMGUI_UNREALPANELS_API FUnrealImGuiOutputDevice GUnrealImGuiOutputDevice;

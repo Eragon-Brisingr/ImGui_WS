@@ -117,7 +117,7 @@ public:
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
-	bool bDisplayToolbarButton = true;
+	bool bDisplayToolbarButton = false;
 #endif
 
 #if WITH_EDITOR

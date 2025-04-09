@@ -75,18 +75,18 @@ namespace UnrealImGui
 		}
 
 		PendingConsumeLogs.Enqueue(FLog{ Message, TestVerbosity, Category, FDateTime::Now(), GFrameCounter });
-		if (bIsFlushInvoked == false)
+		if (bIsConsumeInvoked == false)
 		{
-			bIsFlushInvoked = true;
+			bIsConsumeInvoked = true;
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				Flush();
-				bIsFlushInvoked = false;
+				ConsumeLogs();
+				bIsConsumeInvoked = false;
 			});
 		}
 	}
 
-	void FUnrealImGuiOutputDevice::Flush()
+	void FUnrealImGuiOutputDevice::ConsumeLogs()
 	{
 		while (PendingConsumeLogs.IsEmpty() == false)
 		{
