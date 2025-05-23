@@ -107,11 +107,8 @@ public:
 	}
 	
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
-	static void DrawObjectDetailTable(FName Label, UObject* Object)
-	{
-		if (Object)
-		{
-			UnrealImGui::DrawDetailTable(TCHAR_TO_UTF8(*Label.ToString()), Object->GetClass(), { Object });
-		}
-	}
+	static void DrawObjectDetailTable(FName Label, UObject* Object);
+
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
+	static bool DrawSingleProperty(FName PropertyName, UObject* Object);
 };

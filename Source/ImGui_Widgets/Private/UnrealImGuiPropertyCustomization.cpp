@@ -18,6 +18,7 @@ namespace UnrealImGui
 		extern FObjectArray GOuters;
 		extern const FDetailsFilter* GFilter;
 		extern IMGUI_WIDGETS_API FPostPropertyNameWidgetCreated GPostPropertyNameWidgetCreated;
+		extern bool bPropertyValueChanged;
 	}
 	
 	bool bPropertyDisable = false;
@@ -970,6 +971,7 @@ namespace UnrealImGui
 		FPtrArray SetRawPtr;
 		SetRawPtr.SetNum(Containers.Num());
 
+		InnerValue::bPropertyValueChanged = false;
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
 			ImGui::FIdScope IdScope{ ElemIdx };
@@ -979,7 +981,7 @@ namespace UnrealImGui
 			}
 
 			AddUnrealContainerPropertyInner(SetProperty->ElementProp, SetRawPtr, 0,
-				[ElemIdx, &PropertyCustomization](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool& bIsShowChildren)
+				[ElemIdx, &PropertyCustomization, &Helpers](const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool& bIsShowChildren)
 			{
 				const FString ElementName = FString::FromInt(ElemIdx);
 				CreateUnrealPropertyNameWidget(Property, Containers, Offset, bIsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, bIsIdentical), bIsShowChildren, &ElementName);
@@ -1009,6 +1011,14 @@ namespace UnrealImGui
 			for (auto& It : Iterators)
 			{
 				++It;
+			}
+		}
+
+		if (InnerValue::bPropertyValueChanged)
+		{
+			for (auto& Helper : Helpers)
+			{
+				Helper.Rehash();
 			}
 		}
 	}
@@ -1164,6 +1174,7 @@ namespace UnrealImGui
 			Customization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(ObjectProperty->PropertyClass);
 		}
 
+		InnerValue::bPropertyValueChanged = false;
 		for (int32 ElemIdx = 0; ElemIdx < Helpers[0].Num(); ++ElemIdx)
 		{
 			ImGui::FIdScope IdScope{ ElemIdx };
@@ -1268,6 +1279,14 @@ namespace UnrealImGui
 			}
 
 			ImGui::NextColumn();
+		}
+
+		if (InnerValue::bPropertyValueChanged)
+		{
+			for (auto& Helper : Helpers)
+			{
+				Helper.Rehash();
+			}
 		}
 	}
 

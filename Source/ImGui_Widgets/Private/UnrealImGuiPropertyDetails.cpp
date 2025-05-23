@@ -29,6 +29,8 @@ namespace UnrealImGui
 	
 		TMap<FFilterCacheKey, bool> FilterCacheMap;
 		IMGUI_WIDGETS_API FPostPropertyNameWidgetCreated GPostPropertyNameWidgetCreated;
+
+		bool bPropertyValueChanged = false;
 		
 		bool IsVisible(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, const TSharedPtr<IUnrealPropertyCustomization>& PropertyCustomization, const TSharedPtr<IUnrealStructCustomization>& Customization)
 		{
@@ -740,5 +742,6 @@ bool UnrealImGui::IsAllPropertiesIdentical(const FProperty* Property, const FPtr
 
 void UnrealImGui::NotifyPostPropertyValueChanged(const FProperty* Property)
 {
+	InnerValue::bPropertyValueChanged = true;
 	GlobalValue::GPostPropertyValueChanged.ExecuteIfBound(Property);
 }

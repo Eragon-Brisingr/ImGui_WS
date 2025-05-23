@@ -197,3 +197,34 @@ bool UUnrealImGuiLibrary::ComboSoftClassPickerEx(FName Label, UClass* BaseClass,
 	auto Scope = UnrealImGuiLibrary::FClassPickerSettingsScope{ Settings };
 	return UnrealImGui::ComboSoftClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, &UnrealImGuiLibrary::ClassPickerSettings);
 }
+
+void UUnrealImGuiLibrary::DrawObjectDetailTable(FName Label, UObject* Object)
+{
+	if (!CheckImGuiContextThrowError()) { return; }
+	if (Object)
+	{
+		UnrealImGui::DrawDetailTable(TCHAR_TO_UTF8(*Label.ToString()), Object->GetClass(), { Object });
+	}
+}
+
+bool UUnrealImGuiLibrary::DrawSingleProperty(FName PropertyName, UObject* Object)
+{
+	if (!CheckImGuiContextThrowError()) { return false; }
+	FProperty* Property = Object ? Object->GetClass()->FindPropertyByName(PropertyName) : nullptr;
+	if (Property == nullptr)
+	{
+		return false;
+	}
+
+	bool bChanged = false;
+	if (ImGui::BeginTable(TCHAR_TO_UTF8(*PropertyName.ToString()), 2))
+	{
+		UnrealImGui::FDetailTableContextGuard DetailTableContextGuard{ nullptr, UnrealImGui::FPostPropertyValueChanged::CreateLambda([&bChanged](const FProperty*)
+		{
+			bChanged = true;
+		}) };
+		UnrealImGui::DrawUnrealProperty(Property, { reinterpret_cast<uint8*>(Object) }, Property->GetOffset_ForInternal());
+		ImGui::EndTable();
+	}
+	return bChanged;
+}
