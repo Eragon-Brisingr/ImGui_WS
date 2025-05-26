@@ -52,6 +52,11 @@ void UImGuiEditorDefaultDebugger::Register()
 	PanelBuilder->Register(this);
 }
 
+void UImGuiEditorDefaultDebugger::Unregister()
+{
+	PanelBuilder->Unregister(this);
+}
+
 void UImGuiEditorDefaultDebugger::Draw(float DeltaSeconds)
 {
 	UObject* Owner = this;

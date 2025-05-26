@@ -12,8 +12,9 @@ public:
     void ShutdownModule() override;
 
 #if WITH_EDITOR
-    TWeakObjectPtr<UImGuiEditorDefaultDebugger> DefaultEditorDebugger;
+	TWeakObjectPtr<UImGuiEditorDefaultDebugger> DefaultEditorDebugger;
 
-    UImGuiEditorDefaultDebugger* GetEditorDebugger();
+	FDelegateHandle OnCDOConstructHandle;
+	FDelegateHandle OnPostEditChangePropertyHandle;
 #endif
 };

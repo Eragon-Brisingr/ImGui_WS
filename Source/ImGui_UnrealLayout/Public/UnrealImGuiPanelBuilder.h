@@ -13,9 +13,10 @@ UCLASS(Config = GameUserSettings, PerObjectConfig)
 class IMGUI_UNREALLAYOUT_API UUnrealImGuiPanelBuilder : public UObject
 {
 	GENERATED_BODY()
+
+	template<bool bReenter>
+	void ConstructPanels(UObject* Owner);
 public:
-	UUnrealImGuiPanelBuilder();
-	
 	// Layout name
 	FName DockSpaceName = NAME_None;
 
@@ -27,6 +28,10 @@ public:
 
 	void DrawPanelStateMenu(UObject* Owner);
 	void DrawLayoutStateMenu(UObject* Owner);
+
+#if WITH_EDITOR
+	void ReconstructPanels_Editor(UObject* Owner);
+#endif
 
 	UFUNCTION(BlueprintCallable, Category = ImGui, meta = (DeterminesOutputType = PanelType))
 	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const;
@@ -45,7 +50,7 @@ public:
 	TSoftClassPtr<UUnrealImGuiLayoutBase> ActiveLayoutClass;
 
 	UPROPERTY(Transient)
-	TArray<UUnrealImGuiPanelBase*> Panels;
+	TArray<TObjectPtr<UUnrealImGuiPanelBase>> Panels;
 	struct FCategoryPanels
 	{
 		FCategoryPanels(const FName& Category)
@@ -57,6 +62,10 @@ public:
 		TMap<FName, TUniquePtr<FCategoryPanels>> Children;
 	};
 	FCategoryPanels CategoryPanels{ NAME_None };
+
+	const auto& GetPanelsMap() const { return PanelsMap; }
 private:
 	TSharedPtr<FStreamableHandle> StreamableHandle;
+
+	TMap<const UClass*, UUnrealImGuiPanelBase*> PanelsMap;
 };

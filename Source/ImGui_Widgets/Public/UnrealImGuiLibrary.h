@@ -98,14 +98,8 @@ public:
 	static bool ComboSoftClassPickerEx(FName Label, UClass* BaseClass, UPARAM(Ref)TSoftClassPtr<UObject>& SoftClassPtr, bool bAllowAbstract, const FUnrealImGuiClassPickerSettings& Settings);
 
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
-	static bool ComboEnum(FName Label, uint8& EnumValue, UEnum* EnumType, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiComboFlags"))int32 Flags = 0)
-	{
-		int64 Value = EnumValue;
-		const bool bChanged = UnrealImGui::ComboEnum(TCHAR_TO_UTF8(*Label.ToString()), Value, EnumType, Flags);
-		EnumValue = Value;
-		return bChanged;
-	}
-	
+	static bool ComboEnum(FName Label, uint8& EnumValue, UEnum* EnumType, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiComboFlags"))int32 Flags = 0);
+
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	static void DrawObjectDetailTable(FName Label, UObject* Object);
 

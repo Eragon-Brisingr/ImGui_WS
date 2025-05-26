@@ -18,4 +18,5 @@ private:
     FDelegateHandle OnTabManagerChangedHandle;
     FDelegateHandle OnPostEditChangePropertyHandle;
     FDelegateHandle ToolMenusHandle;
+	FDelegateHandle OnCDOConstructHandle;
 };

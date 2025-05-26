@@ -11,24 +11,9 @@
 #include "UnrealImGuiStat.h"
 #include "Engine/AssetManager.h"
 
-UUnrealImGuiPanelBuilder::UUnrealImGuiPanelBuilder()
+template <bool bReenter>
+void UUnrealImGuiPanelBuilder::ConstructPanels(UObject* Owner)
 {
-
-}
-
-void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
-{
-	if (DockSpaceName == NAME_None)
-	{
-		checkNoEntry();
-		return;
-	}
-
-	if (FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(this))
-	{
-		LayoutManager->PanelBuilders.Add(this);
-	}
-
 	// 只对继承树叶节点的类型生效
 	static auto RemoveNotLeafClass = [](TArray<UClass*>& Classes)
 	{
@@ -76,6 +61,8 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 	};
 
 	{
+		const int32 OldLayoutNum = Layouts.Num();
+		
 		TArray<UClass*> LayoutClasses;
 		GetDerivedClasses(UUnrealImGuiLayoutBase::StaticClass(), LayoutClasses);
 		RemoveNotLeafClass(LayoutClasses);
@@ -92,6 +79,14 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
+			if constexpr (bReenter)
+			{
+				if (Layouts.ContainsByPredicate([&](const UUnrealImGuiLayoutBase* E){ return E->GetClass() == Class; }))
+				{
+					continue;
+				}
+			}
+			
 			UUnrealImGuiLayoutBase* Layout = NewObject<UUnrealImGuiLayoutBase>(this, Class, Class->GetFName(), RF_Transient);
 			if (Layout->LayoutName == NAME_None)
 			{
@@ -103,8 +98,9 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				ActiveLayoutIndex = Idx;
 			}
 		}
-		for (UUnrealImGuiLayoutBase* Layout : Layouts)
+		for (int32 Idx = OldLayoutNum; Idx < Layouts.Num(); ++Idx)
 		{
+			UUnrealImGuiLayoutBase* Layout = Layouts[Idx];
 			Layout->Register(Owner, *this);
 		}
 	}
@@ -126,6 +122,8 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 		Container->Panels.Add(Panel);
 	};
 	{
+		const int32 OldPanelNum = Panels.Num();
+
 		TArray<UClass*> PanelClasses;
 		GetDerivedClasses(UUnrealImGuiPanelBase::StaticClass(), PanelClasses);
 		RemoveNotLeafClass(PanelClasses);
@@ -149,9 +147,23 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				continue;
 			}
 
+			if constexpr (bReenter)
+			{
+				if (PanelsMap.Contains(Class))
+				{
+					continue;
+				}
+			}
+
 			UUnrealImGuiPanelBase* Panel = CreatePanel(this, Class);
 			Panels.Add(Panel);
+			PanelsMap.Add(Class, Panel);
 			UpdateCategoryPanels(Panel);
+		}
+		const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
+		for (int32 Idx = OldPanelNum; Idx < Panels.Num(); ++Idx)
+		{
+			RegisterPanel(Owner, Layout, Panels[Idx], this);
 		}
 
 		TArray<FSoftObjectPath> ToLoadClasses;
@@ -186,9 +198,15 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 				int32 Idx = Panels.Num();
 				for (const UClass* Class : Classes)
 				{
+					if (PanelsMap.Contains(Class))
+					{
+						continue;
+					}
+					
 					UUnrealImGuiPanelBase* Panel = CreatePanel(this, Class);
 					UpdateCategoryPanels(Panel);
 					Panels.Add(Panel);
+					PanelsMap.Add(Class, Panel);
 				}
 				const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
 				for (; Idx < Panels.Num(); ++Idx)
@@ -198,12 +216,22 @@ void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
 			}));
 		}
 	}
+}
 
-	const UUnrealImGuiLayoutBase* Layout = GetActiveLayout();
-	for (UUnrealImGuiPanelBase* Panel : Panels)
+void UUnrealImGuiPanelBuilder::Register(UObject* Owner)
+{
+	if (DockSpaceName == NAME_None)
 	{
-		RegisterPanel(Owner, Layout, Panel, this);
+		checkNoEntry();
+		return;
 	}
+
+	if (FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(this))
+	{
+		LayoutManager->PanelBuilders.Add(this);
+	}
+
+	ConstructPanels<false>(Owner);
 }
 
 void UUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
@@ -227,6 +255,9 @@ void UUnrealImGuiPanelBuilder::Unregister(UObject* Owner)
 	{
 		Panel->Unregister(Owner, this);
 	}
+	Layouts.Reset();
+	Panels.Reset();
+	PanelsMap.Reset();
 
 	if (FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(this))
 	{
@@ -369,14 +400,18 @@ void UUnrealImGuiPanelBuilder::DrawLayoutStateMenu(UObject* Owner)
 	}
 }
 
+#if WITH_EDITOR
+void UUnrealImGuiPanelBuilder::ReconstructPanels_Editor(UObject* Owner)
+{
+	ConstructPanels<true>(Owner);
+}
+#endif
+
 UUnrealImGuiPanelBase* UUnrealImGuiPanelBuilder::FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const
 {
-	for (UUnrealImGuiPanelBase* Panel : Panels)
+	if (UUnrealImGuiPanelBase* Panel = PanelsMap.FindRef(PanelType))
 	{
-		if (Panel->IsA(PanelType))
-		{
-			return Panel->IsOpened() ? Panel : nullptr;
-		}
+		return Panel->IsOpened() ? Panel : nullptr;
 	}
 	return nullptr;
 }

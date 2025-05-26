@@ -27,5 +27,10 @@ public class ImGui_UnrealLayout : ModuleRules
                 "ImGui_Slate",
             }
         );
+
+        if (Target.bBuildEditor)
+        {
+	        PrivateDependencyModuleNames.Add("UnrealEd");
+        }
     }
 }

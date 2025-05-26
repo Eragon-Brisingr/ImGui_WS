@@ -20,6 +20,7 @@ public class ImGui_UnrealPanelsEditor : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
+	            "UnrealEd",
                 "WorkspaceMenuStructure",
                 "ToolMenus",
                 

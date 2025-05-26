@@ -49,5 +49,6 @@ public:
 	TObjectPtr<UUnrealImGuiPanelBuilder> PanelBuilder;
 
 	void Register();
+	void Unregister();
 	void Draw(float DeltaSeconds);
 };

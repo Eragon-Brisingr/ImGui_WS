@@ -49,6 +49,13 @@ class IMGUI_UNREALLAYOUT_API UUnrealImGuiPanelBase : public UObject
 public:
 	UUnrealImGuiPanelBase();
 
+#if WITH_EDITOR
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnCDOConstruct_Editor, const UUnrealImGuiPanelBase*);
+	static FOnCDOConstruct_Editor OnCDOConstruct_Editor;
+
+	void PostCDOContruct() override;
+#endif
+
 	UPROPERTY(EditDefaultsOnly, meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiWindowFlags"), Category = Settings)
 	int32 ImGuiWindowFlags;
 	UPROPERTY(EditDefaultsOnly, Category = Settings)

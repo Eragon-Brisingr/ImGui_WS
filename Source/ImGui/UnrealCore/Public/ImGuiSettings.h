@@ -122,7 +122,7 @@ public:
 
 #if WITH_EDITOR
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPostEditChangeProperty, UImGuiSettings*, FPropertyChangedEvent&);
-	FOnPostEditChangeProperty OnPostEditChangeProperty;
+	static FOnPostEditChangeProperty OnPostEditChangeProperty;
 	
 	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif

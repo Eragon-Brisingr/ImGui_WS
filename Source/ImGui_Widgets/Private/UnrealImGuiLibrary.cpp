@@ -198,6 +198,15 @@ bool UUnrealImGuiLibrary::ComboSoftClassPickerEx(FName Label, UClass* BaseClass,
 	return UnrealImGui::ComboSoftClassPicker(TCHAR_TO_UTF8(*Label.ToString()), BaseClass, SoftClassPtr, bAllowAbstract ? CLASS_Abstract : CLASS_None, &UnrealImGuiLibrary::ClassPickerSettings);
 }
 
+bool UUnrealImGuiLibrary::ComboEnum(FName Label, uint8& EnumValue, UEnum* EnumType, int32 Flags)
+{
+	if (!CheckImGuiContextThrowError()) { return false; }
+	int64 Value = EnumValue;
+	const bool bChanged = UnrealImGui::ComboEnum(TCHAR_TO_UTF8(*Label.ToString()), Value, EnumType, Flags);
+	EnumValue = Value;
+	return bChanged;
+}
+
 void UUnrealImGuiLibrary::DrawObjectDetailTable(FName Label, UObject* Object)
 {
 	if (!CheckImGuiContextThrowError()) { return; }

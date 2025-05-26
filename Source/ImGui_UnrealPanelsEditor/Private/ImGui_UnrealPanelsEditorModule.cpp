@@ -16,6 +16,7 @@
 #include "UnrealImGuiStyles.h"
 #include "WorkspaceMenuStructure.h"
 #include "WorkspaceMenuStructureModule.h"
+#include "Engine/BlueprintCore.h"
 #include "Framework/Application/SlateApplication.h"
 #include "HAL/PlatformFileManager.h"
 #include "Textures/SlateIcon.h"
@@ -34,20 +35,33 @@ void FImGui_UnrealPanelsEditorModule::StartupModule()
 
 	if (FLevelEditorModule* LevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>(TEXT("LevelEditor")))
 	{
+		static bool bTabManagerUpdated = false;
 		OnTabManagerChangedHandle = LevelEditorModule->OnTabManagerChanged().AddLambda([this]
 		{
+			bTabManagerUpdated = true;
 			RefreshGroupMenu();
 		});
-		if (UImGuiSettings* ImGuiSettings = GetMutableDefault<UImGuiSettings>())
+		OnPostEditChangePropertyHandle = UImGuiSettings::OnPostEditChangeProperty.AddLambda([this](UImGuiSettings*, FPropertyChangedEvent& Event)
 		{
-			OnPostEditChangePropertyHandle = ImGuiSettings->OnPostEditChangeProperty.AddLambda([this](UImGuiSettings*, FPropertyChangedEvent& Event)
+			if (Event.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UImGuiSettings, BlueprintPanels))
 			{
-				if (Event.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UImGuiSettings, BlueprintPanels))
+				RefreshGroupMenu();
+			}
+		});
+		OnCDOConstructHandle = UUnrealImGuiPanelBase::OnCDOConstruct_Editor.AddLambda([this](const UUnrealImGuiPanelBase* CDO)
+		{
+			if (bTabManagerUpdated && GEditor && Cast<UBlueprintCore>(CDO->GetClass()->ClassGeneratedBy) == nullptr)
+			{
+				static bool bInvokeUpdated = false;
+				if (bInvokeUpdated == false)
 				{
-					RefreshGroupMenu();
+					GEditor->GetTimerManager()->SetTimerForNextTick([this]
+					{
+						RefreshGroupMenu();
+					});
 				}
-			});
-		}
+			}
+		});
 	}
 
 	if (FSlateApplication::IsInitialized() && GetDefault<UImGuiSettings>()->bDisplayToolbarButton)
@@ -144,18 +158,13 @@ void FImGui_UnrealPanelsEditorModule::StartupModule()
 void FImGui_UnrealPanelsEditorModule::ShutdownModule()
 {
 	WorkspaceMenu::GetMenuStructure().GetToolsCategory()->RemoveItem(ImGuiPanelsGroup.ToSharedRef());
-	
+
 	if (FLevelEditorModule* LevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>(TEXT("LevelEditor")))
 	{
 		LevelEditorModule->OnTabManagerChanged().Remove(OnTabManagerChangedHandle);
 	}
-	if (!IsEngineExitRequested())
-	{
-		if (UImGuiSettings* ImGuiSettings = GetMutableDefault<UImGuiSettings>())
-		{
-			ImGuiSettings->OnPostEditChangeProperty.Remove(OnPostEditChangePropertyHandle);
-		}
-	}
+	UImGuiSettings::OnPostEditChangeProperty.Remove(OnPostEditChangePropertyHandle);
+	UUnrealImGuiPanelBase::OnCDOConstruct_Editor.Remove(OnCDOConstructHandle);
 	
 	if (UObjectInitialized() && ToolMenusHandle.IsValid())
 	{
@@ -233,7 +242,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 	RemoveNotLeafClass(PanelClasses);
 	for (const UClass* Class : PanelClasses)
 	{
-		if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated))
+		if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists))
 		{
 			continue;
 		}
@@ -370,19 +379,12 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 						}
 						for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
 						{
-							for (UUnrealImGuiPanelBase* TestPanel : PanelBuilder->Panels)
+							if (UUnrealImGuiPanelBase* TestPanel = PanelBuilder->GetPanelsMap().FindRef(Class))
 							{
-								if (TestPanel->GetClass() == Class)
-								{
-									Panel = TestPanel;
-									Panel->LocalPanelOpened();
-									DrawPanel = Panel;
-									Builder = PanelBuilder;
-									break;
-								}
-							}
-							if (Panel)
-							{
+								Panel = TestPanel;
+								Panel->LocalPanelOpened();
+								DrawPanel = Panel;
+								Builder = PanelBuilder;
 								break;
 							}
 						}

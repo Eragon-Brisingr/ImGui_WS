@@ -1016,11 +1016,11 @@ public:
 					UUnrealImGuiPanelBase* Panel = nullptr;
 					for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
 					{
-						const int32 PanelIdx = PanelBuilder->Panels.IndexOfByPredicate([&](const UUnrealImGuiPanelBase* E){ return E->GetClass() == PanelClass; });
-						if (PanelIdx != INDEX_NONE)
+						Panel = PanelBuilder->GetPanelsMap().FindRef(PanelClass.Get());
+						if (Panel != nullptr)
 						{
 							Builder = PanelBuilder;
-							Panel = Builder->Panels[PanelIdx];
+							break;
 						}
 					}
 					if (Panel)

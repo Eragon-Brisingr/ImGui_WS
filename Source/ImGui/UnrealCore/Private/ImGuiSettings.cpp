@@ -32,6 +32,8 @@ UImGuiSettings::UImGuiSettings()
 }
 
 #if WITH_EDITOR
+UImGuiSettings::FOnPostEditChangeProperty UImGuiSettings::OnPostEditChangeProperty;
+
 void UImGuiSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);

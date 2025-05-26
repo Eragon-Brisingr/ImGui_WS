@@ -14,6 +14,17 @@ UUnrealImGuiPanelBase::UUnrealImGuiPanelBase()
 	Categories.Add(TEXT("Misc"));
 }
 
+#if WITH_EDITOR
+UUnrealImGuiPanelBase::FOnCDOConstruct_Editor UUnrealImGuiPanelBase::OnCDOConstruct_Editor;
+
+void UUnrealImGuiPanelBase::PostCDOContruct()
+{
+	Super::PostCDOContruct();
+
+	OnCDOConstruct_Editor.Broadcast(this);
+}
+#endif
+
 void UUnrealImGuiPanelBase::SetOpenState(bool bOpen)
 {
 	UUnrealImGuiPanelBase* ConfigObject = ConfigObjectPrivate;
