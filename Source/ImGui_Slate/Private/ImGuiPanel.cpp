@@ -56,9 +56,9 @@ TSharedRef<SWidget> UImGuiPanel::RebuildWidget()
 			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 			const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
 			PlatformFile.CreateDirectory(*IniDirectory);
-			IniFilePath = IniDirectory / IniFileName;
+			IniFilePath = FUtf8String{ IniDirectory / IniFileName };
 		}
-		IO.IniFilename = IniFilePath.GetData();
+		IO.IniFilename = reinterpret_cast<const char*>(*IniFilePath);
 	}
 	IO.ConfigFlags = ConfigFlags;
 	return ImGuiPanel;

@@ -278,7 +278,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 				{
 					const auto Cmd = This.MatchedCmd[This.SelectedCmdBarIndex];
 					Data->DeleteChars(0, Data->BufTextLen);
-					Data->InsertChars(0, *Cmd.CmdString);
+					Data->InsertChars(0, (const char*)*Cmd.CmdString);
 					This.SetCmdString(*Cmd.CmdString);
 				}
 			}
@@ -302,7 +302,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 							}
 							This.SelectedCmdBarIndex = ConsoleHistory.Num() - 1;
 							Data->DeleteChars(0, Data->BufTextLen);
-							Data->InsertChars(0, *This.MatchedCmd.Last().CmdString);
+							Data->InsertChars(0, (const char*)*This.MatchedCmd.Last().CmdString);
 							This.CmdString = ConsoleHistory.Last();
 						}
 					}
@@ -319,7 +319,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 						}
 						const auto Cmd = This.MatchedCmd[This.SelectedCmdBarIndex];
 						Data->DeleteChars(0, Data->BufTextLen);
-						Data->InsertChars(0, *Cmd.CmdString);
+						Data->InsertChars(0, (const char*)*Cmd.CmdString);
 						This.CmdString = *Cmd.CmdString;
 					}
 				}
@@ -331,7 +331,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 						This.SelectedCmdBarIndex += 1;
 						const auto Cmd = This.MatchedCmd[This.SelectedCmdBarIndex];
 						Data->DeleteChars(0, Data->BufTextLen);
-						Data->InsertChars(0, *Cmd.CmdString);
+						Data->InsertChars(0, (const char*)*Cmd.CmdString);
 						This.CmdString = *Cmd.CmdString;
 					}
 				}
@@ -381,7 +381,7 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 					{
 						ImGui::TableNextColumn();
 						const auto& Cmd = MatchedCmd[Idx];
-						if (ImGui::Selectable(*Cmd.CmdString, SelectedCmdBarIndex == Idx))
+						if (ImGui::Selectable((const char*)*Cmd.CmdString, SelectedCmdBarIndex == Idx))
 						{
 							SetCmdString(*Cmd.CmdString);
 						}
@@ -390,10 +390,10 @@ void FUnrealImGuiCmdDevice::Draw(UObject* Owner)
 							ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterY);
 						}
 						ImGui::TableNextColumn();
-						ImGui::TextUnformatted(*Cmd.CmdHelp);
+						ImGui::TextUnformatted((const char*)*Cmd.CmdHelp);
 						if (ImGui::BeginItemTooltip())
 						{
-							ImGui::TextUnformatted(*Cmd.CmdHelp);
+							ImGui::TextUnformatted((const char*)*Cmd.CmdHelp);
 							ImGui::EndTooltip();
 						}
 					}

@@ -23,15 +23,15 @@ TAutoConsoleVariable<float> UnrealImGuiLogMaxSize
 
 namespace UnrealImGui
 {
-	FUTF8String VerbosityString[ELogVerbosity::NumVerbosity] =
+	FUtf8String VerbosityString[ELogVerbosity::NumVerbosity] =
 	{
-		FUTF8String{ ::ToString(ELogVerbosity::Fatal) },
-		FUTF8String{ ::ToString(ELogVerbosity::Error) },
-		FUTF8String{ ::ToString(ELogVerbosity::Warning) },
-		FUTF8String{ ::ToString(ELogVerbosity::Display) },
-		FUTF8String{ ::ToString(ELogVerbosity::Log) },
-		FUTF8String{ ::ToString(ELogVerbosity::Verbose) },
-		FUTF8String{ ::ToString(ELogVerbosity::VeryVerbose) },
+		FUtf8String{ ::ToString(ELogVerbosity::Fatal) },
+		FUtf8String{ ::ToString(ELogVerbosity::Error) },
+		FUtf8String{ ::ToString(ELogVerbosity::Warning) },
+		FUtf8String{ ::ToString(ELogVerbosity::Display) },
+		FUtf8String{ ::ToString(ELogVerbosity::Log) },
+		FUtf8String{ ::ToString(ELogVerbosity::Verbose) },
+		FUtf8String{ ::ToString(ELogVerbosity::VeryVerbose) },
 	};
 
 	ImU32 VerbosityColor[ELogVerbosity::NumVerbosity] =
@@ -47,7 +47,7 @@ namespace UnrealImGui
 
 	FUnrealImGuiOutputDevice GUnrealImGuiOutputDevice;
 
-	const FUTF8String& ToString(ELogVerbosity::Type Verbosity)
+	const FUtf8String& ToString(ELogVerbosity::Type Verbosity)
 	{
 		return VerbosityString[Verbosity - 1];
 	}
@@ -211,7 +211,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 			{
 				const ELogVerbosity::Type Verbosity = static_cast<ELogVerbosity::Type>(VerbosityIdx);
 				ImGui::PushStyleColor(ImGuiCol_Text, UnrealImGui::ToColor(Verbosity));
-				if (ImGui::Checkbox(*UnrealImGui::ToString(Verbosity), &VerbosityVisibility[Verbosity - 1]))
+				if (ImGui::Checkbox((const char*)*UnrealImGui::ToString(Verbosity), &VerbosityVisibility[Verbosity - 1]))
 				{
 					RefreshDisplayLines();
 					Owner->SaveConfig();

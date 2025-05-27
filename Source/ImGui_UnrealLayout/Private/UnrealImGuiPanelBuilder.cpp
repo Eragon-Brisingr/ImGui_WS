@@ -283,7 +283,19 @@ void UUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 		{
 			continue;
 		}
-		Panel->DrawWindow(Layout, Owner, this, DeltaSeconds);
+		UUnrealImGuiPanelBase* ConfigObject = Panel->ConfigObjectPrivate;
+		if (ConfigObject->bIsOpen == false)
+		{
+			continue;
+		}
+		bool bIsOpen = ConfigObject->bIsOpen;
+		Panel->DrawWindow(Layout, Owner, this, DeltaSeconds, bIsOpen);
+		if (ConfigObject->bIsOpen != bIsOpen)
+		{
+			ConfigObject->PanelOpenState.Add(Layout->GetClass()->GetFName(), bIsOpen);
+			Panel->SetOpenState(bIsOpen);
+			ConfigObject->SaveConfig();
+		}
 	}
 }
 

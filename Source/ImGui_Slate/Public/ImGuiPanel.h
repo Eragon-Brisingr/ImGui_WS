@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "imgui.h"
-#include "UnrealImGuiString.h"
 #include "Components/Widget.h"
+#include "Containers/Utf8String.h"
 #include "ImGuiPanel.generated.h"
 
 UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
@@ -49,5 +49,5 @@ public:
 #endif
 
 private:
-	UnrealImGui::FUTF8String IniFilePath;
+	FUtf8String IniFilePath;
 };

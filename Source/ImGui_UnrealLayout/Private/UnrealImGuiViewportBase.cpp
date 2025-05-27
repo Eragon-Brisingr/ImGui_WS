@@ -285,21 +285,16 @@ void UUnrealImGuiViewportBase::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Bu
 		{
 			ImGui::Indent(ContentSize.X - ImGui::GetFontSize() * 11);
 			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
-			TArray<ANSICHAR, TInlineAllocator<256>> FilterArray;
+			FUtf8String Utf8String{ FilterString };
+			if (ImGui::InputTextWithHint("##Filter", "Filter", Utf8String))
 			{
-				const auto StringPoint = FTCHARToUTF8(*FilterString);
-				FilterArray.SetNumZeroed(FMath::Max(256, StringPoint.Length() + 128));
-				FMemory::Memcpy(FilterArray.GetData(), StringPoint.Get(), StringPoint.Length() + 1);
-			}
-			if (ImGui::InputTextWithHint("##Filter", "Filter", FilterArray.GetData(), FilterArray.Num()))
-			{
+				FilterString = FString{ Utf8String };
 				for (UUnrealImGuiViewportExtentBase* Extent : Extents)
 				{
 					if (Extent->bEnable == false)
 					{
 						continue;
 					}
-					FilterString = UTF8_TO_TCHAR(FilterArray.GetData());
 					Extent->WhenFilterStringChanged(this, FilterString);
 				}
 			}

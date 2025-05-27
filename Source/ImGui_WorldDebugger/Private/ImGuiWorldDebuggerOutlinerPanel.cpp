@@ -9,7 +9,6 @@
 #include "ImGuiWorldDebuggerLayout.h"
 #include "ImGuiWorldDebuggerViewportPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
-#include "UnrealImGuiString.h"
 
 UImGuiWorldDebuggerOutlinerPanel::UImGuiWorldDebuggerOutlinerPanel()
 	: bInvokeRefreshSortOrder(false)
@@ -86,10 +85,10 @@ void UImGuiWorldDebuggerOutlinerPanel::Draw(UObject* Owner, UUnrealImGuiPanelBui
 
 	ImGui::Text("Filter:");
 	ImGui::SameLine();
-	UnrealImGui::FUTF8String UTF8String{ FilterString };
-	if (ImGui::InputText("##FilterInput", UTF8String))
+	FUtf8String Utf8String{ FilterString };
+	if (ImGui::InputText("##FilterInput", Utf8String))
 	{
-		FilterString = UTF8String.ToString();
+		FilterString = FString{ Utf8String };
 		RefreshDisplayActors();
 	}
 

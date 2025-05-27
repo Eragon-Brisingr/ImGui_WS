@@ -23,7 +23,7 @@ void FImGui_EditorModule::StartupModule()
 	}
 
 	FImGuiEditorStyleSet::Initialize();
-	
+
 	const FMargin Padding{ 0.f, 0.f, 2.f, 0.f };
 	static FButtonStyle ButtonStyle = FButtonStyle{ FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("Button") }
 		.SetNormalPadding(Padding)
@@ -73,9 +73,9 @@ void FImGui_EditorModule::StartupModule()
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("IMGUI_Label", "ImGui"))
+				.Text(LOCTEXT("ImGui_Label", "ImGui"))
 			]
-		], LOCTEXT("IMGUI_Label", "ImGui")));
+		], LOCTEXT("ImGui_Label", "ImGui")));
 
 	static TWeakPtr<SNotificationItem> NotificationPtr;
 	if (GetDefault<UEditorPerformanceSettings>()->bThrottleCPUWhenNotForeground)

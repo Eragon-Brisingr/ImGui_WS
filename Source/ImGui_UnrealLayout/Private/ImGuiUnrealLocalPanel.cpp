@@ -14,7 +14,6 @@
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiStat.h"
-#include "UnrealImGuiString.h"
 #include "UnrealImGuiStyles.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
@@ -524,8 +523,8 @@ TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 	const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
 	// Make sure that directory is created.
 	PlatformFile.CreateDirectory(*IniDirectory);
-	static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_LocalWindow.ini");
-	IO.IniFilename = IniFilePath.GetData();
+	static const FUtf8String IniFilePath{ IniDirectory / TEXT("ImGui_LocalWindow.ini") };
+	IO.IniFilename = reinterpret_cast<const char*>(*IniFilePath);
 	return Panel;
 }
 
@@ -547,7 +546,7 @@ public:
 	TMap<TWeakObjectPtr<UUnrealImGuiPanelBase>, TSharedRef<SDragResizeBox>> PanelBoxMap;
 	TSharedPtr<SDragResizeBox> ViewportPtr;
 	TObjectPtr<UImGuiLocalPanelManagerConfig> Config;
-	UnrealImGui::FUTF8String FilterString;
+	FUtf8String FilterString;
 
 	void OpenPanel(UWorld* World, UUnrealImGuiPanelBuilder* Builder, UUnrealImGuiPanelBase* Panel)
 	{
@@ -1057,7 +1056,7 @@ public:
 
 			if (FTreeNodeSeparator TreeNodeSeparator{ "Search Panel" })
 			{
-				UnrealImGui::FUTF8String& FilterString = Overlay->FilterString;
+				auto& FilterString = Overlay->FilterString;
 				ImGui::InputTextWithHint("##SearchPanel", "Search Panel", FilterString);
 				if (ImGui::FListBox ListBox{ "##FilteredPanel", ImVec2{ 0.f, ImGui::GetFontSize() * 10 } })
 				{
@@ -1094,7 +1093,7 @@ public:
 					else
 					{
 						TArray<UUnrealImGuiPanelBase*> FilteredPanels;
-						const FString TestString = FilterString.ToString();
+						const FString TestString{ FilterString };
 						for (const UUnrealImGuiPanelBuilder* Builder : LayoutManager->PanelBuilders)
 						{
 							for (UUnrealImGuiPanelBase* Panel : Builder->Panels)

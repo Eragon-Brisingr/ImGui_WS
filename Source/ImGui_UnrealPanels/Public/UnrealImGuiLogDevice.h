@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UnrealImGuiString.h"
 #include "Containers/Queue.h"
+#include "Containers/Utf8String.h"
 #include "UnrealImGuiLogDevice.generated.h"
 
 struct FUnrealImGuiLogDevice;
 
 namespace UnrealImGui
 {
-	IMGUI_UNREALPANELS_API const FUTF8String& ToString(ELogVerbosity::Type Verbosity);
+	IMGUI_UNREALPANELS_API const FUtf8String& ToString(ELogVerbosity::Type Verbosity);
 	IMGUI_UNREALPANELS_API uint32 ToColor(ELogVerbosity::Type Verbosity);
 	
 	class IMGUI_UNREALPANELS_API FUnrealImGuiOutputDevice : public FOutputDevice
@@ -21,7 +21,7 @@ namespace UnrealImGui
 
 		struct FLog
 		{
-			FUTF8String LogString;
+			FUtf8String LogString;
 			ELogVerbosity::Type Verbosity;
 			FName Category;
 			FDateTime Time;

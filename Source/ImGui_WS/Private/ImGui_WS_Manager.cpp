@@ -19,7 +19,6 @@
 #include "imgui_notify.h"
 #include "implot.h"
 #include "UnrealImGuiStat.h"
-#include "UnrealImGuiString.h"
 #include "UnrealImGuiStyles.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGui_Log.h"
@@ -51,7 +50,6 @@ FAutoConsoleCommand LaunchImGuiWeb
 	})
 };
 
-UnrealImGui::FUTF8String GRecordSaveDirPathString;
 TAutoConsoleVariable<int32> CVar_ImGui_WS_Port
 {
 	TEXT("ImGui.WS.Port"),
@@ -113,19 +111,18 @@ TAutoConsoleVariable<int32> CVar_ImGui_WS_Enable
 	})
 };
 
-TAutoConsoleVariable<FString> CVar_RecordSaveDirPathString
+TAutoConsoleVariable<bool> CVar_DisplayRecorderMenu
+{
+	TEXT("ImGui.WS.DisplayRecorderMenu"),
+	false,
+	TEXT("Display ImGui Recorder Menu")
+};
+FString GRecordSaveDirPathString;
+FAutoConsoleVariableRef CVar_RecordSaveDirPathString
 {
 	TEXT("ImGui.WS.RecordDirPath"),
-	TEXT("./"),
+	GRecordSaveDirPathString,
 	TEXT("Set ImGui-WS Record Saved Path"),
-	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable*)
-	{
-		const FString RecordSaveDirPathString = CVar_RecordSaveDirPathString.GetValueOnAnyThread();
-		if (FPaths::DirectoryExists(RecordSaveDirPathString))
-		{
-			GRecordSaveDirPathString = UnrealImGui::FUTF8String{ *RecordSaveDirPathString };
-		}
-	})
 };
 FAutoConsoleCommand StartImGuiRecord
 {
@@ -228,8 +225,8 @@ public:
 		const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
 		// Make sure that directory is created.
 		PlatformFile.CreateDirectory(*IniDirectory);
-		static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_WS.ini");
-		IO.IniFilename = IniFilePath.GetData();
+		static const FUtf8String IniFilePath{ IniDirectory / TEXT("ImGui_WS.ini") };
+		IO.IniFilename = reinterpret_cast<const char*>(*IniFilePath);
 	    IO.DisplaySize = ImVec2(0, 0);
 
 		PlotContext = ImPlot::CreateContext();
@@ -642,7 +639,7 @@ public:
 						ImGui::EndMenu();
 					}
 
-					if (ImGui::BeginMenu("Recorder"))
+					if (CVar_DisplayRecorderMenu.GetValueOnGameThread() && ImGui::BeginMenu("Recorder"))
 					{
 						if (RecordSession.IsValid() == false)
 						{
@@ -652,11 +649,11 @@ public:
 							}
 							if (ImGui::BeginPopupModal("RecordSettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 							{
-								static UnrealImGui::FUTF8String SaveFilePath = GRecordSaveDirPathString;
+								FString& SaveFilePath = GRecordSaveDirPathString;
 								ImGui::Text("Save Path:");
 								ImGui::SameLine();
 								ImGui::SetNextItemWidth(600.f);
-								ImGui::InputText("##RecordSavePath", GRecordSaveDirPathString);
+								ImGui::InputText("##RecordSavePath", SaveFilePath);
 
 								ImGui::SameLine();
 								if (ImGui::ArrowButton("SaveRecordFile", ImGuiDir_Down))
@@ -671,7 +668,7 @@ public:
 								ImGui::SetCursorPosX(ImGui::GetWindowWidth() - (ImGui::CalcTextSize(StartText).x + ImGui::CalcTextSize(CancelText).x + ImGui::GetTextLineHeightWithSpacing() * 2.f));
 								if (ImGui::Button(StartText))
 								{
-									if (FPaths::DirectoryExists(GRecordSaveDirPathString.ToString()))
+									if (FPaths::DirectoryExists(SaveFilePath))
 									{
 										StartRecord();
 										ImGui::InsertNotification(ImGuiToastType_Info, "Start Record ImGui");
@@ -697,7 +694,7 @@ public:
 							}
 							if (ImGui::BeginPopupModal("ReplaySettings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 							{
-								static UnrealImGui::FUTF8String LoadFilePath = GRecordSaveDirPathString;
+								FString& LoadFilePath = GRecordSaveDirPathString;
 								ImGui::Text("File Path:");
 								ImGui::SameLine();
 								ImGui::SetNextItemWidth(600.f);
@@ -714,9 +711,9 @@ public:
 								ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.f);
 								if (ImGui::Button("Load"))
 								{
-									if (FPaths::FileExists(LoadFilePath.ToString()))
+									if (FPaths::FileExists(LoadFilePath))
 									{
-										RecordReplay = MakeUnique<ImGuiWS_Record::FImGuiWS_Replay>(*LoadFilePath);
+										RecordReplay = MakeUnique<ImGuiWS_Record::FImGuiWS_Replay>(TCHAR_TO_UTF8(*LoadFilePath));
 										ImGui::CloseCurrentPopup();
 									}
 									else
@@ -877,9 +874,8 @@ public:
 	void StopRecord()
 	{
 		check(RecordSession.IsValid());
-		const FString SaveDirPath = GRecordSaveDirPathString.ToString();
 		FScopeLock ScopeLock{ &RecordCriticalSection };
-		const FString SavePath = FString::Printf(TEXT("%s/%s.imgrcd"), *SaveDirPath, *FDateTime::Now().ToString());
+		const FString SavePath = FString::Printf(TEXT("%s/%s.imgrcd"), *GRecordSaveDirPathString, *FDateTime::Now().ToString());
 		if (RecordSession->save(TCHAR_TO_UTF8(*SavePath)))
 		{
 			RecordSession.Reset();
@@ -1012,8 +1008,10 @@ void UImGui_WS_Manager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	GRecordSaveDirPathString = *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT(UE_PLUGIN_NAME));
-	CVar_RecordSaveDirPathString->Set(*GRecordSaveDirPathString.ToString());
+	if (GRecordSaveDirPathString.IsEmpty())
+	{
+		GRecordSaveDirPathString = *(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) / TEXT(UE_PLUGIN_NAME));
+	}
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this, [this](float)
 	{
 		if (GEngine->DeferredCommands.Num() > 0)

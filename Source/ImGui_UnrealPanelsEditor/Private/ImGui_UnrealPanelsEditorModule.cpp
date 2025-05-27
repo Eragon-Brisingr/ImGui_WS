@@ -12,7 +12,6 @@
 #include "UnrealImGuiPanel.h"
 #include "UnrealImGuiPanelBuilder.h"
 #include "UnrealImGuiStat.h"
-#include "UnrealImGuiString.h"
 #include "UnrealImGuiStyles.h"
 #include "WorkspaceMenuStructure.h"
 #include "WorkspaceMenuStructureModule.h"
@@ -422,8 +421,8 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 			const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
 			// Make sure that directory is created.
 			PlatformFile.CreateDirectory(*IniDirectory);
-			static const UnrealImGui::FUTF8String IniFilePath = IniDirectory / TEXT("ImGui_EditorPanels.ini");
-			IO.IniFilename = IniFilePath.GetData();
+			static const FUtf8String IniFilePath{ IniDirectory / TEXT("ImGui_EditorPanels.ini") };
+			IO.IniFilename = reinterpret_cast<const char*>(*IniFilePath);
 
 			ChildSlot
 			[

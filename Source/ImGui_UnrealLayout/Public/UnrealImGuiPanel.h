@@ -113,7 +113,7 @@ public:
 	virtual void WhenClose(UObject* Owner, UUnrealImGuiPanelBuilder* Builder) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReceiveWhenClose(Owner, Builder); }
 	
 	virtual void Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds) { FScriptExecutionGuard ScriptExecutionGuard{ this }; ReceiveDraw(Owner, Builder, DeltaSeconds); }
-	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds);
+	virtual void DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds, bool& bOpen);
 protected:
 	UFUNCTION(BlueprintNativeEvent)
 	bool ReceiveShouldCreatePanel(UObject* Owner) const;

@@ -3,30 +3,27 @@
 
 #include "ImGuiEx.h"
 
-#include "UnrealImGuiString.h"
-
 namespace ImGui
 {
-	using FUTF8String = UnrealImGui::FUTF8String;
-
 	struct InputTextCallback_UserData
 	{
-	    FUTF8String&            Str;
+	    FUtf8String&            Str;
 	    ImGuiInputTextCallback  ChainCallback;
 	    void*                   ChainCallbackUserData;
 	};
 
 	static int InputTextCallback(ImGuiInputTextCallbackData* data)
 	{
-	    InputTextCallback_UserData* user_data = (InputTextCallback_UserData*)data->UserData;
+	    InputTextCallback_UserData* user_data = static_cast<InputTextCallback_UserData*>(data->UserData);
 	    if (data->EventFlag == ImGuiInputTextFlags_CallbackResize)
 	    {
 	        // Resize string callback
 	        // If for some reason we refuse the new length (BufTextLen) and/or capacity (BufSize) we need to set them back to what we want.
-	        FUTF8String& str = user_data->Str;
-	        IM_ASSERT(data->Buf == str.GetData());
-	        str.SetNum(data->BufTextLen);
-	        data->Buf = str.GetData();
+	        FUtf8String& str = user_data->Str;
+	        IM_ASSERT(data->Buf == (char*)*str);
+			auto& CharArray = str.GetCharArray();
+	        CharArray.SetNum(data->BufTextLen + 1);
+	        data->Buf = reinterpret_cast<char*>(CharArray.GetData());
 	    }
 	    else if (user_data->ChainCallback)
 	    {
@@ -37,30 +34,30 @@ namespace ImGui
 	    return 0;
 	}
 
-	bool InputText(const char* label, FUTF8String& str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+	bool InputText(const char* label, FUtf8String& str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 	{
 	    IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 	    flags |= ImGuiInputTextFlags_CallbackResize;
 
 	    InputTextCallback_UserData cb_user_data{ str, callback, user_data };
-	    return ImGui::InputText(label, str.GetData(), str.Max(), flags, InputTextCallback, &cb_user_data);
+	    return ImGui::InputText(label, (char*)*str, str.GetCharArray().Max(), flags, InputTextCallback, &cb_user_data);
 	}
 
-	bool InputTextMultiline(const char* label, FUTF8String& str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+	bool InputTextMultiline(const char* label, FUtf8String& str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 	{
 	    IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 	    flags |= ImGuiInputTextFlags_CallbackResize;
 
 		InputTextCallback_UserData cb_user_data{ str, callback, user_data };
-	    return ImGui::InputTextMultiline(label, str.GetData(), str.Max(), size, flags, InputTextCallback, &cb_user_data);
+	    return ImGui::InputTextMultiline(label, (char*)*str, str.GetCharArray().Max(), size, flags, InputTextCallback, &cb_user_data);
 	}
 
-	bool InputTextWithHint(const char* label, const char* hint, FUTF8String& str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+	bool InputTextWithHint(const char* label, const char* hint, FUtf8String& str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 	{
 	    IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 	    flags |= ImGuiInputTextFlags_CallbackResize;
 
 		InputTextCallback_UserData cb_user_data{ str, callback, user_data };
-	    return ImGui::InputTextWithHint(label, hint, str.GetData(), str.Max(), flags, InputTextCallback, &cb_user_data);
+	    return ImGui::InputTextWithHint(label, hint, (char*)*str, str.GetCharArray().Max(), flags, InputTextCallback, &cb_user_data);
 	}
 }

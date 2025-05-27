@@ -7,7 +7,7 @@
 #include "IconsFontAwesome.h"
 #include "imgui.h"
 #include "ImGuiSettings.h"
-#include "UnrealImGuiString.h"
+#include "Containers/Utf8String.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/FileHelper.h"
@@ -62,8 +62,9 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 
 		TArray<uint8> Bin;
 		ensure(FFileHelper::LoadFileToArray(Bin, *FontPath));
-		FUTF8String FontName{ Settings->FontName };
-		FCStringAnsi::Strcpy(FontConfig.Name, FontName.Len() + 1, FontName.GetData());
+		FUtf8String FontName{ Settings->FontName };
+		check(Settings->FontName.Len() < UE_ARRAY_COUNT(FontConfig.Name));
+		FCStringAnsi::Strcpy(FontConfig.Name, FontName.Len(), reinterpret_cast<const char*>(*FontName));
 		FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), Settings->FontSize, &FontConfig);
 
 		// FontAwesome Icon

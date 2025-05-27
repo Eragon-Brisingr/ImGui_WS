@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UnrealImGuiString.h"
 #include "UObject/SoftObjectPtr.h"
 
 struct FAssetData;
@@ -20,7 +19,7 @@ namespace UnrealImGui
 	};
 	struct FObjectPickerData
 	{
-		FUTF8String FilterString;
+		FString FilterString;
 		TWeakObjectPtr<UClass> CachedAssetClass;
 		TArray<FAssetData> CachedAssetList;
 	};
@@ -46,7 +45,7 @@ namespace UnrealImGui
 	IMGUI_WIDGETS_API extern FActorPickerSettings GActorPickerSettings;
 	struct FActorPickerData
 	{
-		FUTF8String FilterString;
+		FString FilterString;
 		TWeakObjectPtr<UClass> CachedActorClass;
 		TArray<TWeakObjectPtr<AActor>> CachedActorList;
 	};
@@ -75,7 +74,7 @@ namespace UnrealImGui
 	IMGUI_WIDGETS_API extern FObjectPickerSettings GObjectPickerSettings;
 	struct FClassPickerData
 	{
-		FUTF8String FilterString;
+		FString FilterString;
 		TWeakObjectPtr<UClass> CachedClass;
 		TArray<TSoftClassPtr<UObject>> CachedClassList;
 	};

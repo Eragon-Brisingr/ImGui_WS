@@ -91,27 +91,14 @@ UUnrealImGuiPanelBase::FScriptExecutionGuard::FScriptExecutionGuard(const UUnrea
 	EditorScriptExecutionGuard = FEditorScriptExecutionGuard{};
 }
 
-void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds)
+void UUnrealImGuiPanelBase::DrawWindow(UUnrealImGuiLayoutBase* Layout, UObject* Owner, UUnrealImGuiPanelBuilder* Builder, float DeltaSeconds, bool& bOpen)
 {
-	UUnrealImGuiPanelBase* ConfigObject = ConfigObjectPrivate;
-	if (ConfigObject->bIsOpen == false)
-	{
-		return;
-	}
-	
-	bool IsOpen = ConfigObject->bIsOpen;
 	const FString WindowName = GetLayoutPanelName(Layout->GetName());
-	if (ImGui::Begin(TCHAR_TO_UTF8(*WindowName), &IsOpen, ImGuiWindowFlags))
+	if (ImGui::Begin(TCHAR_TO_UTF8(*WindowName), &bOpen, ImGuiWindowFlags))
 	{
 		Draw(Owner, Builder, DeltaSeconds);
 	}
 	ImGui::End();
-	if (ConfigObject->bIsOpen != IsOpen)
-	{
-		ConfigObject->PanelOpenState.Add(Layout->GetClass()->GetFName(), IsOpen);
-		SetOpenState(IsOpen);
-		ConfigObject->SaveConfig();
-	}
 }
 
 bool UUnrealImGuiPanelBase::ReceiveShouldCreatePanel_Implementation(UObject* Owner) const

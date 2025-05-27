@@ -4,11 +4,6 @@
 
 #include "CoreMinimal.h"
 
-namespace UnrealImGui
-{
-	struct FUTF8String;
-}
-
 namespace ImGui
 {
 	enum class FileDialogType : uint8
@@ -38,5 +33,5 @@ namespace ImGui
 		bool InitialPathSet = false;
 	};
 
-	IMGUI_API void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealImGui::FUTF8String& Path, const char* Ext, FileDialogType Type = FileDialogType::OpenFile);
+	IMGUI_API void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FString& Path, const char* Ext, FileDialogType Type = FileDialogType::OpenFile);
 }

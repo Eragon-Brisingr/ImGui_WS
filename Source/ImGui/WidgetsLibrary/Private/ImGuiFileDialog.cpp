@@ -11,7 +11,6 @@
 #include "imgui_internal.h"
 #include "imgui_notify.h"
 #include "ImGuiEx.h"
-#include "UnrealImGuiString.h"
 #include "Framework/Application/SlateApplication.h"
 
 namespace ImGui
@@ -20,7 +19,7 @@ namespace ImGui
 TArray<char, TInlineAllocator<26>> GetDrivesBitMask();
 #endif
 
-void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealImGui::FUTF8String& Path, const char* Ext, FileDialogType Type)
+void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, FString& Path, const char* Ext, FileDialogType Type)
 {
 	if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_NoResize))
 	{
@@ -361,7 +360,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealI
 			ImGui::CloseCurrentPopup();
 		};
 
-		UnrealImGui::FUTF8String SelectedFilePath = *(FileDialogState.CurrentPath + (FileDialogState.CurrentPath.IsEmpty() || FileDialogState.CurrentPath[FileDialogState.CurrentPath.Len() - 1] == TEXT('/') ? TEXT("") : TEXT("/")) + (FileDialogState.FileDialogCurrentFolder.Len() > 0 ? FileDialogState.FileDialogCurrentFolder : FileDialogState.CurrentFile));
+		FUtf8String SelectedFilePath = *(FileDialogState.CurrentPath + (FileDialogState.CurrentPath.IsEmpty() || FileDialogState.CurrentPath[FileDialogState.CurrentPath.Len() - 1] == TEXT('/') ? TEXT("") : TEXT("/")) + (FileDialogState.FileDialogCurrentFolder.Len() > 0 ? FileDialogState.FileDialogCurrentFolder : FileDialogState.CurrentFile));
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() - 130);
 		ImGui::InputText("##SelectedFilePath", SelectedFilePath, ImGuiInputTextFlags_ReadOnly);
 		ImGui::SameLine();
@@ -431,17 +430,16 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealI
 		if (ImGui::BeginPopup("NewFolderPopup", ImGuiWindowFlags_Modal))
 		{
 			ImGui::Text("Enter a name for the new folder");
-			static UnrealImGui::FUTF8String NewFolderName;
-			ImGui::InputText("##newfolder", NewFolderName, sizeof(NewFolderName));
+			static FString NewFilePath;
+			ImGui::InputText("##newfolder", NewFilePath, sizeof(NewFilePath));
 			if (ImGui::Button("Create##1"))
 			{
-				if (NewFolderName.Len() <= 0)
+				if (NewFilePath.Len() <= 0)
 				{
 					ImGui::InsertNotification(ImGuiToastType_Error, "Folder name can't be IsEmpty");
 				}
 				else
 				{
-					FString NewFilePath = GetCurrentPath() + *NewFolderName;
 					std::filesystem::create_directory(TCHAR_TO_UTF8(*NewFilePath));
 					ImGui::CloseCurrentPopup();
 				}
@@ -449,7 +447,7 @@ void ShowFileDialog(const char* name, FFileDialogState& FileDialogState, UnrealI
 			ImGui::SameLine();
 			if (ImGui::Button("Cancel##1"))
 			{
-				NewFolderName.Empty();
+				NewFilePath.Empty();
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();

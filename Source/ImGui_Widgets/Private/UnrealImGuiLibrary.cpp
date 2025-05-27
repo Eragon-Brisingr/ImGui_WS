@@ -4,6 +4,7 @@
 #include "UnrealImGuiLibrary.h"
 
 #include "UnrealImGuiAssetPicker.h"
+#include "Containers/Utf8String.h"
 
 namespace UnrealImGuiLibrary
 {
@@ -18,7 +19,7 @@ namespace UnrealImGuiLibrary
 			, FilterHint(ObjectPickerSettings.FilterHint)
 			, CustomFilter(MoveTemp(ObjectPickerSettings.CustomFilter))
 		{
-			ObjectPickerSettings.FilterHint = FilterHintString.GetData();
+			ObjectPickerSettings.FilterHint = reinterpret_cast<const char*>(*FilterHintString);
 			if (Settings.Filter.IsBound())
 			{
 				ObjectPickerSettings.CustomFilter = [Filter = Settings.Filter](const FAssetData& Asset)
@@ -37,7 +38,7 @@ namespace UnrealImGuiLibrary
 			ObjectPickerSettings.CustomFilter = MoveTemp(CustomFilter);
 		}
 		
-		UnrealImGui::FUTF8String FilterHintString;
+		FUtf8String FilterHintString;
 		const char* FilterHint;
 		TFunction<bool(const FAssetData&)> CustomFilter;
 	};
@@ -49,7 +50,7 @@ namespace UnrealImGuiLibrary
 			, FilterHint(ActorPickerSettings.FilterHint)
 			, CustomFilter(MoveTemp(ActorPickerSettings.CustomFilter))
 		{
-			ActorPickerSettings.FilterHint = FilterHintString.GetData();
+			ActorPickerSettings.FilterHint = reinterpret_cast<const char*>(*FilterHintString);
 			if (Settings.Filter.IsBound())
 			{
 				ActorPickerSettings.CustomFilter = [Filter = Settings.Filter](const AActor* Actor)
@@ -68,7 +69,7 @@ namespace UnrealImGuiLibrary
 			ActorPickerSettings.CustomFilter = MoveTemp(CustomFilter);
 		}
 		
-		UnrealImGui::FUTF8String FilterHintString;
+		FUtf8String FilterHintString;
 		const char* FilterHint;
 		TFunction<bool(const AActor*)> CustomFilter;
 	};
@@ -81,7 +82,7 @@ namespace UnrealImGuiLibrary
 			, CustomFilter(MoveTemp(ClassPickerSettings.CustomFilter))
 			, CustomFilterUnloadBp(MoveTemp(ClassPickerSettings.CustomFilterUnloadBp))
 		{
-			ClassPickerSettings.FilterHint = FilterHintString.GetData();
+			ClassPickerSettings.FilterHint = reinterpret_cast<const char*>(*FilterHintString);
 			if (Settings.Filter.IsBound())
 			{
 				ClassPickerSettings.CustomFilter = [Filter = Settings.Filter](const UClass* Class)
@@ -113,7 +114,7 @@ namespace UnrealImGuiLibrary
 			ClassPickerSettings.CustomFilterUnloadBp = MoveTemp(CustomFilterUnloadBp);
 		}
 
-		UnrealImGui::FUTF8String FilterHintString;
+		FUtf8String FilterHintString;
 		const char* FilterHint;
 		TFunction<bool(const UClass*)> CustomFilter;
 		TFunction<bool(const FAssetData&)> CustomFilterUnloadBp;

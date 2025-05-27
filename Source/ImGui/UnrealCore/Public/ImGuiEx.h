@@ -4,17 +4,44 @@
 
 #include "CoreMinimal.h"
 #include "imgui.h"
-
-namespace UnrealImGui
-{
-	struct FUTF8String;
-}
+#include "Containers/Utf8String.h"
 
 namespace ImGui
 {
-	IMGUI_API bool InputText(const char* label, UnrealImGui::FUTF8String& str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
-	IMGUI_API bool InputTextMultiline(const char* label, UnrealImGui::FUTF8String& str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
-	IMGUI_API bool InputTextWithHint(const char* label, const char* hint, UnrealImGui::FUTF8String& str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+	IMGUI_API bool InputText(const char* label, FUtf8String& str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+	IMGUI_API bool InputTextMultiline(const char* label, FUtf8String& str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+	IMGUI_API bool InputTextWithHint(const char* label, const char* hint, FUtf8String& str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+
+	FORCEINLINE bool InputText(const char* label, FString& str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL)
+	{
+		FUtf8String Utf8String{ str };
+		const bool Ret = ImGui::InputText(label, Utf8String, flags, callback, user_data);
+		if (Ret)
+		{
+			str = FString{ Utf8String };
+		}
+		return Ret;
+	}
+	FORCEINLINE bool InputTextMultiline(const char* label, FString& str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL)
+	{
+		FUtf8String Utf8String{ str };
+		const bool Ret = ImGui::InputTextMultiline(label, Utf8String, size, flags, callback, user_data);
+		if (Ret)
+		{
+			str = FString{ Utf8String };
+		}
+		return Ret;
+	}
+	FORCEINLINE bool InputTextWithHint(const char* label, const char* hint, FString& str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL)
+	{
+		FUtf8String Utf8String{ str };
+		const bool Ret = ImGui::InputTextWithHint(label, hint, Utf8String, flags, callback, user_data);
+		if (Ret)
+		{
+			str = FString{ Utf8String };
+		}
+		return Ret;
+	}
 }
 
 namespace ImGui

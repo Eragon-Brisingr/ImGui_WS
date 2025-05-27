@@ -9,7 +9,6 @@
 #include "ImGuiDelegates.h"
 #include "ImGuiEx.h"
 #include "UnrealImGuiPropertyDetails.h"
-#include "UnrealImGuiString.h"
 #include "UObject/Package.h"
 
 UUnrealImGuiObjectBrowserPanel::UUnrealImGuiObjectBrowserPanel()
@@ -83,14 +82,14 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 	ImGui::SetNextWindowClass(WindowClass);
 	if (ImGui::FWindow Window{ "ObjectBrowserContent" })
 	{
-		static UnrealImGui::FUTF8String FilterString;
+		static FString FilterString;
 		const bool bInvokeSearch = ImGui::InputTextWithHint("##Filter", "Filter (Input full path then press Enter to search object)", FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 		if (bInvokeSearch && ImGui::IsItemDeactivatedAfterEdit())
 		{
-			SelectedObject = FindObject<UObject>(nullptr, *FilterString.ToString());
+			SelectedObject = FindObject<UObject>(nullptr, *FilterString);
 			if (SelectedObject == nullptr)
 			{
-				SelectedObject = LoadObject<UObject>(nullptr, *FilterString.ToString());
+				SelectedObject = LoadObject<UObject>(nullptr, *FilterString);
 				if (SelectedObject)
 				{
 					ImGui::InsertNotification(ImGuiToastType_Info, "load \"%s\" object", *FilterString);
@@ -105,14 +104,13 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 		TArray<UObject*> DisplayObjects;
 		int32 AllObjectCount = 0;
 		{
-			const FString Filter = FilterString.ToString();
 			if (SelectedObject == nullptr)
 			{
 				GetObjectsOfClass(UPackage::StaticClass(), DisplayObjects);
 				AllObjectCount = DisplayObjects.Num();
-				if (Filter.Len() > 0)
+				if (FilterString.Len() > 0)
 				{
-					DisplayObjects.RemoveAllSwap([&Filter](const UObject* E){ return E->GetName().Contains(Filter) == false; });
+					DisplayObjects.RemoveAllSwap([](const UObject* E){ return E->GetName().Contains(FilterString) == false; });
 				}
 			}
 			else
@@ -120,7 +118,7 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 				ForEachObjectWithOuter(SelectedObject, [&](UObject* SubObject)
 				{
 					AllObjectCount += 1;
-					if (Filter.Len() > 0 && SubObject->GetName().Contains(Filter) == false)
+					if (FilterString.Len() > 0 && SubObject->GetName().Contains(FilterString) == false)
 					{
 						return;
 					}
@@ -132,8 +130,6 @@ void UUnrealImGuiObjectBrowserPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuild
 		ImGui::Text("Filter %d | Total %d", AllObjectCount, DisplayObjects.Num());
 		ImGui::Separator();
 		
-		const FString Filter = FilterString.ToString();
-
 		constexpr ImGuiTableFlags OutlinerTableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
 			ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody | ImGuiTableFlags_ScrollY;
 

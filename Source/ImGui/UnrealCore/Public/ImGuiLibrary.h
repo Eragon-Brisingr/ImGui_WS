@@ -8,7 +8,6 @@
 #include "ImGuiLibraryBase.h"
 #include "InputCoreTypes.h"
 #include "UnrealImGuiKeyUtils.h"
-#include "UnrealImGuiString.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGuiTypes.h"
 #include "ImGuiLibrary.generated.h"
@@ -728,9 +727,9 @@ public:
 		return ImGui::Combo(TCHAR_TO_UTF8(*Label.ToString()), &CurrentItem, [](void* UserData, int32 Idx)
 		{
 			const TArray<FName>& Items = static_cast<FUserData*>(UserData)->Items;
-			static UnrealImGui::FUTF8String String;
-			String = Items[Idx].ToString();
-			return *String;
+			static FUtf8String Utf8String;
+			Utf8String = FUtf8String{ Items[Idx].ToString() };
+			return reinterpret_cast<const char*>(*Utf8String);
 		}, &UserData, Items.Num(), PopupMaxHeightInItems);
 	}
 
@@ -956,37 +955,19 @@ public:
 	static bool InputText(FName Label, UPARAM(Ref)FString& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		UnrealImGui::FUTF8String UTF8String{ Value };
-		const bool Ret = ImGui::InputText(TCHAR_TO_UTF8(*Label.ToString()), UTF8String, Flags);
-		if (Ret)
-		{
-			Value = UTF8String.ToString();
-		}
-		return Ret;
+		return ImGui::InputText(TCHAR_TO_UTF8(*Label.ToString()), Value, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
 	static bool InputTextMultiline(FName Label, UPARAM(Ref)FString& Value, FVector2f Size, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		UnrealImGui::FUTF8String UTF8String{ Value };
-		const bool Ret = ImGui::InputTextMultiline(TCHAR_TO_UTF8(*Label.ToString()), UTF8String, ImVec2{ Size }, Flags);
-		if (Ret)
-		{
-			Value = UTF8String.ToString();
-		}
-		return Ret;
+		return ImGui::InputTextMultiline(TCHAR_TO_UTF8(*Label.ToString()), Value, ImVec2{ Size }, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
 	static bool InputTextWithHint(FName Label, const FString& Hint, UPARAM(Ref)FString& Value, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		UnrealImGui::FUTF8String UTF8String{ Value };
-		const bool Ret = ImGui::InputTextWithHint(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Hint), UTF8String, Flags);
-		if (Ret)
-		{
-			Value = UTF8String.ToString();
-		}
-		return Ret;
+		return ImGui::InputTextWithHint(TCHAR_TO_UTF8(*Label.ToString()), TCHAR_TO_UTF8(*Hint), Value, Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Input", meta = (ImGuiTrigger, AdvancedDisplay = 2), BlueprintInternalUseOnly)
 	static bool InputFloat(FName Label, UPARAM(Ref)float& Value, float Step = 0.f, float StepFast = 0.f, const FString& Format = TEXT("%.3f"), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiInputTextFlags"))int32 Flags = 0)
@@ -1208,9 +1189,9 @@ public:
 		return ImGui::ListBox(TCHAR_TO_UTF8(*Label.ToString()), &CurrentItem, [](void* UserData, int32 Idx)->const char*
 		{
 			const TArray<FName>& Items = static_cast<FUserData*>(UserData)->Items;
-			static UnrealImGui::FUTF8String String;
-			String = Items[Idx].ToString();
-			return *String;
+			static FUtf8String Utf8String;
+			Utf8String = FUtf8String{ Items[Idx].ToString() };
+			return reinterpret_cast<const char*>(*Utf8String);
 		}, &UserData, Items.Num(), HeightInItems);
 	}
 

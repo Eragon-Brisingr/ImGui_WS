@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UnrealImGuiString.h"
+#include "Containers/Utf8String.h"
 #include "UnrealImGuiCmdDevice.generated.h"
 
 /**
@@ -24,8 +24,8 @@ private:
 
 	struct FCmd
 	{
-		UnrealImGui::FUTF8String CmdString;
-		UnrealImGui::FUTF8String CmdHelp;
+		FUtf8String CmdString;
+		FUtf8String CmdHelp;
 	};
 	
 	TArray<FCmd> MatchedCmd;

@@ -113,12 +113,11 @@ namespace UnrealImGui
 				ARFilter.bRecursiveClasses = true;
 				ARFilter.ClassPaths.Add(FTopLevelAssetPath{ BaseClass });
 				AssetRegistry.GetAssets(ARFilter, CachedAssetList);
-				const FString Filter = FilterString.ToString();
 				CachedAssetList.RemoveAllSwap([&](const FAssetData& E)
 				{
-					if (Filter.IsEmpty() == false)
+					if (FilterString.IsEmpty() == false)
 					{
-						if (E.AssetName.ToString().Contains(Filter) == false)
+						if (E.AssetName.ToString().Contains(FilterString) == false)
 						{
 							return true;
 						}
@@ -149,7 +148,7 @@ namespace UnrealImGui
 						{
 							continue;
 						}
-						if (Filter.IsEmpty() == false && Asset.AssetName.ToString().Contains(Filter) == false)
+						if (FilterString.IsEmpty() == false && Asset.AssetName.ToString().Contains(FilterString) == false)
 						{
 							continue;
 						}
@@ -289,7 +288,6 @@ namespace UnrealImGui
 			{
 				CachedActorClass = BaseClass;
 				CachedActorList.Reset();
-				const FString Filter = FilterString.ToString();
 				for (TActorIterator<AActor> It(World, BaseClass); It; ++It)
 				{
 					AActor* Actor = *It;
@@ -297,7 +295,7 @@ namespace UnrealImGui
 					{
 						continue;
 					}
-					if (Filter.Len() > 0 && Actor->GetName().Contains(Filter) == false)
+					if (FilterString.Len() > 0 && Actor->GetName().Contains(FilterString) == false)
 					{
 						continue;
 					}
@@ -486,7 +484,6 @@ namespace UnrealImGui
 				TArray<UClass*> LoadedClasses;
 				GetDerivedClasses(BaseClass, LoadedClasses);
 				LoadedClasses.Add(BaseClass);
-				const FString Filter = FilterString.ToString();
 				for (UClass* Class : LoadedClasses)
 				{
 					if (Class->HasAnyClassFlags(IgnoreClassFlags))
@@ -499,7 +496,7 @@ namespace UnrealImGui
 						continue;
 					}
 #endif
-					if (Filter.Len() > 0 && Class->GetName().Contains(Filter) == false)
+					if (FilterString.Len() > 0 && Class->GetName().Contains(FilterString) == false)
 					{
 						continue;
 					}
@@ -532,7 +529,7 @@ namespace UnrealImGui
 					{
 						continue;
 					}
-					if (Filter.Len() > 0 && Asset.AssetName.ToString().Contains(Filter) == false)
+					if (FilterString.Len() > 0 && Asset.AssetName.ToString().Contains(FilterString) == false)
 					{
 						continue;
 					}
