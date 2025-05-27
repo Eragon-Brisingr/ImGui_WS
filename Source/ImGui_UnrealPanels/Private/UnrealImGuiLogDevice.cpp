@@ -354,7 +354,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 			for (int32 Idx = 0; Idx < DisplayLines.Num(); ++Idx)
 			{
 				const auto& Log = Logs[DisplayLines[Idx] + DisplayLineIndexOffset];
-				ToClipboardText += FString::Printf(TEXT("%s: %s: %s"), *Log.Category.ToString(), ToString(Log.Verbosity), UTF8_TO_TCHAR(*Log.LogString));
+				ImGui::Text("%s: %s: %s", TCHAR_TO_UTF8(*Log.Category.ToString()), reinterpret_cast<const char*>(*UnrealImGui::ToString(Log.Verbosity)), reinterpret_cast<const char*>(*Log.LogString));
 				if (Idx != Logs.Num() - 1)
 				{
 					ToClipboardText += TEXT("\n");
