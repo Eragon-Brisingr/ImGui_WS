@@ -16,7 +16,7 @@ namespace ImGui
 	{
 		FUtf8String Utf8String{ str };
 		const bool Ret = ImGui::InputText(label, Utf8String, flags, callback, user_data);
-		if (Ret)
+		if (ImGui::IsItemEdited())
 		{
 			str = FString{ Utf8String };
 		}
@@ -26,7 +26,7 @@ namespace ImGui
 	{
 		FUtf8String Utf8String{ str };
 		const bool Ret = ImGui::InputTextMultiline(label, Utf8String, size, flags, callback, user_data);
-		if (Ret)
+		if (ImGui::IsItemEdited())
 		{
 			str = FString{ Utf8String };
 		}
@@ -36,7 +36,7 @@ namespace ImGui
 	{
 		FUtf8String Utf8String{ str };
 		const bool Ret = ImGui::InputTextWithHint(label, hint, Utf8String, flags, callback, user_data);
-		if (Ret)
+		if (ImGui::IsItemEdited())
 		{
 			str = FString{ Utf8String };
 		}
