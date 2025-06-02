@@ -478,10 +478,6 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					{
 						return SpawnedTab;
 					}
-					if (EditorContext->InvokeCreateDebugger)
-					{
-						EditorContext->InvokeCreateDebugger();
-					}
 
 					// Ignore FTabManager::RestoreFrom case
 					if (GFrameCounter > 0)

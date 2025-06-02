@@ -33,17 +33,11 @@ void FImGui_UnrealLayoutModule::StartupModule()
         {
             return;
         }
-        EditorContext->InvokeCreateDebugger = [this]
-        {
-        	if (DefaultEditorDebugger.IsValid())
-        	{
-        		return;
-        	}
-        	UImGuiEditorDefaultDebugger* Debugger = NewObject<UImGuiEditorDefaultDebugger>();
-			Debugger->AddToRoot();
-			Debugger->Register();
-			DefaultEditorDebugger = Debugger;
-        };
+    	UImGuiEditorDefaultDebugger* Debugger = NewObject<UImGuiEditorDefaultDebugger>();
+		Debugger->AddToRoot();
+		Debugger->Register();
+		DefaultEditorDebugger = Debugger;
+
         EditorContext->EditorDrawer = [this](float DeltaSeconds)
         {
         	if (UImGuiEditorDefaultDebugger* Debugger = DefaultEditorDebugger.Get())

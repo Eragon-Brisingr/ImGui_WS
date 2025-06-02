@@ -23,7 +23,6 @@ struct IMGUI_API FImGuiUnrealEditorContext : public FImGuiUnrealContext
 	GENERATED_BODY()
 public:
 	TFunction<void(float)> EditorDrawer;
-	TFunction<void()> InvokeCreateDebugger;
 	bool bAlwaysDrawDefaultLayout = false;
 };
 
