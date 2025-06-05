@@ -15,6 +15,7 @@ namespace UnrealImGui
 		bool bShowDeveloperContent = false;
 		bool bShowEngineContent = false;
 		bool bShowNonAssetRegistry = false;
+		bool bShowNativeClass = false;
 		TFunction<bool(const FAssetData&)> CustomFilter;
 	};
 	struct FObjectPickerData
@@ -23,6 +24,7 @@ namespace UnrealImGui
 		TWeakObjectPtr<UClass> CachedAssetClass;
 		TArray<FAssetData> CachedAssetList;
 	};
+	IMGUI_WIDGETS_API extern FObjectPickerSettings* GObjectPickerSettingsPtr;
 	IMGUI_WIDGETS_API bool ComboObjectPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const FAssetData&)>& IsSelectedFunc, const TFunctionRef<void(const FAssetData&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, FObjectPickerSettings* Settings, FObjectPickerData* Data = nullptr);
 	IMGUI_WIDGETS_API bool ComboObjectPicker(const char* Label, UClass* BaseClass, UObject*& ObjectPtr, FObjectPickerSettings* Settings, FObjectPickerData* Data = nullptr);
 	template<typename T> requires std::is_base_of_v<UObject, T>
@@ -42,7 +44,7 @@ namespace UnrealImGui
 		const char* FilterHint = "Filter";
 		TFunction<bool(const AActor*)> CustomFilter;
 	};
-	IMGUI_WIDGETS_API extern FActorPickerSettings GActorPickerSettings;
+	IMGUI_WIDGETS_API extern FActorPickerSettings* GActorPickerSettingsPtr;
 	struct FActorPickerData
 	{
 		FString FilterString;
@@ -71,13 +73,13 @@ namespace UnrealImGui
 		TFunction<bool(const UClass*)> CustomFilter;
 		TFunction<bool(const FAssetData&)> CustomFilterUnloadBp;
 	};
-	IMGUI_WIDGETS_API extern FObjectPickerSettings GObjectPickerSettings;
 	struct FClassPickerData
 	{
 		FString FilterString;
 		TWeakObjectPtr<UClass> CachedClass;
 		TArray<TSoftClassPtr<UObject>> CachedClassList;
 	};
+	IMGUI_WIDGETS_API extern FClassPickerSettings* GClassPickerSettingsPtr;
 	IMGUI_WIDGETS_API bool ComboClassPicker(const char* Label, const char* PreviewValue, UClass* BaseClass, const TFunctionRef<bool(const TSoftClassPtr<UObject>&)>& IsSelectedFunc, const TFunctionRef<void(const TSoftClassPtr<UObject>&)>& OnSetValue, const TFunctionRef<void()>& OnClearValue, EClassFlags IgnoreClassFlags = CLASS_Abstract, FClassPickerSettings* Settings = nullptr, FClassPickerData* Data = nullptr);
 	IMGUI_WIDGETS_API bool ComboClassPicker(const char* Label, UClass* BaseClass, TSubclassOf<UObject>& ClassPtr, EClassFlags IgnoreClassFlags = CLASS_Abstract, FClassPickerSettings* Settings = nullptr, FClassPickerData* Data = nullptr);
 	template<typename T> requires std::is_base_of_v<UObject, T>

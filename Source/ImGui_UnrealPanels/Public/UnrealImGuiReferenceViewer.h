@@ -19,6 +19,7 @@ public:
 	TArray<TWeakObjectPtr<UObject>> Objects = { nullptr };
 
 	bool bIgnoreSelfPackage = true;
+	bool bIgnoreTransient = true;
 	
 	struct FReferencer
 	{

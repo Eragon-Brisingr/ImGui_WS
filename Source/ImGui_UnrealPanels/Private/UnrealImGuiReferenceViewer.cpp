@@ -10,11 +10,12 @@
 
 namespace ReferenceChainSearch
 {
-	void DumpChain(FReferenceChainSearch::FReferenceChain* Chain,
+	bool DumpChain(FReferenceChainSearch::FReferenceChain* Chain,
 		TFunctionRef<bool(FReferenceChainSearch::FCallbackParams& Params)> ReferenceCallback,
 		TMap<uint64, FString>& CallstackCache,
 		FOutputDevice& Out,
-		ELogVerbosity::Type InVerbosityForPrint)
+		ELogVerbosity::Type InVerbosityForPrint,
+		EPropertyFlags IgnorePropertyFlags)
 	{
 		if (Chain->Num())
 		{
@@ -60,6 +61,11 @@ namespace ReferenceChainSearch
 						FProperty* InnermostProperty = ReferencingProperties.Last();
 						FProperty* OutermostProperty = ReferencingProperties[0];
 
+						if (OutermostProperty->HasAnyPropertyFlags(IgnorePropertyFlags))
+						{
+							return false;
+						}
+						
 						ReferencingPropertyName = FString::Printf(TEXT("%s %s%s::%s"),
 							*InnermostProperty->GetCPPType(),
 							OutermostProperty->GetOwnerClass()->GetPrefixCPP(),
@@ -144,6 +150,7 @@ namespace ReferenceChainSearch
 			}
 			Out.Logf(InVerbosityForPrint, TEXT("  "));
 		}
+		return true;
 	}
 }
 
@@ -220,6 +227,7 @@ void UUnrealImGuiReferenceViewer::Draw(UObject* Owner, UUnrealImGuiPanelBuilder*
 			{
 				continue;
 			}
+			ImGui::FIdScope IdScope{ Reference.Asset.Get() };
 			if (ImGui::Button(TCHAR_TO_UTF8(*Reference.Asset->GetName()), { -1.f, 0.f }))
 			{
 				Objects = { Reference.Asset };
@@ -245,13 +253,18 @@ void UUnrealImGuiReferenceViewer::Draw(UObject* Owner, UUnrealImGuiPanelBuilder*
 		{
 			Refresh();
 		}
+		if (ImGui::Checkbox("Ignore Transient", &bIgnoreTransient))
+		{
+			Refresh();
+		}
 
 		if (ImGui::BeginTable("ObjectsTable", 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 		{
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 0.3f);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 0.7f);
-			
-			const TGuardValue GObjectPickerSettingsGuard{ UnrealImGui::GObjectPickerSettings, UnrealImGui::FObjectPickerSettings{ .bShowNonAssetRegistry = true } };
+
+			static UnrealImGui::FObjectPickerSettings ObjectPickerSettings{ .bShowNativeClass = true };
+			const TGuardValue GObjectPickerSettingsGuard{ UnrealImGui::GObjectPickerSettingsPtr, &ObjectPickerSettings };
 			const TGuardValue GEnableEditVisiblePropertyGuard{UnrealImGui::GlobalValue::GEnableEditVisibleProperty, true };
 
 			static auto ObjectProperty = StaticClass()->FindPropertyByName(GET_MEMBER_NAME_CHECKED(ThisClass, Objects));
@@ -280,6 +293,7 @@ void UUnrealImGuiReferenceViewer::Draw(UObject* Owner, UUnrealImGuiPanelBuilder*
 			{
 				continue;
 			}
+			ImGui::FIdScope IdScope{ Dependency.Asset.Get() };
 			if (ImGui::Button(TCHAR_TO_UTF8(*Dependency.Asset->GetName()), { -1.f, 0.f }))
 			{
 				Objects = { Dependency.Asset };
@@ -340,8 +354,10 @@ void UUnrealImGuiReferenceViewer::Refresh()
 			FStringOutputDevice OutString;
 			OutString.SetAutoEmitLineTerminator(true);
 			TMap<uint64, FString> CallstackCache;
-			ReferenceChainSearch::DumpChain(ReferenceChain, [](FReferenceChainSearch::FCallbackParams&){ return true; }, CallstackCache, OutString, ELogVerbosity::Log);
-			References[Idx].ReferencePaths.Add(MoveTemp(OutString));
+			if (ReferenceChainSearch::DumpChain(ReferenceChain, [](FReferenceChainSearch::FCallbackParams&){ return true; }, CallstackCache, OutString, ELogVerbosity::Log, bIgnoreTransient ? CPF_Transient : CPF_None))
+			{
+				References[Idx].ReferencePaths.Add(MoveTemp(OutString));
+			}
 		}
 	}
 	References.Sort([](const FReferencer& LHS, const FReferencer& RHS)
@@ -350,6 +366,7 @@ void UUnrealImGuiReferenceViewer::Refresh()
 	});
 
 	DependencySearch::FDependencySearch DependencySearch{ bIgnoreSelfPackage, SelfPackages };
+	DependencySearch.SetIsPersistent(!bIgnoreTransient);
 	for (auto Obj : ToFindObjects)
 	{
 		DependencySearch << Obj;

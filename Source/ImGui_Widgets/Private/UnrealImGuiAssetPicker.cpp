@@ -19,6 +19,10 @@ namespace UnrealImGui
 	FActorPickerSettings GActorPickerSettings;
 	FClassPickerSettings GClassPickerSettings;
 	
+	FObjectPickerSettings* GObjectPickerSettingsPtr = &GObjectPickerSettings;
+	FActorPickerSettings* GActorPickerSettingsPtr = &GActorPickerSettings;
+	FClassPickerSettings* GClassPickerSettingsPtr = &GClassPickerSettings;
+	
 	template<typename TActivatedFunc>
 	struct FComboEx : FNoncopyable
 	{
@@ -61,7 +65,7 @@ namespace UnrealImGui
 	{
 		if (Settings == nullptr)
 		{
-			Settings = &GObjectPickerSettings;
+			Settings = GObjectPickerSettingsPtr;
 		}
 		if (Data == nullptr)
 		{
@@ -91,6 +95,14 @@ namespace UnrealImGui
 					IsFiltered |= ImGui::IsItemEdited();
 				}
 				if (ImGui::Checkbox("Show Engine Content", &Settings->bShowEngineContent))
+				{
+					IsFiltered |= ImGui::IsItemEdited();
+				}
+				if (ImGui::Checkbox("Show NonAssetRegistry", &Settings->bShowNonAssetRegistry))
+				{
+					IsFiltered |= ImGui::IsItemEdited();
+				}
+				if (BaseClass == UObject::StaticClass() && ImGui::Checkbox("Show Native Class", &Settings->bShowNativeClass))
 				{
 					IsFiltered |= ImGui::IsItemEdited();
 				}
@@ -141,6 +153,29 @@ namespace UnrealImGui
 					const TSet<FAssetData> ExistAssetList{ CachedAssetList };
 					TArray<UObject*> Objects;
 					GetObjectsOfClass(BaseClass, Objects, true, RF_ClassDefaultObject | RF_ArchetypeObject | RF_NewerVersionExists);
+					for (UObject* Object : Objects)
+					{
+						const FAssetData Asset{ Object };
+						if (ExistAssetList.Contains(Asset))
+						{
+							continue;
+						}
+						if (FilterString.IsEmpty() == false && Asset.AssetName.ToString().Contains(FilterString) == false)
+						{
+							continue;
+						}
+						if (Settings->CustomFilter && Settings->CustomFilter(Asset))
+						{
+							continue;
+						}
+						CachedAssetList.Add(Asset);
+					}
+				}
+				else if (BaseClass == UObject::StaticClass() && Settings->bShowNativeClass)
+				{
+					const TSet<FAssetData> ExistAssetList{ CachedAssetList };
+					TArray<UObject*> Objects;
+					GetObjectsOfClass(UClass::StaticClass(), Objects, true, RF_ClassDefaultObject | RF_ArchetypeObject | RF_NewerVersionExists);
 					for (UObject* Object : Objects)
 					{
 						const FAssetData Asset{ Object };
@@ -255,7 +290,7 @@ namespace UnrealImGui
 	{
 		if (Settings == nullptr)
 		{
-			Settings = &GActorPickerSettings;
+			Settings = GActorPickerSettingsPtr;
 		}
 		if (Data == nullptr)
 		{
@@ -433,7 +468,7 @@ namespace UnrealImGui
 	{
 		if (Settings == nullptr)
 		{
-			Settings = &GClassPickerSettings;
+			Settings = GClassPickerSettingsPtr;
 		}
 		if (Data == nullptr)
 		{
