@@ -293,10 +293,10 @@ void UImGuiWorldDebuggerViewportActorExtent::DrawViewportContent(UObject* Owner,
 		}
 
 		SelectedActors.Add(TopSelectedActor);
-		SelectedActors.Sort([&](const TObjectPtr<AActor>& LHS, const TObjectPtr<AActor>& RHS)
+		SelectedActors.Sort([&](const AActor& LHS, const AActor& RHS)
 		{
-			const FVector2D LHS_Location = FVector2D(LHS->GetActorLocation());
-			const FVector2D RHS_Location = FVector2D(RHS->GetActorLocation());
+			const FVector2D LHS_Location = FVector2D(LHS.GetActorLocation());
+			const FVector2D RHS_Location = FVector2D(RHS.GetActorLocation());
 			return (LHS_Location - ViewportContext.MouseWorldPos).SizeSquared() < (RHS_Location - ViewportContext.MouseWorldPos).SizeSquared();
 		});
 	}

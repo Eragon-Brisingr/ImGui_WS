@@ -20,7 +20,7 @@ namespace UnrealImGui
 		extern IMGUI_WIDGETS_API FPostPropertyNameWidgetCreated GPostPropertyNameWidgetCreated;
 		extern bool bPropertyValueChanged;
 	}
-	
+
 	bool bPropertyDisable = false;
 	int32 PropertyDisableCounter = 0;
 	FPropertyDisableScope::FPropertyDisableScope(const FProperty* Property)
@@ -1218,18 +1218,6 @@ namespace UnrealImGui
 				{
 					KeyPropertyCustomization->CreateValueWidget(MapProperty->KeyProp, KeyRawPtr, 0, bKeyIsIdentical);
 				}
-				if (bKeyHasChildProperties && bIsShowChildren)
-				{
-					if (Customization)
-					{
-						Customization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, bKeyIsIdentical);
-					}
-					else
-					{
-						KeyPropertyCustomization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, bKeyIsIdentical);
-					}
-					ImGui::TreePop();
-				}
 			}
 			ImGui::TableSetColumnIndex(1);
 			ImGui::SetNextItemWidth(InnerValue::ContainerValueRightWidth - (Customization ? Customization->ValueAdditiveRightWidth : 0.f));
@@ -1260,7 +1248,21 @@ namespace UnrealImGui
 					}
 					ImGui::EndPopup();
 				}
-				if (bValueHasChildProperties && bIsShowChildren)
+			}
+			if (bIsShowChildren)
+			{
+				if (bKeyHasChildProperties)
+				{
+					if (Customization)
+					{
+						Customization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, bKeyIsIdentical);
+					}
+					else
+					{
+						KeyPropertyCustomization->CreateChildrenWidget(MapProperty->KeyProp, KeyRawPtr, 0, bKeyIsIdentical);
+					}
+				}
+				if (bValueHasChildProperties)
 				{
 					if (Customization)
 					{
@@ -1270,8 +1272,8 @@ namespace UnrealImGui
 					{
 						ValuePropertyCustomization->CreateChildrenWidget(MapProperty->ValueProp, ValueRawPtr, 0, bValueIsIdentical);
 					}
-					ImGui::TreePop();
 				}
+				ImGui::TreePop();
 			}
 			for (auto& It : Iterators)
 			{

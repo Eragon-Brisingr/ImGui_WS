@@ -104,5 +104,5 @@ public:
 	static void DrawObjectDetailTable(FName Label, UObject* Object);
 
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
-	static bool DrawSingleProperty(FName PropertyName, UObject* Object);
+	static bool DrawSingleProperty(FName PropertyName, UObject* Object, FName DisplayNameOverride = NAME_None);
 };

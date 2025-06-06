@@ -217,7 +217,7 @@ void UUnrealImGuiLibrary::DrawObjectDetailTable(FName Label, UObject* Object)
 	}
 }
 
-bool UUnrealImGuiLibrary::DrawSingleProperty(FName PropertyName, UObject* Object)
+bool UUnrealImGuiLibrary::DrawSingleProperty(FName PropertyName, UObject* Object, FName DisplayNameOverride)
 {
 	if (!CheckImGuiContextThrowError()) { return false; }
 	FProperty* Property = Object ? Object->GetClass()->FindPropertyByName(PropertyName) : nullptr;
@@ -233,7 +233,15 @@ bool UUnrealImGuiLibrary::DrawSingleProperty(FName PropertyName, UObject* Object
 		{
 			bChanged = true;
 		}) };
-		UnrealImGui::DrawUnrealProperty(Property, { reinterpret_cast<uint8*>(Object) }, Property->GetOffset_ForInternal());
+		if (DisplayNameOverride != NAME_None)
+		{
+			const FString DisplayName = DisplayNameOverride.ToString();
+			UnrealImGui::DrawUnrealProperty(Property, { reinterpret_cast<uint8*>(Object) }, Property->GetOffset_ForInternal(), &DisplayName);
+		}
+		else
+		{
+			UnrealImGui::DrawUnrealProperty(Property, { reinterpret_cast<uint8*>(Object) }, Property->GetOffset_ForInternal());
+		}
 		ImGui::EndTable();
 	}
 	return bChanged;

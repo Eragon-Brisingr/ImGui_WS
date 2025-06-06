@@ -75,7 +75,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void AddUnrealPropertyInner(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
+	void AddUnrealPropertyInner(const FProperty* Property, const FPtrArray& Containers, int32 Offset, const FString* NameOverride = nullptr)
 	{
 		const TSharedPtr<IUnrealPropertyCustomization> PropertyCustomization = UnrealPropertyCustomizeFactory::FindPropertyCustomizer(Property);
 		if (!PropertyCustomization)
@@ -106,11 +106,11 @@ namespace UnrealImGui
 		ImGui::AlignTextToFramePadding();
 		if (Customization)
 		{
-			Customization->CreateNameWidget(Property, Containers, Offset, bIsIdentical, bIsShowChildren);
+			Customization->CreateNameWidget(Property, Containers, Offset, bIsIdentical, bIsShowChildren, NameOverride);
 		}
 		else
 		{
-			CreateUnrealPropertyNameWidget(Property, Containers, Offset, bIsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, bIsIdentical), bIsShowChildren);
+			CreateUnrealPropertyNameWidget(Property, Containers, Offset, bIsIdentical, PropertyCustomization->HasChildProperties(Property, Containers, Offset, bIsIdentical), bIsShowChildren, NameOverride);
 		}
 		ImGui::TableSetColumnIndex(1);
 		ImGui::SetNextItemWidth(InnerValue::ValueRightBaseWidth - (Customization ? Customization->ValueAdditiveRightWidth : PropertyCustomization->ValueAdditiveRightWidth));
@@ -172,9 +172,9 @@ namespace UnrealImGui
 		return Property->GetName().Contains(Filter.StringFilter);
 	}
 
-	void IUnrealStructCustomization::CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool& bIsShowChildren) const
+	void IUnrealStructCustomization::CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool& bIsShowChildren, const FString* NameOverride) const
 	{
-		CreateUnrealPropertyNameWidget(Property, Containers, Offset, bIsIdentical, false, bIsShowChildren);
+		CreateUnrealPropertyNameWidget(Property, Containers, Offset, bIsIdentical, false, bIsShowChildren, NameOverride);
 	}
 
 	void IUnrealDetailsCustomization::CreateClassDetails(const UClass* Class, const FObjectArray& Containers, int32 Offset) const
@@ -381,13 +381,13 @@ void UnrealImGui::CreateUnrealPropertyNameWidget(const FProperty* Property, cons
 	}
 }
 
-void UnrealImGui::DrawUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset)
+void UnrealImGui::DrawUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset, const FString* NameOverride)
 {
 	FPropertyDisableScope ImGuiDisableScope{ Property };
 	ImGui::FIdScope IdScope{ Property };
 	if (Property->ArrayDim == 1)
 	{
-		AddUnrealPropertyInner(Property, Containers, Offset);
+		AddUnrealPropertyInner(Property, Containers, Offset, NameOverride);
 	}
 	else
 	{
@@ -432,7 +432,7 @@ void UnrealImGui::DrawUnrealProperty(const FProperty* Property, const FPtrArray&
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 		ImGui::AlignTextToFramePadding();
-		CreateUnrealPropertyNameWidget(Property, Containers, Offset, bIsIdentical, true, bIsShowChildren);
+		CreateUnrealPropertyNameWidget(Property, Containers, Offset, bIsIdentical, true, bIsShowChildren, NameOverride);
 		ImGui::TableSetColumnIndex(1);
 		ImGui::SetNextItemWidth(InnerValue::ValueRightBaseWidth);
 		ImGui::Text("%d Elements %s", Property->ArrayDim, bIsIdentical ? "" : "*");

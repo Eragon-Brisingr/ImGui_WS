@@ -108,7 +108,7 @@ namespace UnrealImGui
 		int32 ValueAdditiveRightWidth = 0;
 
 		virtual bool IsVisible(const FDetailsFilter& Filter, const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const;
-		virtual void CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool& bIsShowChildren) const;
+		virtual void CreateNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool& bIsShowChildren, const FString* NameOverride = nullptr) const;
 		virtual void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const = 0;
 		virtual void CreateChildrenWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const {}
 
@@ -243,7 +243,7 @@ namespace UnrealImGui
 
 	IMGUI_WIDGETS_API void CreateUnrealPropertyNameWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical, bool bHasChildProperties, bool& bIsShowChildren, const FString* NameOverride = nullptr);
 	
-	IMGUI_WIDGETS_API void DrawUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset);
+	IMGUI_WIDGETS_API void DrawUnrealProperty(const FProperty* Property, const FPtrArray& Containers, int32 Offset, const FString* NameOverride = nullptr);
 
 	IMGUI_WIDGETS_API void DrawStructDefaultDetails(const UStruct* TopStruct, const FPtrArray& Instances, int32 Offset);
 	IMGUI_WIDGETS_API void DrawClassDefaultDetails(const UClass* TopClass, bool CollapseCategories, const FObjectArray& Instances, int32 Offset);

@@ -5,7 +5,6 @@
 #include "LogIncppect.h"
 #include "WebSocketServer.h"
 #include "Stats/Stats.h"
-#include "Stats/Stats2.h"
 
 DECLARE_STATS_GROUP (TEXT("Incppect"), STATGROUP_Incppect, STATCAT_Advanced);
 
