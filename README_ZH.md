@@ -331,6 +331,8 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 
 菜单`Tools - ImGui Panels`可打开单独的ImGui面板
 
+![编辑器面板](Docs/EditorPanel.png)
+
 ## 冒泡消息提示
 
 [imgui-notify](https://github.com/patrickcjk/imgui-notify)
@@ -338,24 +340,6 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 调用**ImGui::InsertNotification**使用全局的冒泡消息提示  
 
 ![冒泡消息提示](Docs/Notification.gif)  
-
-## 录制绘制数据与回放（实验性）
-
-### 录制方式
-
-开始录制：
-
-* 菜单->ImGui_WS->Start Record
-* 控制台输入**ImGui.WS.StartRecord**
-
-结束录制：
-
-* 菜单->ImGui_WS->Stop Record
-* 控制台输入**ImGui.WS.StopRecord**
-
-### 回放录制数据
-
-菜单->ImGui_WS->Load Record，选择录制的文件进行回看
 
 ## C++ RAII API
 

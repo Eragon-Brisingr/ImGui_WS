@@ -329,31 +329,7 @@ UImGuiWorldDebuggerViewportPanel::UImGuiWorldDebuggerViewportPanel()
 
 Menu `Tools - ImGui Panels` can open single ImGui Panel
 
-## Bubbling message prompt
-
-[imgui-notify](https://github.com/patrickcjk/imgui-notify)
-
-Call **ImGui::InsertNotification** to use the global bubbling message prompt
-
-![Bubbling message](Docs/Notification.gif)  
-
-## Record drawing data and playback (experimental)
-
-### Recording method
-
-Start recording:
-
-* Menu->ImGui_WS->Start Record
-* Console input **ImGui.WS.StartRecord**
-
-To end recording:
-
-* Menu->ImGui_WS->Stop Record
-* Console input **ImGui.WS.StopRecord**
-
-### Play back recorded data
-
-Menu->ImGui_WS->Load Record, select the recorded file for review
+![编辑器面板](Docs/EditorPanel.png)
 
 ## C++ RAII API
 
