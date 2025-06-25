@@ -731,9 +731,9 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 
 			auto fop_fd = new lws_fop_fd
 			{
-				.fd = FileHandle,
+				.fd = {},
 				.fops = fops,
-				.filesystem_priv = nullptr,
+				.filesystem_priv = FileHandle,
 				.pos = 0,
 				.len = (lws_filepos_t)FileHandle->Size(),
 				.flags = *flags,
@@ -742,7 +742,7 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 		};
 		fops->LWS_FOP_CLOSE = [](lws_fop_fd_t *fop_fd)->int32
 		{
-			IFileHandle* FileHandle = static_cast<IFileHandle*>((*fop_fd)->fd);
+			IFileHandle* FileHandle = static_cast<IFileHandle*>((*fop_fd)->filesystem_priv);
 			delete *fop_fd;
 			*fop_fd = nullptr;
 			delete FileHandle;
@@ -750,7 +750,7 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 		};
 		fops->LWS_FOP_SEEK_CUR = [](lws_fop_fd_t fop_fd, lws_fileofs_t offset_from_cur_pos)->lws_fileofs_t
 		{
-			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->fd);
+			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->filesystem_priv);
 			auto NewPos = fop_fd->pos + offset_from_cur_pos;
 			if (!FileHandle->Seek(NewPos))
 			{
@@ -761,7 +761,7 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 		};
 		fops->LWS_FOP_READ = [](lws_fop_fd_t fop_fd, lws_filepos_t *amount, uint8_t *buf, lws_filepos_t len)->int32
 		{
-			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->fd);
+			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->filesystem_priv);
 			const auto ReadSize = FMath::Min(len, lws_filepos_t(FileHandle->Size() - FileHandle->Tell()));
 			if (!FileHandle->Read(buf, ReadSize))
 			{
@@ -774,7 +774,7 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 		};
 		fops->LWS_FOP_WRITE = [](lws_fop_fd_t fop_fd, lws_filepos_t *amount, uint8_t *buf, lws_filepos_t len)->int32
 		{
-			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->fd);
+			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->filesystem_priv);
 			const auto PreSize = FileHandle->Tell();
 			if (!FileHandle->Write(buf, len))
 			{
