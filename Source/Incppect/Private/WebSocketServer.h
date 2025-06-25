@@ -11,7 +11,7 @@
 #else
 #include <netinet/in.h>
 #endif
-#include <string>
+#include "Containers/Utf8String.h"
 
 typedef struct lws_context WebSocketInternalContext;
 typedef struct lws WebSocketInternal;
@@ -28,37 +28,38 @@ public:
 	 * Sets the absolute path on disk to the directory we wish to serve.
 	 * @param InPathOnDisk The absolute path to the directory.
 	 */
-	void SetPathOnDisk(const FString& InPathOnDisk) { PathOnDisk = std::string(TCHAR_TO_ANSI(*InPathOnDisk)); }
+	void SetPathOnDisk(const FString& InPathOnDisk) { PathOnDisk = TCHAR_TO_UTF8(*InPathOnDisk); }
 
 	/**
 	 * Sets The web url path to use for this mount, e.g. /images .
 	 * @param InWebPath The web url path we will map the directory to, e.g. /images.
 	 */
-	void SetWebPath(const FString& InWebPath) { WebPath = std::string(TCHAR_TO_ANSI(*InWebPath)); }
+	void SetWebPath(const FString& InWebPath) { WebPath = TCHAR_TO_UTF8(*InWebPath); }
 
 	/**
 	 * Sets a file to serve when the root web path is requested.
 	 * @param InDefaultFile The file to serve when the root web path is request, e.g. index.html.
 	 */
-	void SetDefaultFile(const FString& InDefaultFile) { DefaultFile = std::string(TCHAR_TO_ANSI(*InDefaultFile)); }
+	void SetDefaultFile(const FString& InDefaultFile) { DefaultFile = TCHAR_TO_UTF8(*InDefaultFile); }
 
-	const char* GetPathOnDisk() { return PathOnDisk.c_str(); }
-	const char* GetWebPath() { return WebPath.c_str(); }
-	const char* GetDefaultFile() { return DefaultFile.c_str(); }
-	bool HasDefaultFile() { return DefaultFile.empty(); }
+	const char* GetPathOnDisk() const { return (const char*)GetData(PathOnDisk); }
+	const char* GetWebPath() const { return (const char*)GetData(WebPath); }
+	int32 GetWebPathLen() const { return WebPath.Len(); }
+	const char* GetDefaultFile() const { return (const char*)GetData(DefaultFile); }
+	bool HasDefaultFile() const { return DefaultFile.Len() > 0; }
 
 private:
 
 	// Note: The below members are std::string purposefully as lws requires char* strings and FString may not be char*.
 
 	/* The absolute path on disk to directory we wish to serve. */
-	std::string PathOnDisk;
+	FUtf8String PathOnDisk;
 
 	/* The web url path to use for this mount, e.g. /images */
-	std::string WebPath;
+	FUtf8String WebPath;
 
 	/* When the root of the `WebPath` is requested, without a file, we can serve this file, e.g. index.html */
-	std::string DefaultFile = "index.html";
+	FUtf8String DefaultFile = "index.html";
 };
 
 enum class EWebsocketConnectionFilterResult : uint8

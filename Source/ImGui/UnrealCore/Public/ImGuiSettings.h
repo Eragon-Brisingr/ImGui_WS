@@ -115,6 +115,10 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.UnrealImGuiPanelBase"))
 	TArray<TSoftClassPtr<UObject>> FavoritePanels;
 
+	// Support Non-ASCII paths, will enable pre-thread locale and set ImGui_WS thread locale as UTF-8
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", AdvancedDisplay, meta = (ConfigRestartRequired = true))
+	bool bEnableThreadLocaleAsUft8 = false;
+
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	bool bDisplayToolbarButton = false;

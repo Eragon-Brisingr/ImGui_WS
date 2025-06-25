@@ -3,6 +3,8 @@
 #include "WebSocketServer.h"
 
 #include "LogIncppect.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "HAL/PlatformFileManager.h"
 
 #if USE_LIBWEBSOCKET
 
@@ -51,7 +53,7 @@ namespace Incppect
 static int unreal_networking_client(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
 static void lws_debugLogS(int level, const char *line)
 {
-	UE_LOG(LogIncppect, Log, TEXT("client: %s"), ANSI_TO_TCHAR(line));
+	UE_LOG(LogIncppect, Log, TEXT("client: %hs"), line);
 }
 
 FWebSocket::FWebSocket(
@@ -570,7 +572,7 @@ static int unreal_networking_server(struct lws *wsi, enum lws_callback_reasons r
 #if !UE_BUILD_SHIPPING
 	inline void lws_debugLog(int level, const char *line)
 	{
-		UE_LOG(LogIncppect, Log, TEXT("websocket server: %s"), ANSI_TO_TCHAR(line));
+		UE_LOG(LogIncppect, Log, TEXT("websocket server: %hs"), line);
 	}
 #endif // UE_BUILD_SHIPPING
 
@@ -605,7 +607,7 @@ void FWebSocketServer::EnableHTTPServer(TArray<FWebSocketHttpMount> InDirectorie
 		LWSMount->mountpoint = MountDir.GetWebPath();
 		LWSMount->origin = MountDir.GetPathOnDisk();
 
-		if(!MountDir.HasDefaultFile())
+		if(MountDir.HasDefaultFile())
 		{
 			LWSMount->def = MountDir.GetDefaultFile();
 		}
@@ -625,7 +627,7 @@ void FWebSocketServer::EnableHTTPServer(TArray<FWebSocketHttpMount> InDirectorie
 		LWSMount->cache_revalidate = 0;
 		LWSMount->cache_intermediaries = 0;
 		LWSMount->origin_protocol = LWSMPRO_FILE;
-		LWSMount->mountpoint_len = FPlatformString::Strlen(MountDir.GetWebPath());
+		LWSMount->mountpoint_len = MountDir.GetWebPathLen();
 		LWSMount->basic_auth_login_file = NULL;
 	}
 #endif
@@ -679,6 +681,7 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 
 	//Info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 	Info.options |= LWS_SERVER_OPTION_DISABLE_IPV6;
+	Info.options |= LWS_SERVER_OPTION_VALIDATE_UTF8;
 
 	if(bEnableHttp && LwsHttpMounts != NULL)
 	{
@@ -698,6 +701,91 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 	}
 
 	ConnectedCallBack = CallBack;
+
+	if (auto fops = lws_get_fops(Context))
+	{
+		fops->LWS_FOP_OPEN = [](const lws_plat_file_ops* fops, const char* file_name, const char* vpath, lws_fop_flags_t* flags)->lws_fop_fd_t
+		{
+			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+			const auto AccessMode = *flags & LWS_FOP_FLAGS_MASK;
+
+			bool bWrite = AccessMode & (O_WRONLY | O_RDWR);
+			bool bAppend = AccessMode & O_APPEND;
+			bool bExtended = AccessMode & (O_RDWR | O_CREAT);
+
+			IFileHandle* FileHandle;
+			if (bWrite || bAppend || bExtended)
+			{
+				FileHandle = PlatformFile.OpenWrite(UTF8_TO_TCHAR(file_name), bAppend, bExtended);
+			}
+			else
+			{
+				FileHandle = PlatformFile.OpenRead(UTF8_TO_TCHAR(file_name), true);
+			}
+
+			if (FileHandle == nullptr)
+			{
+				return nullptr;
+			}
+
+			auto fop_fd = new lws_fop_fd
+			{
+				.fd = FileHandle,
+				.fops = fops,
+				.filesystem_priv = nullptr,
+				.pos = 0,
+				.len = (lws_filepos_t)FileHandle->Size(),
+				.flags = *flags,
+			};
+			return fop_fd;
+		};
+		fops->LWS_FOP_CLOSE = [](lws_fop_fd_t *fop_fd)->int32
+		{
+			IFileHandle* FileHandle = static_cast<IFileHandle*>((*fop_fd)->fd);
+			delete *fop_fd;
+			*fop_fd = nullptr;
+			delete FileHandle;
+			return 0;
+		};
+		fops->LWS_FOP_SEEK_CUR = [](lws_fop_fd_t fop_fd, lws_fileofs_t offset_from_cur_pos)->lws_fileofs_t
+		{
+			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->fd);
+			auto NewPos = fop_fd->pos + offset_from_cur_pos;
+			if (!FileHandle->Seek(NewPos))
+			{
+				return -1;
+			}
+			fop_fd->pos = FileHandle->Tell();
+			return NewPos;
+		};
+		fops->LWS_FOP_READ = [](lws_fop_fd_t fop_fd, lws_filepos_t *amount, uint8_t *buf, lws_filepos_t len)->int32
+		{
+			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->fd);
+			const auto ReadSize = FMath::Min(len, lws_filepos_t(FileHandle->Size() - FileHandle->Tell()));
+			if (!FileHandle->Read(buf, ReadSize))
+			{
+				*amount = 0;
+				return 1;
+			}
+			*amount = ReadSize;
+			fop_fd->pos = FileHandle->Tell();
+			return 0;
+		};
+		fops->LWS_FOP_WRITE = [](lws_fop_fd_t fop_fd, lws_filepos_t *amount, uint8_t *buf, lws_filepos_t len)->int32
+		{
+			IFileHandle* FileHandle = static_cast<IFileHandle*>(fop_fd->fd);
+			const auto PreSize = FileHandle->Tell();
+			if (!FileHandle->Write(buf, len))
+			{
+				*amount = 0;
+				return 1;
+			}
+			*amount = FileHandle->Tell() - PreSize;
+			fop_fd->pos = FileHandle->Tell();
+			return 0;
+		};
+	}
 #endif
 	return true;
 }

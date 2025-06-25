@@ -64,7 +64,7 @@ ImFontAtlas& UnrealImGui::GetDefaultFontAtlas()
 		ensure(FFileHelper::LoadFileToArray(Bin, *FontPath));
 		FUtf8String FontName{ Settings->FontName };
 		check(Settings->FontName.Len() < UE_ARRAY_COUNT(FontConfig.Name));
-		FCStringAnsi::Strcpy(FontConfig.Name, FontName.Len(), reinterpret_cast<const char*>(*FontName));
+		FCStringAnsi::Strncpy(FontConfig.Name, reinterpret_cast<const char*>(*FontName), UE_ARRAY_COUNT(FontConfig.Name));
 		FontAtlas.AddFontFromMemoryTTF(Bin.GetData(), Bin.Num(), Settings->FontSize, &FontConfig);
 
 		// FontAwesome Icon

@@ -190,6 +190,14 @@ public:
 
 		IMGUI_CHECKVERSION();
 
+#if PLATFORM_WINDOWS
+		static bool bEnableThreadLocaleAsUft8 = GetDefault<UImGuiSettings>()->bEnableThreadLocaleAsUft8;
+		if (bEnableThreadLocaleAsUft8)
+		{
+			_configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+		}
+#endif
+
 		ImGuiContext* PrevContext = ImGui::GetCurrentContext();
 		Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
 		ImGui::SetCurrentContext(Context);
@@ -253,6 +261,12 @@ public:
 		ImGuiWS.Init(Manager.GetPort(), HtmlPath);
 		WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGuiSettings>()->ServerTickInterval]
 		{
+#if PLATFORM_WINDOWS
+			if (bEnableThreadLocaleAsUft8)
+			{
+				std::setlocale(LC_ALL, "en_US.UTF-8");
+			}
+#endif
 			while (bRequestedExit == false)
 			{
 				const double StartSeconds = FPlatformTime::Seconds();
