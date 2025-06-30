@@ -140,9 +140,9 @@ void UImGuiUnrealContextManager::DrawContextContent(int32& ContextIndex)
 		{
 		case NM_Client:
 #if WITH_EDITOR
-			WorldDesc = FString::Printf(TEXT("Client %d"), World->GetOutermost()->GetPIEInstanceID() - 1);
+			WorldDesc = FString::Printf(TEXT("Client %d"), World->GetOutermost()->GetPIEInstanceID());
 #else
-			WorldDesc = FString::Printf(TEXT("Client %d"), Idx);
+			WorldDesc = FString::Printf(TEXT("Client %d"), Idx + 1);
 #endif
 			break;
 		case NM_DedicatedServer:
