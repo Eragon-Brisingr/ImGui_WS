@@ -1,5 +1,6 @@
 ﻿#include "ImGui_Viewport.h"
 
+#include "ImGuiSettings.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
@@ -94,6 +95,12 @@ void SImGuiViewportOverlay::Tick(const FGeometry& AllottedGeometry, const double
 	const auto ScopedContext = ImGuiScopedContext();
 
 	constexpr int32 FloatContextFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+	const FVector2D& FloatingPanelSize = GetDefault<UImGuiSettings>()->ViewportFloatingPanelSize;
+	if (FloatingPanelSize.X != 0 || FloatingPanelSize.Y != 0)
+	{
+		ImGui::SetNextWindowSize(ImVec2{ FloatingPanelSize }, ImGuiCond_Always);
+	}
 	ImGui::SetNextWindowBgAlpha(0.4f);
 	if (ImGui::Begin(FloatingContextName, nullptr, FloatContextFlags))
 	{
@@ -110,7 +117,27 @@ void SImGuiViewportOverlay::WhenImGuiTick(float DeltaSeconds)
 	{
 		if (FloatingWindow->ContentSize.y > 0)
 		{
-			ImGui::SetWindowPos(FloatingWindow, { 50, 50 });
+			const auto FloatingPanelAnchor = GetDefault<UImGuiSettings>()->ViewportFloatingPanelAnchor;
+			const FVector2D ViewportSize{ ImGui::GetIO().DisplaySize };
+			const FVector2D PanelSize{ FloatingWindow->Size };
+			const FVector2D Offset{ 50 };
+			FVector2D Position;
+			switch (FloatingPanelAnchor)
+			{
+			case EImGuiViewportFloatingPanelAnchor::TopLeft:
+				Position = Offset;
+				break;
+			case EImGuiViewportFloatingPanelAnchor::TopRight:
+				Position = { ViewportSize.X - PanelSize.X - Offset.X, Offset.Y };
+				break;
+			case EImGuiViewportFloatingPanelAnchor::BottomLeft:
+				Position = { Offset.X, ViewportSize.Y - PanelSize.Y - Offset.Y };
+				break;
+			case EImGuiViewportFloatingPanelAnchor::BottomRight:
+				Position = { ViewportSize.X - PanelSize.X - Offset.X, ViewportSize.Y - PanelSize.Y - Offset.Y };
+				break;
+			}
+			ImGui::SetWindowPos(FloatingWindow, ImVec2{ Position });
 		}
 		else
 		{

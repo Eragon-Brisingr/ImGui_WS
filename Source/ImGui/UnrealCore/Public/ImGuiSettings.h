@@ -31,6 +31,15 @@ enum class EImGuiFontGlyphRanges : uint8
 	Vietnamese,
 };
 
+UENUM()
+enum class EImGuiViewportFloatingPanelAnchor
+{
+	TopLeft,
+	TopRight,
+	BottomLeft,
+	BottomRight,
+};
+
 UCLASS(Config = EditorPerProjectUserSettings)
 class IMGUI_API UImGuiPerUserSettings : public UObject
 {
@@ -115,6 +124,12 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (AllowedClasses = "/Script/ImGui_UnrealLayout.UnrealImGuiPanelBase"))
 	TArray<TSoftClassPtr<UObject>> FavoritePanels;
 
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS")
+	EImGuiViewportFloatingPanelAnchor ViewportFloatingPanelAnchor = EImGuiViewportFloatingPanelAnchor::TopLeft;
+
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS")
+	FVector2D ViewportFloatingPanelSize = FVector2D::ZeroVector;
+	
 	// Support Non-ASCII paths, will enable pre-thread locale and set ImGui_WS thread locale as UTF-8
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", AdvancedDisplay, meta = (ConfigRestartRequired = true))
 	bool bEnableThreadLocaleAsUft8 = false;
