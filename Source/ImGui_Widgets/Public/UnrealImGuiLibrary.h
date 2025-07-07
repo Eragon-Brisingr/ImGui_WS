@@ -101,7 +101,7 @@ public:
 	static bool ComboEnum(FName Label, uint8& EnumValue, UEnum* EnumType, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiComboFlags"))int32 Flags = 0);
 
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
-	static void DrawObjectDetailTable(FName Label, UObject* Object);
+	static bool DrawObjectDetailTable(FName Label, UObject* Object, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiTableFlags"))int32 TableFlags = 25857);
 
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	static bool DrawSingleProperty(FName PropertyName, UObject* Object, FName DisplayNameOverride = NAME_None);

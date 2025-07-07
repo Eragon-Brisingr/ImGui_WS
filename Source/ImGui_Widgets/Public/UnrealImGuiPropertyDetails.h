@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "imgui.h"
 #include "UObject/UnrealType.h"
 
 class FFieldClass;
@@ -260,9 +261,10 @@ namespace UnrealImGui
 		TGuardValue<FPostPropertyValueChanged> GPostPropertyValueChangedGuard;
 		TGuardValue<TMap<InnerValue::FFilterCacheKey, bool>> GFilterCacheMapGuard;
 	};
-	
-	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
-	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+
+	constexpr int32 DefaultDetailTableFlags = ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
+	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, int32 TableFlags = DefaultDetailTableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, int32 TableFlags = DefaultDetailTableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 
 	IMGUI_WIDGETS_API UClass* GetTopClass(const FObjectArray& Objects, const UClass* StopClass = UObject::StaticClass());
 	IMGUI_WIDGETS_API const UStruct* GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct = nullptr);

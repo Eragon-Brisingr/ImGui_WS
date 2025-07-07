@@ -84,7 +84,7 @@ namespace UnrealImGui
 		}))
 		{
 			ImGui::FIdScope IdScope{ Label };
-			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 7.f);
+			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 6.f);
 			ImGui::InputTextWithHint("##Filter", Settings->FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 			bool IsFiltered = ImGui::IsItemEdited();
 			ImGui::SameLine();
@@ -488,7 +488,7 @@ namespace UnrealImGui
 		}))
 		{
 			ImGui::FIdScope IdScope{ Label };
-			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 7.f);
+			ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 6.f);
 			ImGui::InputTextWithHint("##Filter", Settings->FilterHint, FilterString, ImGuiInputTextFlags_EnterReturnsTrue);
 			bool IsFiltered = ImGui::IsItemEdited();
 			ImGui::SameLine();
