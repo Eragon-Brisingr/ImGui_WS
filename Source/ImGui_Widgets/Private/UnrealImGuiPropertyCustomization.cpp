@@ -311,6 +311,7 @@ namespace UnrealImGui
 		if (ObjectProperty->HasAnyPropertyFlags(CPF_InstancedReference))
 		{
 			static FClassPickerData ClassPickerData;
+			ImGui::SetNextWindowSize({ -1, 400 });
 			ComboClassPicker(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, bIsIdentical)),
 				TCHAR_TO_UTF8(*ObjectName.ToString()),
 				ObjectProperty->PropertyClass,
@@ -592,14 +593,11 @@ namespace UnrealImGui
 	{
 		const FStrProperty* StringProperty = CastFieldChecked<FStrProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
-		const FString FirstValue = StringProperty->GetPropertyValue(FirstValuePtr);
-		const auto StringPoint = FTCHARToUTF8(*FirstValue);
-		char Buff[512];
-		FMemory::Memcpy(&Buff, StringPoint.Get(), StringPoint.Length() + 1);
-		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, bIsIdentical)), Buff, sizeof(Buff));
+		FUtf8String FirstValue{ StringProperty->GetPropertyValue(FirstValuePtr) };
+		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, bIsIdentical)), FirstValue);
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
-			const FString ChangedValue = UTF8_TO_TCHAR(Buff);
+			const FString ChangedValue{ FirstValue };
 			for (uint8* Container : Containers)
 			{
 				StringProperty->SetPropertyValue(Container + Offset, ChangedValue);
@@ -613,14 +611,11 @@ namespace UnrealImGui
 		const FNameProperty* NameProperty = CastFieldChecked<FNameProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
 		const FString PropertyLabelName = GetPropertyValueLabel(Property, bIsIdentical);
-		const FName FirstValue = NameProperty->GetPropertyValue(FirstValuePtr);
-		const auto StringPoint = FTCHARToUTF8(*FirstValue.ToString());
-		char Buff[512];
-		FMemory::Memcpy(&Buff, StringPoint.Get(), StringPoint.Length() + 1);
-		ImGui::InputText(TCHAR_TO_UTF8(*PropertyLabelName), Buff, sizeof(Buff));
+		FUtf8String FirstValue{ NameProperty->GetPropertyValue(FirstValuePtr).ToString() };
+		ImGui::InputText(TCHAR_TO_UTF8(*PropertyLabelName), FirstValue);
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
-			const FName ChangedValue = UTF8_TO_TCHAR(Buff);
+			const FName ChangedValue = UTF8_TO_TCHAR(*FirstValue);
 			for (uint8* Container : Containers)
 			{
 				NameProperty->SetPropertyValue(Container + Offset, ChangedValue);
@@ -633,14 +628,11 @@ namespace UnrealImGui
 	{
 		const FTextProperty* TextProperty = CastFieldChecked<FTextProperty>(Property);
 		const uint8* FirstValuePtr = Containers[0] + Offset;
-		const FText FirstValue = TextProperty->GetPropertyValue(FirstValuePtr);
-		const auto StringPoint = FTCHARToUTF8(*FirstValue.ToString());
-		char Buff[512];
-		FMemory::Memcpy(&Buff, StringPoint.Get(), StringPoint.Length() + 1);
-		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, bIsIdentical)), Buff, sizeof(Buff));
+		FUtf8String FirstValue{ TextProperty->GetPropertyValue(FirstValuePtr).ToString() };
+		ImGui::InputText(TCHAR_TO_UTF8(*GetPropertyValueLabel(Property, bIsIdentical)), FirstValue);
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
-			const FText ChangedValue = FText::FromString(UTF8_TO_TCHAR(Buff));
+			const FText ChangedValue = FText::FromString(UTF8_TO_TCHAR(*FirstValue));
 			for (uint8* Container : Containers)
 			{
 				TextProperty->SetPropertyValue(Container + Offset, ChangedValue);

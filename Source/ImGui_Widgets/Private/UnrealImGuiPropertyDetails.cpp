@@ -219,13 +219,12 @@ namespace UnrealImGui
 	}
 
 	template<typename ComponentT, int32 Length>
-	struct FComponentPropertyCustomization : IUnrealStructCustomization
+	struct TComponentPropertyCustomization : IUnrealStructCustomization
 	{
-		using ImGuiDataType = int32;
 		ImGuiDataType DataType;
 		const char* Format = nullptr;
 
-		FComponentPropertyCustomization(ImGuiDataType data_type, const char* fmt = nullptr)
+		TComponentPropertyCustomization(ImGuiDataType data_type, const char* fmt = nullptr)
 			: DataType(data_type), Format(fmt)
 		{}
 
@@ -245,9 +244,77 @@ namespace UnrealImGui
 		}
 	};
 
+	template<typename ComponentT>
+	struct TRotatorPropertyCustomization : IUnrealStructCustomization
+	{
+		ImGuiDataType DataType;
+		const char* Format = nullptr;
+
+		TRotatorPropertyCustomization(ImGuiDataType data_type, const char* fmt = nullptr)
+			: DataType(data_type), Format(fmt)
+		{}
+		
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override
+		{
+			constexpr int32 Length = 3;
+			ComponentT Component[Length];
+			{
+				auto& Rotator = *reinterpret_cast<UE::Math::TRotator<ComponentT>*>(Containers[0] + Offset);
+				Component[0] = Rotator.Roll;
+				Component[1] = Rotator.Pitch;
+				Component[2] = Rotator.Yaw;
+			}
+			ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyValueLabel(Property, bIsIdentical)), DataType, Component, Length, nullptr, nullptr, Format);
+			if (ImGui::IsItemDeactivatedAfterEdit())
+			{
+				for (uint8* Container : Containers)
+				{
+					auto& Rotator = *reinterpret_cast<UE::Math::TRotator<ComponentT>*>(Container + Offset);
+					Rotator.Roll = Component[0];
+					Rotator.Pitch = Component[1];
+					Rotator.Yaw = Component[2];
+				}
+				NotifyPostPropertyValueChanged(Property);
+			}
+		}
+	};
+
+	template<typename ComponentT>
+	struct TQuatCustomization : IUnrealStructCustomization
+	{
+		ImGuiDataType DataType;
+		const char* Format = nullptr;
+
+		TQuatCustomization(ImGuiDataType data_type, const char* fmt = nullptr)
+			: DataType(data_type), Format(fmt)
+		{}
+
+		void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override
+		{
+			constexpr int32 Length = 3;
+			ComponentT Component[Length];
+			{
+				auto Rotator = reinterpret_cast<UE::Math::TQuat<ComponentT>*>(Containers[0] + Offset)->Rotator();
+				Component[0] = Rotator.Roll;
+				Component[1] = Rotator.Pitch;
+				Component[2] = Rotator.Yaw;
+			}
+			static_assert(std::is_same<FVector::FReal, double>::value);
+			ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyValueLabel(Property, bIsIdentical)), ImGuiDataType_Double, Component, Length, nullptr, nullptr, Format);
+			if (ImGui::IsItemDeactivatedAfterEdit())
+			{
+				const auto Quat = UE::Math::TRotator<ComponentT>{ Component[1], Component[2], Component[0] }.Quaternion();
+				for (uint8* Container : Containers)
+				{
+					*reinterpret_cast<UE::Math::TQuat<ComponentT>*>(Container + Offset) = Quat;
+				}
+				NotifyPostPropertyValueChanged(Property);
+			}
+		}
+	};
+	
 	void UnrealPropertyCustomizeFactory::InitialDefaultCustomizer()
 	{
-		// 注册默认的属性自定义显示实现
 		AddPropertyCustomizer(FBoolProperty::StaticClass(), MakeShared<FBoolPropertyCustomization>());
 		AddPropertyCustomizer(FNumericProperty::StaticClass(), MakeShared<FNumericPropertyCustomization>());
 		AddPropertyCustomizer(FObjectProperty::StaticClass(), MakeShared<FObjectPropertyCustomization>());
@@ -264,54 +331,24 @@ namespace UnrealImGui
 		AddPropertyCustomizer(FMapProperty::StaticClass(), MakeShared<FMapPropertyCustomization>());
 		AddPropertyCustomizer(FStructProperty::StaticClass(), MakeShared<FStructPropertyCustomization>());
 
-		// 注册默认的结构体自定义显示实现
-		struct StaticGetBaseStructure
-		{
-			static UScriptStruct* Get(FStringView Name)
-			{
-				static UPackage* CoreUObjectPkg = FindObjectChecked<UPackage>(nullptr, TEXT("/Script/CoreUObject"));
-				UScriptStruct* Result = FindObjectChecked<UScriptStruct>(CoreUObjectPkg, Name.GetData());
-
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-				if (!Result)
-				{
-					UE_LOG(LogClass, Fatal, TEXT("Failed to find native struct '%s.%s'"), *CoreUObjectPkg->GetName(), Name.GetData());
-				}
-#endif
-				return Result;
-			}
-		};
-
 		static_assert(std::is_same_v<FVector::FReal, double>);
-		AddStructCustomizer(TBaseStructure<FVector2D>::Get(), MakeShared<FComponentPropertyCustomization<double, 2>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FVector>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FVector4>::Get(), MakeShared<FComponentPropertyCustomization<double, 4>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TBaseStructure<FRotator>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TVariantStructure<FVector2f>::Get(), MakeShared<FComponentPropertyCustomization<double, 2>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TVariantStructure<FVector3f>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TVariantStructure<FVector4f>::Get(), MakeShared<FComponentPropertyCustomization<double, 4>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(TVariantStructure<FRotator3f>::Get(), MakeShared<FComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.3f"));
-		AddStructCustomizer(StaticGetBaseStructure::Get(TEXT("IntVector")), MakeShared<FComponentPropertyCustomization<int32, 3>>(ImGuiDataType_S32));
+		AddStructCustomizer(TBaseStructure<FVector2D>::Get(), MakeShared<TComponentPropertyCustomization<double, 2>>(ImGuiDataType_Double, "%.15g"));
+		AddStructCustomizer(TVariantStructure<FVector2f>::Get(), MakeShared<TComponentPropertyCustomization<float, 2>>(ImGuiDataType_Float, "%.15g"));
+		AddStructCustomizer(TBaseStructure<FVector>::Get(), MakeShared<TComponentPropertyCustomization<double, 3>>(ImGuiDataType_Double, "%.15g"));
+		AddStructCustomizer(TVariantStructure<FVector3f>::Get(), MakeShared<TComponentPropertyCustomization<float, 3>>(ImGuiDataType_Float, "%.15g"));
+		AddStructCustomizer(TBaseStructure<FVector4>::Get(), MakeShared<TComponentPropertyCustomization<double, 4>>(ImGuiDataType_Double, "%.15g"));
+		AddStructCustomizer(TVariantStructure<FVector4f>::Get(), MakeShared<TComponentPropertyCustomization<float, 4>>(ImGuiDataType_Float, "%.15g"));
+		AddStructCustomizer(TBaseStructure<FRotator>::Get(), MakeShared<TRotatorPropertyCustomization<double>>(ImGuiDataType_Double, "%.15g"));
+		AddStructCustomizer(TVariantStructure<FRotator3f>::Get(), MakeShared<TRotatorPropertyCustomization<float>>(ImGuiDataType_Float, "%.15g"));
+		AddStructCustomizer(TBaseStructure<FQuat>::Get(), MakeShared<TQuatCustomization<double>>(ImGuiDataType_Double, "%.15g"));
+		AddStructCustomizer(TVariantStructure<FQuat4f>::Get(), MakeShared<TQuatCustomization<float>>(ImGuiDataType_Float, "%.15g"));
 
-		struct FQuatCustomization : IUnrealStructCustomization
-		{
-			void CreateValueWidget(const FProperty* Property, const FPtrArray& Containers, int32 Offset, bool bIsIdentical) const override
-			{
-				FRotator Rotation = reinterpret_cast<FQuat*>(Containers[0] + Offset)->Rotator();
-				static_assert(std::is_same<FVector::FReal, double>::value);
-				ImGui::InputScalarN(TCHAR_TO_UTF8(*UnrealImGui::GetPropertyValueLabel(Property, bIsIdentical)), ImGuiDataType_Double, (double*)&Rotation, 3);
-				if (ImGui::IsItemDeactivatedAfterEdit())
-				{
-					const FQuat Quat = Rotation.Quaternion();
-					for (uint8* Container : Containers)
-					{
-						*reinterpret_cast<FQuat*>(Container + Offset) = Quat;
-					}
-					NotifyPostPropertyValueChanged(Property);
-				}
-			}
-		};
-		AddStructCustomizer(TBaseStructure<FQuat>::Get(), MakeShared<FQuatCustomization>());
+		AddStructCustomizer(TBaseStructure<FIntPoint>::Get(), MakeShared<TComponentPropertyCustomization<int32, 2>>(ImGuiDataType_S32));
+		AddStructCustomizer(TBaseStructure<FIntVector>::Get(), MakeShared<TComponentPropertyCustomization<int32, 3>>(ImGuiDataType_S32));
+		AddStructCustomizer(TBaseStructure<FInt64Vector2>::Get(), MakeShared<TComponentPropertyCustomization<int64, 2>>(ImGuiDataType_S64));
+		AddStructCustomizer(TBaseStructure<FIntVector4>::Get(), MakeShared<TComponentPropertyCustomization<int32, 4>>(ImGuiDataType_S32));
+
+		AddStructCustomizer(TBaseStructure<FGuid>::Get(), MakeShared<TComponentPropertyCustomization<uint32, 4>>(ImGuiDataType_U32));
 
 		struct FLinearColorCustomization : IUnrealStructCustomization
 		{
