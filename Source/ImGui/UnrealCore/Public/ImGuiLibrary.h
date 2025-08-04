@@ -7,6 +7,7 @@
 #include "ImGuiEx.h"
 #include "ImGuiLibraryBase.h"
 #include "InputCoreTypes.h"
+#include "UnrealImGuiFileUtils.h"
 #include "UnrealImGuiKeyUtils.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGuiTypes.h"
@@ -1849,5 +1850,11 @@ public:
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetClipboardText(TCHAR_TO_UTF8(*Text));
+	}
+
+	UFUNCTION(BlueprintCallable, Category="ImGui|File", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	void DownloadFile(const FString& FileName, const TArray<uint8>& Data)
+	{
+		UnrealImGui::DownloadFile(*FileName, Data);
 	}
 };

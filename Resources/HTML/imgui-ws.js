@@ -14,6 +14,7 @@ const EventType = {
 
 const ServerEventType = {
     SetClipboardText : 0,
+    DownloadFile : 1,
 };
 
 var imgui_ws = {
@@ -66,9 +67,27 @@ var imgui_ws = {
             switch (event_id)
             {
                 case ServerEventType.SetClipboardText:
+                {
                     let clipboard_text = incppect.abut_to_str(payload);
                     navigator.clipboard.writeText(clipboard_text);
                     break;
+                }
+                case ServerEventType.DownloadFile:
+                {
+                    const nameLen = (new Uint32Array(payload))[0];
+                    const fileName = incppect.abut_to_str(payload.slice(4, 4 + nameLen));
+                    const blob = new Blob([payload.slice(4 + nameLen)], { type: "application/octet-stream" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.style.display = "none";
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    break;
+                }
                 default:
                     console.error("to server event %s not handle", event_id);
             }

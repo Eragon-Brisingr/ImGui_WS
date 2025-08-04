@@ -18,6 +18,7 @@
 #include "imgui_internal.h"
 #include "imgui_notify.h"
 #include "implot.h"
+#include "UnrealImGuiFileUtils.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiStyles.h"
 #include "UnrealImGuiTexture.h"
@@ -38,6 +39,11 @@
 #include "UObject/Package.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
+
+namespace UnrealImGui
+{
+	IMGUI_API extern FDownloadFileHook DownloadFileHook;
+}
 
 FAutoConsoleCommand LaunchImGuiWeb
 {
@@ -178,7 +184,8 @@ public:
 	{
 		enum Type : int32
 		{
-			SetClipboardText
+			SetClipboardText,
+			DownloadFile,
 		};
 	};
 
@@ -214,12 +221,28 @@ public:
 		ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text)
 		{
 			const UImGui_WS_Manager* Manager = UImGui_WS_Manager::GetChecked();
-			const int32 Len = FCStringAnsi::Strlen(text);
+			FUtf8String Utf8String{ (FPlatformTypes::UTF8CHAR*)text };
 			TArray<uint8> Payload;
-			Payload.SetNumUninitialized(Len + 1);
-			FMemory::Memcpy(Payload.GetData(), text, Len + 1);
+			Payload.SetNumUninitialized(Utf8String.Len());
+			FMemory::Memcpy(Payload.GetData(), Utf8String.GetCharArray().GetData(), Utf8String.Len());
 			Manager->Impl->ImGuiWS.AddServerEvent(Manager->Impl->State.CurControlId, EServerEventType::SetClipboardText, MoveTemp(Payload));
 		};
+
+		UnrealImGui::DownloadFileHook.BindLambda([this](const TCHAR* FileName, const TConstArrayView64<uint8> Data)
+		{
+			if (ImGui::GetCurrentContext() != Context)
+			{
+				return false;
+			}
+			TArray<uint8> Payload;
+			FTCHARToUTF8 UTF8String{ FileName };
+			Payload.SetNumUninitialized(sizeof(uint32));
+			*(uint32*)Payload.GetData() = UTF8String.Length();
+			Payload.Append((uint8*)UTF8String.Get(), UTF8String.Length());
+			Payload.Append(Data);
+			ImGuiWS.AddServerEvent(State.CurControlId, EServerEventType::DownloadFile, MoveTemp(Payload));
+			return true;
+		});
 
 		// Enable Docking
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -319,6 +342,7 @@ public:
 		ImPlot::DestroyContext(PlotContext);
 		UnrealImGui::Private::UpdateTextureData_WS.Reset();
 		bRequestedExit = true;
+		UnrealImGui::DownloadFileHook.Unbind();
 		if (WS_Thread.IsJoinable())
 		{
 			WS_Thread.Join();
