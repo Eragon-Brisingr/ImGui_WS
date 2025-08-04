@@ -163,6 +163,7 @@ class UImGui_WS_Manager::FImpl final : FTickableGameObject
 public:
 	ImGuiWS ImGuiWS;
 	FThread WS_Thread;
+	FTSTicker::FDelegateHandle WS_NonMultiThreadTickHandle;
     std::atomic_bool bRequestedExit{ false };
 
 	ImGuiContext* Context;
@@ -259,25 +260,36 @@ public:
 			}
 		}
 		ImGuiWS.Init(Manager.GetPort(), HtmlPath);
-		WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGuiSettings>()->ServerTickInterval]
+		if (FPlatformProcess::SupportsMultithreading())
 		{
+			WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGuiSettings>()->ServerTickInterval]
+			{
 #if PLATFORM_WINDOWS
-			if (bEnableThreadLocaleAsUft8)
-			{
-				std::setlocale(LC_ALL, "en_US.UTF-8");
-			}
-#endif
-			while (bRequestedExit == false)
-			{
-				const double StartSeconds = FPlatformTime::Seconds();
-				WS_ThreadUpdate();
-				const double SleepSeconds = Interval - (FPlatformTime::Seconds() - StartSeconds);
-				if (SleepSeconds > 0.f)
+				if (bEnableThreadLocaleAsUft8)
 				{
-					FPlatformProcess::SleepNoStats(SleepSeconds);
+					std::setlocale(LC_ALL, "en_US.UTF-8");
 				}
-			}
-		}, 0, TPri_Lowest };
+#endif
+				while (bRequestedExit == false)
+				{
+					const double StartSeconds = FPlatformTime::Seconds();
+					WS_ThreadUpdate();
+					const double SleepSeconds = Interval - (FPlatformTime::Seconds() - StartSeconds);
+					if (SleepSeconds > 0.f)
+					{
+						FPlatformProcess::SleepNoStats(SleepSeconds);
+					}
+				}
+			}, 0, TPri_Lowest };
+		}
+		else
+		{
+			WS_NonMultiThreadTickHandle = FTSTicker::GetCoreTicker().AddTicker(TEXT("ImGui_WS"), 0, [this](float)
+			{
+				WS_ThreadUpdate();
+				return true;
+			});
+		}
 
 		// prepare font texture
 		{
@@ -310,6 +322,10 @@ public:
 		if (WS_Thread.IsJoinable())
 		{
 			WS_Thread.Join();
+		}
+		else if (WS_NonMultiThreadTickHandle.IsValid())
+		{
+			FTSTicker::GetCoreTicker().RemoveTicker(WS_NonMultiThreadTickHandle);
 		}
 	}
 
