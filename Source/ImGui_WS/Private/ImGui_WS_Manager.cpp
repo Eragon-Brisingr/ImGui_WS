@@ -901,6 +901,8 @@ public:
 	}
 	void WS_ThreadUpdate()
 	{
+		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("WS_ThreadUpdate"), STAT_WS_ThreadUpdate, STATGROUP_ImGui);
+
 		if (ImGuiDataTripleBuffer.IsDirty())
 		{
 			const TSharedPtr<FImGuiData> ImGuiData = ImGuiDataTripleBuffer.SwapAndRead();
