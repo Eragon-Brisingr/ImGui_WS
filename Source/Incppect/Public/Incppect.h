@@ -29,7 +29,7 @@ public:
     // service parameters
     struct FParameters
     {
-        uint32 PortListen = 3000;
+        uint32 ListenPort = 3000;
         int64 tLastRequestTimeout_ms = 3000;
         uint32 tIdleTimeout_s = 120;
 
@@ -52,6 +52,8 @@ public:
     // number of connected clients
     int32 NumConnected() const;
 
+	uint32 GetPort() const;
+	
     // define variable/memory to inspect
     //
     // examples:

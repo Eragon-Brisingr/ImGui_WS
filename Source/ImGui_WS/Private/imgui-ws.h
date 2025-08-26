@@ -80,8 +80,9 @@ public:
     ImGuiWS();
     ~ImGuiWS();
 
-    bool Init(int32 PortListen, const FString& PathOnDisk);
-    bool Init(int32 PortListen, const FString& PathOnDisk, THandler&& ConnectHandler, THandler&& DisconnectHandler);
+    bool Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk);
+    bool Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk, THandler&& ConnectHandler, THandler&& DisconnectHandler);
+	uint32 GetPort() const;
     void Tick();
     bool SetTexture(FTextureId TextureId, FTexture::Type TextureType, int32 Width, int32 Height, const uint8* Data);
     bool SetDrawData(const struct ImDrawData* DrawData);

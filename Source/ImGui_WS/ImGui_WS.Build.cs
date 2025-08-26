@@ -23,6 +23,8 @@ public class ImGui_WS : ModuleRules
 	        "DeveloperSettings",
 	        "Slate",
 	        "SlateCore",
+	        "Sockets",
+	        "Networking",
 	        
 	        "ImGui",
 	        "ImGui_Slate",

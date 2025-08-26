@@ -24,11 +24,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	void Disable();
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
-	int32 GetPort() const;
+	int32 GetConfigPort() const;
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
+	int32 GetRealPort() const;
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
+	int32 GetPortTestNum() const;
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
 	int32 GetConnectionCount() const;
 	UFUNCTION(BlueprintCallable, Category = "ImGui")
-	void OpenWebPage(bool bServerPort = false) const;
+	void OpenWebPage(const FString& URL = TEXT("")) const;
+	UFUNCTION(BlueprintCallable, Category = "ImGui")
+	FString GetWebURL(bool bQueryIP) const;
 
 	bool IsRecording() const;
 	void StartRecord();

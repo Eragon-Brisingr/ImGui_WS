@@ -661,8 +661,8 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 	struct lws_context_creation_info Info;
 	memset(&Info, 0, sizeof(lws_context_creation_info));
 	// look up libwebsockets.h for details.
+	Info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 	Info.port = Port;
-	ServerPort = Port;
 
 	Info.iface = NULL;
 	if (!BindAddress.IsEmpty())
@@ -697,8 +697,25 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 		Protocols = NULL;
 		delete[] LwsHttpMounts;
 	 	LwsHttpMounts = NULL;
-		return false; // couldn't create a server.
+		return false;
 	}
+
+	lws_vhost* Vh = nullptr;
+	{
+		struct lws_context_creation_info VhInfo = {};
+		VhInfo.port = Port;
+		VhInfo.protocols = Protocols;
+		VhInfo.vhost_name = "default";
+
+		Vh = lws_create_vhost(Context, &VhInfo);
+	}
+	if (Vh == nullptr)
+	{
+		lws_context_destroy(Context);
+		return false;
+	}
+
+	ServerPort = lws_get_vhost_listen_port(Vh);
 
 	ConnectedCallBack = CallBack;
 

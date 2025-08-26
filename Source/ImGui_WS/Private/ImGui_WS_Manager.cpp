@@ -18,6 +18,7 @@
 #include "imgui_internal.h"
 #include "imgui_notify.h"
 #include "implot.h"
+#include "SocketSubsystem.h"
 #include "UnrealImGuiFileUtils.h"
 #include "UnrealImGuiStat.h"
 #include "UnrealImGuiStyles.h"
@@ -32,6 +33,7 @@
 #include "HAL/PlatformFileManager.h"
 #include "HAL/Thread.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/Base64.h"
 #include "Misc/FileHelper.h"
 #include "Misc/ScopeExit.h"
 #include "Record/imgui-ws-record.h"
@@ -282,7 +284,7 @@ public:
 				FFileHelper::SaveArrayToFile(Bin, *FilePath);
 			}
 		}
-		ImGuiWS.Init(Manager.GetPort(), HtmlPath);
+		ImGuiWS.Init(Manager.GetConfigPort(), Manager.GetPortTestNum(), HtmlPath);
 		if (FPlatformProcess::SupportsMultithreading())
 		{
 			WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGuiSettings>()->ServerTickInterval]
@@ -1000,7 +1002,7 @@ void UImGui_WS_Manager::Disable()
 	UE_LOG(LogImGui, Log, TEXT("Disable ImGui WS"));
 }
 
-int32 UImGui_WS_Manager::GetPort() const
+int32 UImGui_WS_Manager::GetConfigPort() const
 {
 	const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
 	if (GIsEditor)
@@ -1017,22 +1019,143 @@ int32 UImGui_WS_Manager::GetPort() const
 	return Settings->GamePort;
 }
 
+int32 UImGui_WS_Manager::GetRealPort() const
+{
+	if (Impl)
+	{
+		return Impl->ImGuiWS.GetPort();
+	}
+	return INDEX_NONE;
+}
+
+int32 UImGui_WS_Manager::GetPortTestNum() const
+{
+	const UImGuiSettings* Settings = GetDefault<UImGuiSettings>();
+	return Settings->PortTestNum;
+}
+
 int32 UImGui_WS_Manager::GetConnectionCount() const
 {
 	return Impl ? Impl->ImGuiWS.NumConnected() : 0;
 }
 
-void UImGui_WS_Manager::OpenWebPage(bool bServerPort) const
+#if PLATFORM_WINDOWS
+#include "Windows/AllowWindowsPlatformTypes.h"
+	#include <shellapi.h>
+#include "Windows/HideWindowsPlatformTypes.h"
+static void LaunchWebURL( const FString& URLParams, FString* Error )
 {
-	if (bServerPort == false && IsEnable() == false)
+	UE_LOG(LogWindows, Log, TEXT("LaunchURL %s"), *URLParams);
+
+	FString BrowserOpenCommand;
+
+	// First lookup the program Id for the default browser.
+	FString ProgId;
+	if (FWindowsPlatformMisc::QueryRegKey(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\http\\UserChoice"), TEXT("Progid"), ProgId))
 	{
-		FPlatformProcess::LaunchURL(TEXT("http://localhost#ImGui_WS_Not_Enable!"), nullptr, nullptr);
+		// If we found it, then lookup it's open shell command in the classes registry.
+		FString BrowserRegPath = ProgId + TEXT("\\shell\\open\\command");
+		FWindowsPlatformMisc::QueryRegKey(HKEY_CLASSES_ROOT, *BrowserRegPath, NULL, BrowserOpenCommand);
 	}
-	else
+
+	// If we failed to find a default browser using the newer location, revert to using shell open command for the HTTP file association.
+	if (BrowserOpenCommand.IsEmpty())
 	{
-		const int32 Port = bServerPort ? GetDefault<UImGuiSettings>()->ServerPort : GetPort();
-		FPlatformProcess::LaunchURL(*FString::Printf(TEXT("http://localhost:%d"), Port), nullptr, nullptr);
+		FWindowsPlatformMisc::QueryRegKey(HKEY_CLASSES_ROOT, TEXT("http\\shell\\open\\command"), NULL, BrowserOpenCommand);
 	}
+
+	// If we have successfully looked up the correct shell command, then we can create a new process using that command
+	// we do this instead of shell execute due to security concerns.  By starting the browser directly we avoid most issues.
+	if (!BrowserOpenCommand.IsEmpty())
+	{
+		FString ExePath, ExeArgs;
+
+		// If everything has gone to plan, the shell command should be something like this:
+		// "C:\Program Files (x86)\Mozilla Firefox\firefox.exe" -osint -url "%1"
+		// We need to extract out the executable portion, and the arguments portion and expand any %1's with the URL,
+		// then start the browser process.
+
+		// Extract the exe and any arguments to the executable.
+		const int32 FirstQuote = BrowserOpenCommand.Find(TEXT("\""));
+		if (FirstQuote != INDEX_NONE)
+		{
+			const int32 SecondQuote = BrowserOpenCommand.Find(TEXT("\""), ESearchCase::IgnoreCase, ESearchDir::FromStart, FirstQuote + 1);
+			if (SecondQuote != INDEX_NONE)
+			{
+				ExePath = BrowserOpenCommand.Mid(FirstQuote + 1, (SecondQuote - 1) - FirstQuote);
+				ExeArgs = BrowserOpenCommand.Mid(SecondQuote + 1);
+			}
+		}
+
+		// If anything failed to parse right, don't continue down this path, just use shell execute.
+		if (!ExePath.IsEmpty())
+		{
+			if (ExeArgs.ReplaceInline(TEXT("%1"), *URLParams) == 0)
+			{
+				// If we fail to detect the placement token we append the URL to the arguments.
+				// This is for robustness, and to fix a known error case when using Internet Explorer 8. 
+				ExeArgs.Append(TEXT(" \"") + URLParams + TEXT("\""));
+			}
+
+			// Now that we have the shell open command to use, run the shell command in the open process with any and all parameters.
+			if (FPlatformProcess::CreateProc(*ExePath, *ExeArgs, true, false, false, NULL, 0, NULL, NULL).IsValid())
+			{
+				// Success!
+				return;
+			}
+			else
+			{
+				if (Error)
+				{
+					*Error = NSLOCTEXT("Core", "UrlFailed", "Failed launching URL").ToString();
+				}
+			}
+		}
+	}
+
+	// If all else fails just do a shell execute and let windows sort it out.  But only do it if it's an
+	// HTTP or HTTPS address.  A malicious address could be problematic if just passed directly to shell execute.
+	if (URLParams.StartsWith(TEXT("http://")) || URLParams.StartsWith(TEXT("https://")))
+	{
+		const HINSTANCE Code = ::ShellExecuteW(NULL, TEXT("open"), *URLParams, NULL, NULL, SW_SHOWNORMAL);
+		if (Error)
+		{
+			*Error = ((PTRINT)Code <= 32) ? NSLOCTEXT("Core", "UrlFailed", "Failed launching URL").ToString() : TEXT("");
+		}
+	}
+}
+#endif
+
+void UImGui_WS_Manager::OpenWebPage(const FString& URL) const
+{
+	const FString& RealURL = URL.Len() > 0 ? *URL : *GetWebURL(false);
+#if PLATFORM_WINDOWS
+	LaunchWebURL(RealURL, nullptr);
+#else
+	FPlatformProcess::LaunchURL(RealURL, nullptr, nullptr);
+#endif
+}
+
+FString UImGui_WS_Manager::GetWebURL(bool bQueryIP) const
+{
+	if (IsEnable() == false)
+	{
+		constexpr auto Html = R"(
+<meta charset="utf-8">
+<title>ImGui WS not enable</title>
+<style>body{font-family:system-ui,sans-serif;padding:2rem;line-height:1.6}</style>
+<h1>ImGui WS not enable</h1>
+<p>Use console variable <b>ImGui.WS.Enable 1</b> to enable ImGui WS</p>
+)";
+		return FString::Printf(TEXT("data:text/html;base64,%s"), *FBase64::Encode(Html));
+	}
+	if (!bQueryIP)
+	{
+		return *FString::Printf(TEXT("http://localhost:%d"), GetRealPort());
+	}
+	bool bCanBindAll = false;
+	auto Addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->GetLocalHostAddr(*GLog, bCanBindAll);
+	return *FString::Printf(TEXT("http://%s:%d"), *Addr->ToString(false), GetRealPort());
 }
 
 bool UImGui_WS_Manager::IsRecording() const

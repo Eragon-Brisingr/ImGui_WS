@@ -16,6 +16,7 @@
 #include "imgui.h"
 #include "Incppect.h"
 #include "UnrealImGui_Log.h"
+#include "Common/TcpSocketBuilder.h"
 #include "Containers/Queue.h"
 
 struct ImGuiWS::FImpl
@@ -54,7 +55,7 @@ struct ImGuiWS::FImpl
 };
 
 ImGuiWS::ImGuiWS()
-    : Impl(new FImpl())
+    : Impl(MakeUnique<FImpl>())
 {}
 
 ImGuiWS::~ImGuiWS()
@@ -75,11 +76,33 @@ void ImGuiWS::AddServerEvent(int32 ClientId, int32 EventId, TArray<uint8>&& Payl
     });
 }
 
-bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
+bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk)
 {
     // start the http/websocket server
     FIncppect::FParameters Parameters;
-    Parameters.PortListen = PortListen;
+
+	auto SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	auto Socket = SocketSubsystem->CreateSocket(NAME_Stream, TEXT("TestPortSocket"));
+	Socket->SetReuseAddr(false);
+	bool bValidSocket = false;
+	for (int32 Port = PortListen; Port <= PortListen + PortTestNum; ++Port)
+	{
+		TSharedRef<FInternetAddr> BoundEndpointAddr = FIPv4Endpoint(FIPv4Address::Any, Port).ToInternetAddr();
+		if (Socket->Bind(*BoundEndpointAddr))
+		{
+			bValidSocket = true;
+			break;
+		}
+	}
+	if (bValidSocket == false)
+	{
+		SocketSubsystem->DestroySocket(Socket);
+		return false;
+	}
+	Parameters.ListenPort = Socket->GetPortNo();
+	Socket->Close();
+	SocketSubsystem->DestroySocket(Socket);
+
     Parameters.tLastRequestTimeout_ms = -1;
     Parameters.HttpRoot = TEXT("/");
     Parameters.PathOnDisk = PathOnDisk;
@@ -308,12 +331,17 @@ bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk)
     return true;
 }
 
-bool ImGuiWS::Init(int32 PortListen, const FString& PathOnDisk, THandler&& HandlerConnect, THandler&& HandlerDisconnect)
+bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk, THandler&& HandlerConnect, THandler&& HandlerDisconnect)
 {
     Impl->HandlerConnect = MoveTemp(HandlerConnect);
     Impl->HandlerDisconnect = MoveTemp(HandlerDisconnect);
 
-    return Init(PortListen, PathOnDisk);
+    return Init(PortListen, PortTestNum, PathOnDisk);
+}
+
+uint32 ImGuiWS::GetPort() const
+{
+	return Impl->Incpp.GetPort();
 }
 
 void ImGuiWS::Tick()

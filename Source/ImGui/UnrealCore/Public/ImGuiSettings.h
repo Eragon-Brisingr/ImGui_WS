@@ -100,6 +100,10 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	int32 GamePort = 8890;
 
+	// when port is already use, test next port
+	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
+	int32 PortTestNum = 100;
+
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	FString FontName = TEXT("zpix, 12px");
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))

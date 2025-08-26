@@ -85,7 +85,7 @@ struct FIncppect::FImpl
             return EWebsocketConnectionFilterResult::ConnectionAccepted;
         }));
 
-        const bool bSucceed = Server->Init(Parameters.PortListen, FWebSocketClientConnectedCallBack::CreateLambda([this](FWebSocket* Socket)
+        const bool bSucceed = Server->Init(Parameters.ListenPort, FWebSocketClientConnectedCallBack::CreateLambda([this](FWebSocket* Socket)
         {
             static int32 UniqueId = 0;
             ++UniqueId;
@@ -256,8 +256,8 @@ struct FIncppect::FImpl
         }));
         if (bSucceed)
         {
-            UE_LOG(LogIncppect, Log, TEXT("listening on port %d"), Parameters.PortListen);
-            UE_LOG(LogIncppect, Log, TEXT("http://localhost:%d/"), Parameters.PortListen);
+            UE_LOG(LogIncppect, Log, TEXT("listening on port %d"), Server->ServerPort);
+            UE_LOG(LogIncppect, Log, TEXT("http://localhost:%d/"), Server->ServerPort);
         }
         else
         {
@@ -530,6 +530,15 @@ void FIncppect::Stop()
 int32 FIncppect::NumConnected() const
 {
     return Impl->SocketDataMap.Num();
+}
+
+uint32 FIncppect::GetPort() const
+{
+	if (Impl->Server)
+	{
+		return Impl->Server->ServerPort;
+	}
+	return INDEX_NONE;
 }
 
 void FIncppect::Var(const TPath& Path, TGetter&& Getter)
