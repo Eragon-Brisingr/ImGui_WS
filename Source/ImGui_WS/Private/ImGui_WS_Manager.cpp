@@ -1132,7 +1132,7 @@ void UImGui_WS_Manager::OpenWebPage(const FString& URL) const
 #if PLATFORM_WINDOWS
 	LaunchWebURL(RealURL, nullptr);
 #else
-	FPlatformProcess::LaunchURL(RealURL, nullptr, nullptr);
+	FPlatformProcess::LaunchURL(*RealURL, nullptr, nullptr);
 #endif
 }
 
