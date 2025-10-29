@@ -4,7 +4,15 @@
 
 #include "CoreMinimal.h"
 
+namespace ENodeTitleType
+{
+	enum Type : int;
+}
+
+class UK2Node_CallFunction;
+
 namespace ImGuiNodeUtils
 {
 	TArray<UClass*> GetImGuiLibraryClasses();
+	FText GetNodeTitle(const UK2Node_CallFunction* FunctionNode, ENodeTitleType::Type TitleType);
 }

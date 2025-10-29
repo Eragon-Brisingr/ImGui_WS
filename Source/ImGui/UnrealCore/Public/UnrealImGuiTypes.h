@@ -524,6 +524,7 @@ enum class EImGuiMouseButton : uint8
 	Right = ImGuiMouseButton_Right,
 	Middle = ImGuiMouseButton_Middle,
 };
+FORCEINLINE constexpr ImGuiMouseButton_ operator*(EImGuiMouseButton MouseButton) { return (ImGuiMouseButton_)MouseButton; }
 
 UENUM()
 enum class EImGuiMouseCursor : uint8

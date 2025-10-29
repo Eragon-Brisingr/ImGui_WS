@@ -15,7 +15,7 @@
 
 FText UBPNode_ImGuiScope::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return FText::Format(LOCTEXT("ImGuiFunctionPrefix", "ImGui {0}"), Super::GetNodeTitle(TitleType));
+	return ImGuiNodeUtils::GetNodeTitle(this, TitleType);
 }
 
 void UBPNode_ImGuiScope::AllocateDefaultPins()

@@ -1745,31 +1745,31 @@ public:
 	static bool IsMouseDown(EImGuiMouseButton Button)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::IsMouseDown((ImGuiMouseButton)Button);
+		return ImGui::IsMouseDown(*Button);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction, AdvancedDisplay = 1), BlueprintInternalUseOnly)
     static bool IsMouseClicked(EImGuiMouseButton Button, bool Repeat = false)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::IsMouseClicked((ImGuiMouseButton)Button, Repeat);
+		return ImGui::IsMouseClicked(*Button, Repeat);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction), BlueprintInternalUseOnly)
     static bool IsMouseReleased(EImGuiMouseButton Button)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::IsMouseReleased((ImGuiMouseButton)Button);
+		return ImGui::IsMouseReleased(*Button);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction), BlueprintInternalUseOnly)
     static bool IsMouseDoubleClicked(EImGuiMouseButton Button)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::IsMouseDoubleClicked((ImGuiMouseButton)Button);
+		return ImGui::IsMouseDoubleClicked(*Button);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction), BlueprintInternalUseOnly)
     static int32 GetMouseClickedCount(EImGuiMouseButton Button)
 	{
 		if (!CheckImGuiContextThrowError()) { return {}; }
-		return ImGui::GetMouseClickedCount((ImGuiMouseButton)Button);
+		return ImGui::GetMouseClickedCount(*Button);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction, AdvancedDisplay = 1), BlueprintInternalUseOnly)
     static bool IsMouseHoveringRect(FVector2D Min, FVector2D Max, bool Clip = true)
@@ -1806,19 +1806,19 @@ public:
     static bool IsMouseDragging(EImGuiMouseButton Button, float LockThreshold = -1.0f)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::IsMouseDragging((ImGuiMouseButton)Button, LockThreshold);
+		return ImGui::IsMouseDragging(*Button, LockThreshold);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction, AdvancedDisplay = 0), BlueprintInternalUseOnly)
     static FVector2D GetMouseDragDelta(EImGuiMouseButton Button = EImGuiMouseButton::Left, float LockThreshold = -1.0f)
 	{
 		if (!CheckImGuiContextThrowError()) { return {}; }
-		return FVector2D{ ImGui::GetMouseDragDelta((ImGuiMouseButton)Button, LockThreshold) };
+		return FVector2D{ ImGui::GetMouseDragDelta(*Button, LockThreshold) };
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction, AdvancedDisplay = 0), BlueprintInternalUseOnly)
     static void ResetMouseDragDelta(EImGuiMouseButton Button = EImGuiMouseButton::Left)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::ResetMouseDragDelta((ImGuiMouseButton)Button);
+		ImGui::ResetMouseDragDelta(*Button);
 	}
 	UFUNCTION(BlueprintPure, Category="ImGui|Inputs Utilities", meta = (ImGuiFunction), BlueprintInternalUseOnly)
     static EImGuiMouseCursor GetMouseCursor()

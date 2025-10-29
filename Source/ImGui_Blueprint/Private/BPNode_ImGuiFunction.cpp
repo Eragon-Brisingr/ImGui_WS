@@ -6,14 +6,13 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "EdGraphSchema_K2.h"
-#include "KismetCompiler.h"
 #include "ImGuiNodeUtils.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
 
 FText UBPNode_ImGuiFunction::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return FText::Format(LOCTEXT("ImGuiFunctionPrefix", "ImGui {0}"), Super::GetNodeTitle(TitleType));
+	return ImGuiNodeUtils::GetNodeTitle(this, TitleType);
 }
 
 void UBPNode_ImGuiFunction::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
