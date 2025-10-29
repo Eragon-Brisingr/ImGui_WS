@@ -297,19 +297,19 @@ public:
 	static void Annotation(double X, double Y, const FString& Annotation, const FLinearColor& Color = FLinearColor::White, const FVector2D& PixOffset = FVector2D::ZeroVector, bool bClamp = false)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::Annotation(X, Y, ImVec4{ Color }, ImVec2{ PixOffset }, bClamp, TCHAR_TO_UTF8(*Annotation));
+		ImPlot::Annotation(X, Y, ImVec4{ Color }, ImVec2{ PixOffset }, bClamp, "%s", TCHAR_TO_UTF8(*Annotation));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImPlot|Tools", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void TagX(double X, const FString& Tag, const FLinearColor& Color = FLinearColor::White)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::TagX(X, ImVec4{ Color }, TCHAR_TO_UTF8(*Tag));
+		ImPlot::TagX(X, ImVec4{ Color }, "%s", TCHAR_TO_UTF8(*Tag));
 	}
 	UFUNCTION(BlueprintCallable, Category="ImPlot|Tools", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static void TagY(double Y, const FString& Tag, const FLinearColor& Color = FLinearColor::White)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::TagY(Y, ImVec4{ Color }, TCHAR_TO_UTF8(*Tag));
+		ImPlot::TagY(Y, ImVec4{ Color }, "%s", TCHAR_TO_UTF8(*Tag));
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImPlot|Utils", meta = (ImGuiFunction), BlueprintInternalUseOnly)
