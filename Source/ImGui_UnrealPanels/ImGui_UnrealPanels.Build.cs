@@ -30,5 +30,15 @@ public class ImGui_UnrealPanels : ModuleRules
                 "ImGui_UnrealLayout",
             }
         );
+
+        if (Target.bBuildEditor)
+        {
+            PrivateDependencyModuleNames.AddRange(
+                new string[]
+                {
+                    "AssetTools",
+                }
+            );
+        }
     }
 }

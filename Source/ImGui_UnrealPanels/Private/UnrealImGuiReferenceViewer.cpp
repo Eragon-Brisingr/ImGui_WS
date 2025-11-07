@@ -3,10 +3,15 @@
 
 #include "UnrealImGuiReferenceViewer.h"
 
+#include "IconsFontAwesome.h"
 #include "ImGuiEx.h"
 #include "UnrealImGuiAssetPicker.h"
 #include "UnrealImGuiPropertyDetails.h"
 #include "UObject/ReferenceChainSearch.h"
+
+#if WITH_EDITOR
+#include "IAssetTools.h"
+#endif
 
 namespace ReferenceChainSearch
 {
@@ -228,12 +233,7 @@ void UUnrealImGuiReferenceViewer::Draw(UObject* Owner, UUnrealImGuiPanelBuilder*
 				continue;
 			}
 			ImGui::FIdScope IdScope{ Reference.Asset.Get() };
-			if (ImGui::Button(TCHAR_TO_UTF8(*Reference.Asset->GetName()), { -1.f, 0.f }))
-			{
-				Objects = { Reference.Asset };
-				Refresh();
-				break;
-			}
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*Reference.Asset->GetName()));
 			if (ImGui::BeginItemTooltip())
 			{
 				for (const auto& Path : Reference.ReferencePaths)
@@ -242,6 +242,43 @@ void UUnrealImGuiReferenceViewer::Draw(UObject* Owner, UUnrealImGuiPanelBuilder*
 				}
 				ImGui::EndTooltip();
 			}
+			ImGui::SameLine();
+			ImGui::Dummy(ImVec2{ ImGui::GetContentRegionAvail().x - ImGui::GetFontSize() * (WITH_EDITOR ? 6 : 2) - ImGui::GetStyle().FramePadding.x * 2, 0 });
+			ImGui::SameLine();
+
+			if (ImGui::Button(ICON_FA_TURN_DOWN))
+			{
+				Objects = { Reference.Asset };
+				Refresh();
+				break;
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted("Search this object reference/dependencies");
+				ImGui::EndTooltip();
+			}
+#if WITH_EDITOR
+			ImGui::SameLine();
+			if (ImGui::Button(ICON_FA_PEN))
+			{
+				IAssetTools::Get().OpenEditorForAssets({ Reference.Asset.Get() });
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted("Open this asset");
+				ImGui::EndTooltip();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(ICON_FA_ARROW_UP_RIGHT_FROM_SQUARE))
+			{
+				IAssetTools::Get().SyncBrowserToAssets(TArray{ Reference.Asset.Get() });
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted("Sync this asset in browser");
+				ImGui::EndTooltip();
+			}
+#endif
 		}
 	}
 	ImGui::SameLine();
@@ -294,12 +331,7 @@ void UUnrealImGuiReferenceViewer::Draw(UObject* Owner, UUnrealImGuiPanelBuilder*
 				continue;
 			}
 			ImGui::FIdScope IdScope{ Dependency.Asset.Get() };
-			if (ImGui::Button(TCHAR_TO_UTF8(*Dependency.Asset->GetName()), { -1.f, 0.f }))
-			{
-				Objects = { Dependency.Asset };
-				Refresh();
-				break;
-			}
+			ImGui::TextUnformatted(TCHAR_TO_UTF8(*Dependency.Asset->GetName()));
 			if (ImGui::BeginItemTooltip())
 			{
 				for (const auto& Path : Dependency.ReferencePaths)
@@ -308,6 +340,43 @@ void UUnrealImGuiReferenceViewer::Draw(UObject* Owner, UUnrealImGuiPanelBuilder*
 				}
 				ImGui::EndTooltip();
 			}
+			ImGui::SameLine();
+			ImGui::Dummy(ImVec2{ ImGui::GetContentRegionAvail().x - ImGui::GetFontSize() * (WITH_EDITOR ? 6 : 2) - ImGui::GetStyle().FramePadding.x * 2, 0 });
+			ImGui::SameLine();
+
+			if (ImGui::Button(ICON_FA_TURN_DOWN))
+			{
+				Objects = { Dependency.Asset };
+				Refresh();
+				break;
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted("Search this object reference/dependencies");
+				ImGui::EndTooltip();
+			}
+#if WITH_EDITOR
+			ImGui::SameLine();
+			if (ImGui::Button(ICON_FA_PEN))
+			{
+				IAssetTools::Get().OpenEditorForAssets({ Dependency.Asset.Get() });
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted("Open this asset");
+				ImGui::EndTooltip();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(ICON_FA_ARROW_UP_RIGHT_FROM_SQUARE))
+			{
+				IAssetTools::Get().SyncBrowserToAssets(TArray{ Dependency.Asset.Get() });
+			}
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::TextUnformatted("Sync this asset in browser");
+				ImGui::EndTooltip();
+			}
+#endif
 		}
 	}
 }
@@ -346,18 +415,23 @@ void UUnrealImGuiReferenceViewer::Refresh()
 			{
 				continue;
 			}
+			FStringOutputDevice OutString;
+			OutString.SetAutoEmitLineTerminator(true);
+			TMap<uint64, FString> CallstackCache;
+			if (!ReferenceChainSearch::DumpChain(ReferenceChain, [](FReferenceChainSearch::FCallbackParams&){ return true; }, CallstackCache, OutString, ELogVerbosity::Log, bIgnoreTransient ? CPF_Transient : CPF_None))
+			{
+				continue;
+			}
 			int32 Idx = References.IndexOfByPredicate([&](const FReferencer& E){ return E.Asset == RootObject; });
 			if (Idx == INDEX_NONE)
 			{
 				Idx = References.Add({ RootObject });
 			}
-			FStringOutputDevice OutString;
-			OutString.SetAutoEmitLineTerminator(true);
-			TMap<uint64, FString> CallstackCache;
-			if (ReferenceChainSearch::DumpChain(ReferenceChain, [](FReferenceChainSearch::FCallbackParams&){ return true; }, CallstackCache, OutString, ELogVerbosity::Log, bIgnoreTransient ? CPF_Transient : CPF_None))
+			if (OutString.EndsWith(TEXT("\r\n  \r\n")))
 			{
-				References[Idx].ReferencePaths.Add(MoveTemp(OutString));
+				OutString.RemoveAt(OutString.Len() - 6, 6);
 			}
+			References[Idx].ReferencePaths.Add(MoveTemp(OutString));
 		}
 	}
 	References.Sort([](const FReferencer& LHS, const FReferencer& RHS)

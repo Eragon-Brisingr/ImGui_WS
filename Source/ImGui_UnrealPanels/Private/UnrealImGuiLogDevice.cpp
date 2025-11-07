@@ -296,7 +296,7 @@ void FUnrealImGuiLogDevice::Draw(UObject* Owner)
 					ImGui::Text("[%llu]", Log.Frame);
 					ImGui::SameLine();
 				}
-				ImGui::Text("%s: %s: %s", TCHAR_TO_UTF8(*Log.Category.ToString()), *UnrealImGui::ToString(Log.Verbosity), *Log.LogString);
+				ImGui::Text("%s: %s: %s", TCHAR_TO_UTF8(*Log.Category.ToString()), reinterpret_cast<const char*>(*UnrealImGui::ToString(Log.Verbosity)), reinterpret_cast<const char*>(*Log.LogString));
 				ImGui::PopStyleColor();
 
 				if (ImGui::BeginItemTooltip())
