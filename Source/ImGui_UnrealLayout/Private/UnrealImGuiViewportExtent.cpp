@@ -261,7 +261,7 @@ void FUnrealImGuiViewportContext::DrawViewFrustum(const FTransform& Transform, f
 	}
 }
 
-void FUnrealImGuiViewportContext::DrawTexture(const FVector2D& Location, UnrealImGui::ETextureFormat TextureFormat, UTexture* Texture, const FVector2D& Size, const FColor& Color, const FVector2D& UV_Min, const FVector2D& UV_Max) const
+void FUnrealImGuiViewportContext::DrawTexture(const FVector2D& Location, EImGuiTextureFormat TextureFormat, UTexture* Texture, const FVector2D& Size, const FColor& Color, const FVector2D& UV_Min, const FVector2D& UV_Max) const
 {
 	if (!Texture)
 	{

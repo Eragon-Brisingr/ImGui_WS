@@ -651,56 +651,42 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static FImGuiTextureHandle CreateTextureHandle() { return FImGuiTextureHandle::MakeUnique(); }
+	static void UpdateTexture2D(UTexture2D* Texture2D, EImGuiTextureFormat TextureFormat = EImGuiTextureFormat::RGB8)
+	{
+		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture(TextureFormat, (UTexture*)Texture2D);
+		UnrealImGui::UpdateTextureData(Handle, Texture2D, TextureFormat);
+	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static FImGuiTextureHandle FindOrCreateTextureHandle(const UTexture* Texture, bool& bCreated) { return FImGuiTextureHandle::FindOrCreateHandle(Texture, bCreated); }
-	UFUNCTION(BlueprintPure, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static bool IsTextureHandleValid(const FImGuiTextureHandle& Handle) { return Handle.IsValid(); }
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, TextureFormat = Gray8), BlueprintInternalUseOnly)
-	static void UpdateTexture2D(const FImGuiTextureHandle& Handle, EImGuiTextureFormat TextureFormat, UTexture2D* Texture2D)
+	static void UpdateTextureRenderTarget2D(UTextureRenderTarget2D* RenderTarget2D, EImGuiTextureFormat TextureFormat = EImGuiTextureFormat::RGB8)
 	{
-		UnrealImGui::UpdateTextureData(Handle, (UnrealImGui::ETextureFormat)TextureFormat, Texture2D);
+		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture(TextureFormat, (UTexture*)RenderTarget2D);
+		UnrealImGui::UpdateTextureData(Handle, RenderTarget2D, TextureFormat);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, TextureFormat = Gray8), BlueprintInternalUseOnly)
-	static void UpdateTextureRenderTarget2D(const FImGuiTextureHandle& Handle, EImGuiTextureFormat TextureFormat, UTextureRenderTarget2D* RenderTarget2D)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, DefaultToSelf = Outer, AdvancedDisplay = 4, Width = 128, Height = 128), BlueprintInternalUseOnly)
+	static UTextureRenderTarget2D* CreatePersistentTexture(EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, UObject* Outer, FName Name)
 	{
-		UnrealImGui::UpdateTextureData(Handle, (UnrealImGui::ETextureFormat)TextureFormat, RenderTarget2D);
+		FImGuiTextureHandle Handle;
+		return UnrealImGui::CreateTexture(Handle, TextureFormat, Width, Height, Outer, Name);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, DefaultToSelf = Outer, AdvancedDisplay = 4, TextureFormat = Gray8, Width = 128, Height = 128), BlueprintInternalUseOnly)
-	static UTextureRenderTarget2D* CreatePersistentTexture(UPARAM(Ref)FImGuiTextureHandle& Handle, EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, UObject* Outer, FName Name)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, Width = 128, Height = 128), BlueprintInternalUseOnly)
+	static void UpdateTextureDataRaw(EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, const TArray<uint8>& Data, UTextureRenderTarget2D* PersistentTexture)
 	{
-		return UnrealImGui::CreateTexture(Handle, (UnrealImGui::ETextureFormat)TextureFormat, Width, Height, Outer, Name);
-	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, TextureFormat = Gray8, Width = 128, Height = 128), BlueprintInternalUseOnly)
-	static void UpdateTextureDataRaw(const FImGuiTextureHandle& Handle, EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, const TArray<uint8>& Data, UTextureRenderTarget2D* PersistentTexture)
-	{
-		UnrealImGui::UpdateTextureData(Handle, (UnrealImGui::ETextureFormat)TextureFormat, Width, Height, Data.GetData(), PersistentTexture);
-	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static void Texture(const FImGuiTextureHandle& Handle, FVector2D ImageSize, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
-	{
-		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::Image(Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
-	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Texture", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static bool TextureButton(FName Label, const FImGuiTextureHandle& Handle, FVector2D ImageSize, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
-	{
-		if (!CheckImGuiContextThrowError()) { return false; }
-		return ImGui::ImageButton(TCHAR_TO_UTF8(*Label.ToString()), Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
+		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture(TextureFormat, (UTexture*)PersistentTexture);
+		UnrealImGui::UpdateTextureData(Handle, TextureFormat, Width, Height, Data.GetData(), PersistentTexture);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Images", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
 	static void Image(UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture((UnrealImGui::ETextureFormat)Format, Texture);
+		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture(Format, Texture);
 		ImGui::Image(Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Images", meta = (ImGuiTrigger, AdvancedDisplay = 3), BlueprintInternalUseOnly)
 	static bool ImageButton(FName Label, UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
-		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture((UnrealImGui::ETextureFormat)Format, Texture);
+		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture(Format, Texture);
 		return ImGui::ImageButton(TCHAR_TO_UTF8(*Label.ToString()), Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
 	}
 

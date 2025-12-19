@@ -215,9 +215,9 @@ public:
 		Context.DrawCoordinateSystem(Transform, Scale, Thickness);
 	}
 	UFUNCTION(BlueprintCallable, Category = ImGui)
-	static void DrawTexture(const FUnrealImGuiViewportContext& Context, const FVector2D& Location, EImGuiTextureFormat TextureFormat, FVector2D Size, UTexture* Texture, const FColor& Color = FColor::White, FVector2D UV_Min = FVector2D::ZeroVector, FVector2D UV_Max = FVector2D::UnitVector)
+	static void DrawTexture(const FUnrealImGuiViewportContext& Context, const FVector2D& Location, EImGuiTextureFormat TextureFormat, UTexture* Texture, FVector2D Size = FVector2D(50.f, 50.f), const FColor& Color = FColor::White, FVector2D UV_Min = FVector2D::ZeroVector, FVector2D UV_Max = FVector2D::UnitVector)
 	{
-		Context.DrawTexture(Location, static_cast<UnrealImGui::ETextureFormat>(TextureFormat), Texture, Size, Color, UV_Min, UV_Max);
+		Context.DrawTexture(Location, TextureFormat, Texture, Size, Color, UV_Min, UV_Max);
 	}
 	UFUNCTION(BlueprintCallable, Category = ImGui)
 	static void DrawText(const FUnrealImGuiViewportContext& Context, const FVector2D& Location, const FString& Text, const FColor& Color)

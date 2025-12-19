@@ -34,30 +34,32 @@ private:
 	FImGuiTextureHandle(uint32 Id)
 		: ImTextureId(Id)
 	{}
+	UPROPERTY()
 	uint32 ImTextureId;
+};
+
+UENUM()
+enum class EImGuiTextureFormat : uint8
+{
+	Alpha8 = 0,
+	Gray8 = 1,
+	RGB8 = 2,
+	RGBA8 = 3,
 };
 
 namespace UnrealImGui
 {
-	enum class ETextureFormat : uint8
-	{
-		Alpha8 = 0,
-		Gray8 = 1,
-		RGB8 = 2,
-		RGBA8 = 3,
-	};
+	IMGUI_API UTextureRenderTarget2D* CreateTexture(FImGuiTextureHandle& Handle, EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, UObject* Outer, const FName& Name = NAME_None);
+	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data, UTextureRenderTarget2D* Texture);
+	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, UTexture2D* Texture2D, EImGuiTextureFormat TextureFormat);
+	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, UTextureRenderTarget2D* RenderTarget2D, EImGuiTextureFormat TextureFormat);
 
-	IMGUI_API UTextureRenderTarget2D* CreateTexture(FImGuiTextureHandle& Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, UObject* Outer, const FName& Name = NAME_None);
-	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data, UTextureRenderTarget2D* Texture);
-	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, UTexture2D* Texture2D);
-	IMGUI_API void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, UTextureRenderTarget2D* RenderTarget2D);
-
-	IMGUI_API FImGuiTextureHandle FindOrAddTexture(ETextureFormat TextureFormat, UTexture* Texture);
+	IMGUI_API FImGuiTextureHandle FindOrAddTexture(EImGuiTextureFormat TextureFormat, UTexture* Texture);
 	IMGUI_API const UTexture* FindTexture(uint32 ImTextureId);
 
 	namespace Private
 	{
-		using FUpdateTextureData_WS = TFunction<void(FImGuiTextureHandle, ETextureFormat, int32, int32, const uint8*)>;
+		using FUpdateTextureData_WS = TFunction<void(FImGuiTextureHandle, EImGuiTextureFormat, int32, int32, const uint8*)>;
 		IMGUI_API extern FUpdateTextureData_WS UpdateTextureData_WS;
 	}
 }

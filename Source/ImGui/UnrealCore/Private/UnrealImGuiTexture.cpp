@@ -22,11 +22,21 @@ namespace UnrealImGui
 		TMap<uint32, TWeakObjectPtr<const UTexture>> IdTextureMap;
 	}
 
-	UTextureRenderTarget2D* CreateTexture(FImGuiTextureHandle& Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, UObject* Outer, const FName& Name)
+	UTextureRenderTarget2D* CreateTexture(FImGuiTextureHandle& Handle, EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, UObject* Outer, const FName& Name)
 	{
 		UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>(Outer, Name);
 		check(RT);
-		RT->RenderTargetFormat = RTF_RGBA8;
+		switch (TextureFormat)
+		{
+		case EImGuiTextureFormat::Alpha8:
+		case EImGuiTextureFormat::Gray8:
+			RT->RenderTargetFormat = RTF_R8;
+			break;
+		case EImGuiTextureFormat::RGB8:
+		case EImGuiTextureFormat::RGBA8:
+			RT->RenderTargetFormat = RTF_RGBA8;
+			break;
+		}
 		RT->ClearColor = FLinearColor::Black;
 		RT->bAutoGenerateMips = false;
 		RT->InitAutoFormat(Width, Height);
@@ -36,7 +46,7 @@ namespace UnrealImGui
 		return RT;
 	}
 
-	void UpdateTextureDataToWS(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data)
+	void UpdateTextureDataToWS(FImGuiTextureHandle Handle, EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data)
 	{
 		if (Private::UpdateTextureData_WS)
 		{
@@ -44,7 +54,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data, UTextureRenderTarget2D* Texture)
+	void UpdateTextureData(FImGuiTextureHandle Handle, EImGuiTextureFormat TextureFormat, int32 Width, int32 Height, const uint8* Data, UTextureRenderTarget2D* Texture)
 	{
 		UpdateTextureDataToWS(Handle, TextureFormat, Width, Height, Data);
 		if (Texture)
@@ -52,14 +62,14 @@ namespace UnrealImGui
 			int32 BytesPerPixel;
 			switch (TextureFormat)
 			{
-			case ETextureFormat::Alpha8:
-			case ETextureFormat::Gray8:
+			case EImGuiTextureFormat::Alpha8:
+			case EImGuiTextureFormat::Gray8:
 				BytesPerPixel = 1;
 				break;
-			case ETextureFormat::RGB8:
+			case EImGuiTextureFormat::RGB8:
 				BytesPerPixel = 3;
 				break;
-			case ETextureFormat::RGBA8:
+			case EImGuiTextureFormat::RGBA8:
 				BytesPerPixel = 4;
 				break;
 			default:
@@ -90,20 +100,20 @@ namespace UnrealImGui
 						uint32* Dst = reinterpret_cast<uint32*>(TextureData.GetData());
 						switch (TextureFormat)
 						{
-						case ETextureFormat::Alpha8:
+						case EImGuiTextureFormat::Alpha8:
 							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
 							{
 								*Dst++ = IM_COL32(255, 255, 255, *Src++);
 							}
 							break;
-						case ETextureFormat::Gray8:
+						case EImGuiTextureFormat::Gray8:
 							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
 							{
 								const uint8 V = *Src++;
 								*Dst++ = IM_COL32(V, V, V, 255);
 							}
 							break;
-						case ETextureFormat::RGB8:
+						case EImGuiTextureFormat::RGB8:
 							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
 							{
 								const uint8 R = *Src++;
@@ -112,7 +122,7 @@ namespace UnrealImGui
 								*Dst++ = IM_COL32(R, G, B, 255);
 							}
 							break;
-						case ETextureFormat::RGBA8:
+						case EImGuiTextureFormat::RGBA8:
 							for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
 							{
 								const uint8 R = *Src++;
@@ -138,7 +148,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, UTexture2D* Texture2D)
+	void UpdateTextureData(FImGuiTextureHandle Handle, UTexture2D* Texture2D, EImGuiTextureFormat TextureFormat)
 	{
 		if (Texture2D == nullptr)
 		{
@@ -151,14 +161,14 @@ namespace UnrealImGui
 		}
 		switch (Image.Format) {
 		case ERawImageFormat::G8:
-			UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Image.AsG8().GetData());
+			UpdateTextureDataToWS(Handle, TextureFormat == EImGuiTextureFormat::Alpha8 ? TextureFormat : EImGuiTextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Image.AsG8().GetData());
 			break;
 		case ERawImageFormat::BGRA8:
 		case ERawImageFormat::BGRE8:
 			switch (TextureFormat)
 			{
-			case ETextureFormat::Alpha8:
-			case ETextureFormat::Gray8:
+			case EImGuiTextureFormat::Alpha8:
+			case EImGuiTextureFormat::Gray8:
 				{
 					const TArrayView64<FColor> RawData = Image.Format == ERawImageFormat::BGRA8 ? Image.AsBGRA8() : Image.AsBGRE8();
 					TArray<uint8> Data;
@@ -170,7 +180,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGB8:
+			case EImGuiTextureFormat::RGB8:
 				{
 					const TArrayView64<FColor> RawData = Image.Format == ERawImageFormat::BGRA8 ? Image.AsBGRA8() : Image.AsBGRE8();
 					TArray<uint8> Data;
@@ -184,7 +194,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGBA8:
+			case EImGuiTextureFormat::RGBA8:
 				{
 					const TArrayView64<FColor> RawData = Image.Format == ERawImageFormat::BGRA8 ? Image.AsBGRA8() : Image.AsBGRE8();
 					TArray<uint8> Data;
@@ -204,8 +214,8 @@ namespace UnrealImGui
 		case ERawImageFormat::RGBA16:
 			switch (TextureFormat)
 			{
-			case ETextureFormat::Alpha8:
-			case ETextureFormat::Gray8:
+			case EImGuiTextureFormat::Alpha8:
+			case EImGuiTextureFormat::Gray8:
 				{
 					constexpr float RGBA16Scale = (float)TNumericLimits<uint8>::Max() / TNumericLimits<uint16>::Max();
 					const TArrayView64<uint16> RawData = Image.AsRGBA16();
@@ -218,7 +228,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGB8:
+			case EImGuiTextureFormat::RGB8:
 				{
 					constexpr float RGBA16Scale = (float)TNumericLimits<uint8>::Max() / TNumericLimits<uint16>::Max();
 					const TArrayView64<uint16> RawData = Image.AsRGBA16();
@@ -233,7 +243,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGBA8:
+			case EImGuiTextureFormat::RGBA8:
 				{
 					constexpr float RGBA16Scale = (float)TNumericLimits<uint8>::Max() / TNumericLimits<uint16>::Max();
 					const TArrayView64<uint16> RawData = Image.AsRGBA16();
@@ -254,8 +264,8 @@ namespace UnrealImGui
 		case ERawImageFormat::RGBA16F:
 			switch (TextureFormat)
 			{
-			case ETextureFormat::Alpha8:
-			case ETextureFormat::Gray8:
+			case EImGuiTextureFormat::Alpha8:
+			case EImGuiTextureFormat::Gray8:
 				{
 					const TArrayView64<FFloat16Color> RawData = Image.AsRGBA16F();
 					TArray<uint8> Data;
@@ -267,7 +277,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGB8:
+			case EImGuiTextureFormat::RGB8:
 				{
 					const TArrayView64<FFloat16Color> RawData = Image.AsRGBA16F();
 					TArray<uint8> Data;
@@ -281,7 +291,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGBA8:
+			case EImGuiTextureFormat::RGBA8:
 				{
 					const TArrayView64<FFloat16Color> RawData = Image.AsRGBA16F();
 					TArray<uint8> Data;
@@ -301,8 +311,8 @@ namespace UnrealImGui
 		case ERawImageFormat::RGBA32F:
 			switch (TextureFormat)
 			{
-			case ETextureFormat::Alpha8:
-			case ETextureFormat::Gray8:
+			case EImGuiTextureFormat::Alpha8:
+			case EImGuiTextureFormat::Gray8:
 				{
 					const TArrayView64<FLinearColor> RawData = Image.AsRGBA32F();
 					TArray<uint8> Data;
@@ -314,7 +324,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGB8:
+			case EImGuiTextureFormat::RGB8:
 				{
 					const TArrayView64<FLinearColor> RawData = Image.AsRGBA32F();
 					TArray<uint8> Data;
@@ -328,7 +338,7 @@ namespace UnrealImGui
 					UpdateTextureDataToWS(Handle, TextureFormat, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 				}
 				break;
-			case ETextureFormat::RGBA8:
+			case EImGuiTextureFormat::RGBA8:
 				{
 					const TArrayView64<FLinearColor> RawData = Image.AsRGBA32F();
 					TArray<uint8> Data;
@@ -354,7 +364,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] / (float)TNumericLimits<uint16>::Max() * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+				UpdateTextureDataToWS(Handle, TextureFormat == EImGuiTextureFormat::Alpha8 ? TextureFormat : EImGuiTextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 			}
 			break;
 		case ERawImageFormat::R16F:
@@ -366,7 +376,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+				UpdateTextureDataToWS(Handle, TextureFormat == EImGuiTextureFormat::Alpha8 ? TextureFormat : EImGuiTextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 			}
 			break;
 		case ERawImageFormat::R32F:
@@ -378,7 +388,7 @@ namespace UnrealImGui
 				{
 					Data[Idx] = RawData[Idx] * TNumericLimits<uint8>::Max();
 				}
-				UpdateTextureDataToWS(Handle, TextureFormat == ETextureFormat::Alpha8 ? TextureFormat : ETextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
+				UpdateTextureDataToWS(Handle, TextureFormat == EImGuiTextureFormat::Alpha8 ? TextureFormat : EImGuiTextureFormat::Gray8, Image.GetWidth(), Image.GetHeight(), Data.GetData());
 			}
 			break;
 		default:
@@ -387,7 +397,7 @@ namespace UnrealImGui
 		}
 	}
 
-	void UpdateTextureData(FImGuiTextureHandle Handle, ETextureFormat TextureFormat, UTextureRenderTarget2D* RenderTarget2D)
+	void UpdateTextureData(FImGuiTextureHandle Handle, UTextureRenderTarget2D* RenderTarget2D, EImGuiTextureFormat TextureFormat)
 	{
 		if (RenderTarget2D == nullptr)
 		{
@@ -407,15 +417,15 @@ namespace UnrealImGui
 
 		const ETextureRenderTargetFormat Format = RenderTarget2D->RenderTargetFormat;
 		const bool bSingleChannel = Format == RTF_R8 || Format == RTF_R16f || Format == RTF_R32f;
-		if (bSingleChannel && TextureFormat != ETextureFormat::Alpha8)
+		if (bSingleChannel && TextureFormat != EImGuiTextureFormat::Alpha8)
 		{
-			TextureFormat = ETextureFormat::Gray8;
+			TextureFormat = EImGuiTextureFormat::Gray8;
 		}
 
 		switch (TextureFormat)
 		{
-		case ETextureFormat::Alpha8:
-		case ETextureFormat::Gray8:
+		case EImGuiTextureFormat::Alpha8:
+		case EImGuiTextureFormat::Gray8:
 			{
 				TArray<uint8> Data;
 				Data.SetNumUninitialized(RenderTarget2D->SizeX * RenderTarget2D->SizeY);
@@ -436,7 +446,7 @@ namespace UnrealImGui
 				UpdateTextureDataToWS(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
 			}
 			break;
-		case ETextureFormat::RGB8:
+		case EImGuiTextureFormat::RGB8:
 			{
 				TArray<uint8> Data;
 				Data.SetNumUninitialized(RenderTarget2D->SizeX * RenderTarget2D->SizeY * 3);
@@ -449,7 +459,7 @@ namespace UnrealImGui
 				UpdateTextureDataToWS(Handle, TextureFormat, RenderTarget2D->SizeX, RenderTarget2D->SizeY, Data.GetData());
 			}
 			break;
-		case ETextureFormat::RGBA8:
+		case EImGuiTextureFormat::RGBA8:
 			{
 				TArray<uint8> Data;
 				Data.SetNumUninitialized(RenderTarget2D->SizeX * RenderTarget2D->SizeY * 4);
@@ -468,7 +478,7 @@ namespace UnrealImGui
 		}
 	}
 
-	FImGuiTextureHandle FindOrAddTexture(ETextureFormat TextureFormat, UTexture* Texture)
+	FImGuiTextureHandle FindOrAddTexture(EImGuiTextureFormat TextureFormat, UTexture* Texture)
 	{
 		if (Texture == nullptr)
 		{
@@ -481,11 +491,11 @@ namespace UnrealImGui
 		{
 			if (UTexture2D* Texture2D = Cast<UTexture2D>(Texture))
 			{
-				UpdateTextureData(Handle, TextureFormat, Texture2D);
+				UpdateTextureData(Handle, Texture2D, TextureFormat);
 			}
 			else if (UTextureRenderTarget2D* RT = Cast<UTextureRenderTarget2D>(Texture))
 			{
-				UpdateTextureData(Handle, TextureFormat, RT);
+				UpdateTextureData(Handle, RT, TextureFormat);
 			}
 			else
 			{

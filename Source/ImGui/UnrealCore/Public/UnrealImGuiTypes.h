@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "imgui.h"
-#include "UnrealImGuiTexture.h"
 #include "UnrealImGuiTypes.generated.h"
 
 UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
@@ -556,13 +555,4 @@ struct FImGuiId
 private:
 	UPROPERTY()
 	uint32 Id = 0;
-};
-
-UENUM()
-enum class EImGuiTextureFormat : uint8
-{
-	Alpha8 = (uint8)UnrealImGui::ETextureFormat::Alpha8,
-	Gray8 = (uint8)UnrealImGui::ETextureFormat::Gray8,
-	RGB8 = (uint8)UnrealImGui::ETextureFormat::RGB8,
-	RGBA8 = (uint8)UnrealImGui::ETextureFormat::RGBA8,
 };
