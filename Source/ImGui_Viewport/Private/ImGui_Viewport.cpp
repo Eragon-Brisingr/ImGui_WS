@@ -23,6 +23,13 @@ TAutoConsoleVariable<int32> CVar_ImGuiViewportZOrder
 	TEXT("Set ImGui viewport Z order"),
 };
 
+TAutoConsoleVariable<bool> CVar_ImGuiViewportShowHitTestArea
+{
+	TEXT("ImGui.Viewport.ShowHitTestArea"),
+	false,
+	TEXT("Show ImGui hit test area"),
+};
+
 FImGui_ViewportModule::FViewportLookup FImGui_ViewportModule::ViewportLookup;
 #if WITH_EDITOR
 TWeakPtr<SImGuiViewportOverlay> FImGui_ViewportModule::EditorViewport;
@@ -154,7 +161,7 @@ void SImGuiViewportOverlay::WhenImGuiTick(float DeltaSeconds)
 	{
 		HoverWindowBounds = FBox2f{ FVector2f::ZeroVector, FVector2f{ Context->IO.DisplaySize } };
 	}
-	else if (auto Window = Context->ActiveIdWindow ? Context->ActiveIdWindow : Context->HoveredWindow)
+	else if (auto Window = Context->ActiveIdWindow ? Context->ActiveIdWindow : Context->HoveredWindow; Window && Window->DrawList && Window->DrawList->_VtxCurrentIdx != 0)
 	{
 		auto g = Context;
 		ImVec2 padding_regular = g->Style.TouchExtraPadding;
@@ -182,16 +189,19 @@ int32 SImGuiViewportOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 			MutablePersistentState.AllottedGeometry.MakeChild(HoverWindowBounds->GetSize() / Scale, FSlateLayoutTransform{ HoverWindowBounds->Min / Scale }) };
 		PreviousGrid.AddWidget(this, 0, LayerId, GetProxyHandle().GetWidgetSortOrder());
 		
-		/* draw hit test area for debug
-		FSlateDrawElement::MakeBox
-		(
-			OutDrawElements,
-			LayerId,
-			MutablePersistentState.AllottedGeometry.ToPaintGeometry(),
-			FAppStyle::GetBrush("WhiteBrush"),
-			ESlateDrawEffect::None,
-			FLinearColor(0, 0, 0, 0.4f)
-		);*/
+		if (CVar_ImGuiViewportShowHitTestArea.GetValueOnGameThread())
+		{
+			// draw hit test area for debug
+			FSlateDrawElement::MakeBox
+			(
+				OutDrawElements,
+				LayerId + 1,
+				MutablePersistentState.AllottedGeometry.ToPaintGeometry(),
+				FAppStyle::GetBrush("WhiteBrush"),
+				ESlateDrawEffect::None,
+				FLinearColor(1.f, 0.6f, 0.f, 0.4f)
+			);
+		}
 	}
 
 	return Super::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
