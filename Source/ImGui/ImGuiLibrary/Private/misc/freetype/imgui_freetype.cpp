@@ -37,6 +37,8 @@
 
 // FIXME: cfg.OversampleH, OversampleV are not supported, but generally not necessary with this rasterizer because Hinting makes everything look better.
 
+#ifdef IMGUI_ENABLE_FREETYPE
+
 #include "imgui_freetype.h"
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
@@ -749,3 +751,5 @@ static FT_Error ImGuiLunasvgPortPresetSlot(FT_GlyphSlot slot, FT_Bool cache, FT_
 #endif
 
 #endif // #ifndef IMGUI_DISABLE
+
+#endif // #ifdef IMGUI_ENABLE_FREETYPE

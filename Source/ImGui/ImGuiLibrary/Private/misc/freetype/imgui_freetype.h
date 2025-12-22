@@ -2,6 +2,9 @@
 // (headers)
 
 #pragma once
+
+#ifdef IMGUI_ENABLE_FREETYPE
+
 #include "imgui.h"      // IMGUI_API
 #ifndef IMGUI_DISABLE
 
@@ -81,3 +84,5 @@ namespace ImGuiFreeType
 }
 
 #endif // #ifndef IMGUI_DISABLE
+
+#endif // #ifdef IMGUI_ENABLE_FREETYPE

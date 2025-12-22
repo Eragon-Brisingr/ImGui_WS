@@ -210,7 +210,7 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 					bReuploadTexture = true;
 				}
 
-				const ImTextureRect UpdateRect = bReuploadTexture ? ImTextureRect(0, 0, TexData->Width, TexData->Height) : TexData->UpdateRect;
+				const ImTextureRect UpdateRect = bReuploadTexture ? ImTextureRect{ 0, 0, (unsigned short)TexData->Width, (unsigned short)TexData->Height } : TexData->UpdateRect;
 				ENQUEUE_RENDER_COMMAND(UpdateFontTexture)(
 					[this,
 					SrcPitch = TexData->GetPitch(),
