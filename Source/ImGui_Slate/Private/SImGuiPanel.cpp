@@ -22,7 +22,7 @@
 namespace ImGuiPanel
 {
 UTextureRenderTarget2D* FontAtlasTexture = nullptr;
-uint32 FontAtlasBuilderFrameCount = 0;
+int32 FontAtlasBuilderFrameCount = -1;
 ImFontAtlas& GetDefaultFontAtlas()
 {
 	static ImFontAtlas DefaultFontAtlas = []
@@ -33,11 +33,6 @@ ImFontAtlas& GetDefaultFontAtlas()
 	}();
 	return DefaultFontAtlas;
 }
-auto OnBeginFrameHandle = FCoreDelegates::OnBeginFrame.AddLambda([]
-{
-	auto& DefaultFontAtlas = GetDefaultFontAtlas();
-	ImFontAtlasUpdateNewFrame(&DefaultFontAtlas, FontAtlasBuilderFrameCount++, true);
-});
 }
 
 FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)
@@ -99,10 +94,11 @@ SImGuiPanel::~SImGuiPanel()
 
 void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
-	if (ImGuiPanel::FontAtlasBuilderFrameCount == 0)
+	if (ImGuiPanel::FontAtlasBuilderFrameCount != GFrameCounter)
 	{
+		ImGuiPanel::FontAtlasBuilderFrameCount = GFrameCounter;
 		auto& DefaultFontAtlas = ImGuiPanel::GetDefaultFontAtlas();
-		ImFontAtlasUpdateNewFrame(&DefaultFontAtlas, ImGuiPanel::FontAtlasBuilderFrameCount++, true);
+		ImFontAtlasUpdateNewFrame(&DefaultFontAtlas, ImGuiPanel::FontAtlasBuilderFrameCount, true);
 	}
 
 	const FScopedContext ScopedContext{ ImGuiScopedContext() };
@@ -168,7 +164,7 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 		{
 			continue;
 		}
-		if (TexData->Status == ImTextureStatus_WantDestroy && TexData->UnusedFrames > 0)
+		if (TexData->Status == ImTextureStatus_WantDestroy && TexData->UnusedFrames > 2)
 		{
 			// latest shared font texture data should never be destroyed!
 			check(TexData != DefaultFontAtlas.TexData);
@@ -233,8 +229,10 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 		{
 			if (TexData->WantDestroyNextFrame)
 			{
-				TexData->SetStatus(ImTextureStatus_OK);
-				TexData->SetTexID(UnrealImGui::FontTextId);
+				if (TexData->Status == ImTextureStatus_WantUpdates)
+				{
+					TexData->SetStatus(ImTextureStatus_OK);
+				}
 			}
 			else
 			{

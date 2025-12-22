@@ -193,6 +193,7 @@ public:
 
 	uint32 FontAtlasBuilderFrameCount = 0;
 	ImFontAtlas DefaultFontAtlas;
+	float FontScaleDpi = 1.f;
 	
 	explicit FImpl(UImGui_WS_Manager& Manager)
 		: Manager(Manager)
@@ -218,8 +219,9 @@ public:
 		ImGuiIO& IO = Context->IO;
 		IO.ConfigDpiScaleViewports = true;
 		IO.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+		FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 		auto& Style = Context->Style;
-		Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
+		Style.FontScaleDpi = FontScaleDpi;
 		ON_SCOPE_EXIT
 		{
 			ImGui::SetCurrentContext(PrevContext);
@@ -650,6 +652,9 @@ public:
 
 		ImFontAtlasUpdateNewFrame(&DefaultFontAtlas, FontAtlasBuilderFrameCount++, true);
 	    ImGui::NewFrame();
+		
+		auto& Style = Context->Style;
+		Style.FontScaleDpi = FontScaleDpi;
 
 	    // websocket event handling
 		auto& Events = ImGuiWS.TakeEvents();
@@ -682,7 +687,7 @@ public:
 					if (ImGui::BeginMenu("Settings"))
 					{
 						UnrealImGui::ShowStyleSelector();
-						UnrealImGui::ShowGlobalDPISettings();
+						UnrealImGui::ShowGlobalDPISettings(FontScaleDpi);
 						
 						ImGui::EndMenu();
 					}
@@ -817,7 +822,6 @@ public:
 
 					if (RecordSession.IsValid())
 					{
-						const ImGuiStyle& Style = ImGui::GetStyle();
 						if (ImGui::Button(TCHAR_TO_UTF8(*(RecordTitleString + TEXT("###StopRecordButton"))), { StopRecordButtonWidth - Style.FramePadding.x * 2.f, 0.f }))
 						{
 							StopRecord();
@@ -902,7 +906,7 @@ public:
 				{
 					continue;
 				}
-				if (TexData->Status == ImTextureStatus_WantDestroy && TexData->UnusedFrames > 0)
+				if (TexData->Status == ImTextureStatus_WantDestroy && TexData->UnusedFrames > 2)
 				{
 					// latest shared font texture data should never be destroyed!
 					check(TexData != DefaultFontAtlas.TexData);
@@ -932,8 +936,10 @@ public:
 				{
 					if (TexData->WantDestroyNextFrame)
 					{
-						TexData->SetStatus(ImTextureStatus_OK);
-						TexData->SetTexID(UnrealImGui::FontTextId);
+						if (TexData->Status == ImTextureStatus_WantUpdates)
+						{
+							TexData->SetStatus(ImTextureStatus_OK);
+						}
 					}
 					else
 					{

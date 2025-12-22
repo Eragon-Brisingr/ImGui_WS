@@ -61,14 +61,13 @@ float UnrealImGui::GetGlobalDPIScale()
 	return GetSystemDPIScale();
 }
 
-void UnrealImGui::ShowGlobalDPISettings()
+void UnrealImGui::ShowGlobalDPISettings(float& OutFontScaleDpi)
 {
 	auto Settings = GetMutableDefault<UImGuiPerUserSettings>();
 	ImGui::SetNextItemWidth(ImGui::GetFontSize());
 	if (ImGui::Checkbox("##Override DPI Scale", &Settings->bOverrideDPIScale))
 	{
-		auto& Style = ImGui::GetStyle();
-		Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
+		OutFontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 		Settings->SaveConfig();
 	}
 	if (ImGui::BeginItemTooltip())
@@ -82,8 +81,7 @@ void UnrealImGui::ShowGlobalDPISettings()
 	if (ImGui::InputFloat("DPI Scale", &Settings->OverrideDPIScale, 0.01f))
 	{
 		Settings->OverrideDPIScale = FMath::Clamp(Settings->OverrideDPIScale, 0.5f, 3.f);
-		auto& Style = ImGui::GetStyle();
-		Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
+		OutFontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 		Settings->SaveConfig();
 	}
 	ImGui::EndDisabled();

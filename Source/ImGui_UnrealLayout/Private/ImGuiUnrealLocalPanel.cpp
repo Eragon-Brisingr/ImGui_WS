@@ -714,11 +714,13 @@ public:
 	TSharedPtr<SImGuiLocalPanelOverlay> Overlay;
 	TWeakObjectPtr<UGameViewportClient> GameViewportPtr;
 	TWeakObjectPtr<UImGuiLocalPanelManagerWidget> LocalPanelManagerWidget = nullptr;
+	float FontScaleDpi = 1.f;
 	void Construct(const FArguments& Args, const TSharedRef<SImGuiLocalPanelOverlay>& InOverlay, UGameViewportClient* GameViewport, const TSharedRef<int32>& ContextIndex)
 	{
 		Overlay = InOverlay;
 		GameViewportPtr = GameViewport;
 		auto ImGuiSettings = GetDefault<UImGuiSettings>();
+		FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 		TSharedPtr<SWidget> FloatButton;
 		if (UClass* Class = ImGuiSettings->LocalPanelManagerWidget.LoadSynchronous())
 		{
@@ -893,6 +895,9 @@ public:
 		{
 			return;
 		}
+		auto& Style = ImGui::GetStyle();
+		Style.FontScaleDpi = FontScaleDpi;
+
 		ImGui::SetNextWindowPos(ImVec2{ 0, 0 });
 		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
 		if (ImGui::FWindow Window{ "ImGui Panel Manager", nullptr, SinglePanelFlags | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysVerticalScrollbar })
@@ -933,7 +938,7 @@ public:
 					if (ImGui::FMenu SettingsMenu{ "Settings" })
 					{
 						UnrealImGui::ShowStyleSelector();
-						UnrealImGui::ShowGlobalDPISettings();
+						UnrealImGui::ShowGlobalDPISettings(FontScaleDpi);
 					}
 					bool IsOpen = Overlay->ViewportPtr.IsValid();
 					if (ImGui::Checkbox("ImGui Full Viewport", &IsOpen))

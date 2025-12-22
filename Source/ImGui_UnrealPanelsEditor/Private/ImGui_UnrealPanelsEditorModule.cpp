@@ -289,7 +289,10 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 					{
 						return;
 					}
-					
+
+					auto& Style = ImGui::GetStyle();
+					Style.FontScaleDpi = FontScaleDpi;
+
 					UClass* Class = PanelClass.Get();
 					if (Class && Class->HasAnyClassFlags(CLASS_NewerVersionExists))
 					{
@@ -318,15 +321,13 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 								if (bOverrideDPIScale)
 								{
 									DPIScaleSettings = &Settings->CustomPanelDPIScaleMap.Add(Class, UnrealImGui::GetGlobalDPIScale());
-									auto& Style = ImGui::GetStyle();
-									Style.FontScaleDpi = *DPIScaleSettings;
+									FontScaleDpi = *DPIScaleSettings;
 								}
 								else
 								{
 									Settings->CustomPanelDPIScaleMap.Remove(Class);
 									DPIScaleSettings = nullptr;
-									auto& Style = ImGui::GetStyle();
-									Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
+									FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 								}
 								Settings->SaveConfig();
 							}
@@ -342,8 +343,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 							if (ImGui::InputFloat("DPI Scale", &DPIScale, 0.01f))
 							{
 								DPIScale = FMath::Clamp(DPIScale, 0.5f, 3.f);
-								auto& Style = ImGui::GetStyle();
-								Style.FontScaleDpi = DPIScale;
+								FontScaleDpi = DPIScale;
 								Settings->CustomPanelDPIScaleMap.Add(Class, DPIScale);
 								Settings->SaveConfig();
 							}
@@ -412,14 +412,14 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 			UnrealImGui::DefaultStyle(&Context->Style);
 			if (auto DPIScale = Settings->CustomPanelDPIScaleMap.Find(Class))
 			{
-				auto& Style = Context->Style;
-				Style.FontScaleDpi = *DPIScale;
+				FontScaleDpi = *DPIScale;
 			}
 			else
 			{
-				auto& Style = Context->Style;
-				Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
+				FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 			}
+			auto& Style = Context->Style;
+			Style.FontScaleDpi = FontScaleDpi;
 
 			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 			const FString IniDirectory = FPaths::ProjectSavedDir() / TEXT(UE_PLUGIN_NAME);
@@ -445,6 +445,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 		TSoftClassPtr<UUnrealImGuiPanelBase> PanelClass;
 		TWeakObjectPtr<UUnrealImGuiPanelBase> DrawPanel;
 		TWeakObjectPtr<UUnrealImGuiPanelBuilder> Builder;
+		float FontScaleDpi = 1.f;
 	};
 	
 	struct FLocal
