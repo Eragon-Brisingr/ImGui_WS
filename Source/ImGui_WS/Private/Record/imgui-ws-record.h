@@ -26,7 +26,7 @@ template<>
         serialize(t.ClipRect.y, buf);
         serialize(t.ClipRect.z, buf);
         serialize(t.ClipRect.w, buf);
-        serialize(t.TextureId, buf);
+        serialize(t.GetTexID(), buf);
         serialize(t.VtxOffset, buf);
         serialize(t.IdxOffset, buf);
     }
@@ -60,7 +60,8 @@ template<>
         unserialize(t.ClipRect.y, buf, offset);
         unserialize(t.ClipRect.z, buf, offset);
         unserialize(t.ClipRect.w, buf, offset);
-        unserialize(t.TextureId, buf, offset);
+        auto TextureId = t.GetTexID();
+        unserialize(TextureId, buf, offset);
         unserialize(t.VtxOffset, buf, offset);
         unserialize(t.IdxOffset, buf, offset);
 

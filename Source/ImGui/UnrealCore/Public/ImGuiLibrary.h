@@ -188,12 +188,6 @@ public:
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetWindowFocus();
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Window manipulation", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetWindowFontScale(float Scale)
-	{
-		if (!CheckImGuiContextThrowError()) { return; }
-		ImGui::SetWindowFontScale(Scale);
-	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Window manipulation", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
 	static void SetWindowPosByName(FName Name, const FVector2D& Pos, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
 	{
@@ -676,11 +670,18 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Images", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
-	static void Image(UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
+	static void Image(UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector)
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture(Format, Texture);
-		ImGui::Image(Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
+		ImGui::Image(Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 });
+	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Images", meta = (ImGuiFunction, AdvancedDisplay = 2), BlueprintInternalUseOnly)
+	static void ImageWithBg(UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)
+	{
+		if (!CheckImGuiContextThrowError()) { return; }
+		const FImGuiTextureHandle Handle = UnrealImGui::FindOrAddTexture(Format, Texture);
+		ImGui::ImageWithBg(Handle, ImVec2{ ImageSize }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, ImVec4{ BorderColor });
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|Widgets|Images", meta = (ImGuiTrigger, AdvancedDisplay = 3), BlueprintInternalUseOnly)
 	static bool ImageButton(FName Label, UTexture* Texture, FVector2D ImageSize, EImGuiTextureFormat Format = EImGuiTextureFormat::RGB8, FVector2D UV0 = FVector2D::ZeroVector, FVector2D UV1 = FVector2D::UnitVector, FLinearColor TintColor = FLinearColor::White, FLinearColor BorderColor = FLinearColor::Transparent)

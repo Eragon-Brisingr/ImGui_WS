@@ -110,8 +110,6 @@ public:
 	FString FontFileName = TEXT("zpix.ttf");
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	float FontSize = 12.f;
-	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
-	EImGuiFontGlyphRanges FontGlyphRanges = EImGuiFontGlyphRanges::ChineseFull;
 
 	UPROPERTY(EditAnywhere, Config, Category = "ImGui WS", meta = (ConfigRestartRequired = true))
 	float ServerTickInterval = 1 / 120.f;

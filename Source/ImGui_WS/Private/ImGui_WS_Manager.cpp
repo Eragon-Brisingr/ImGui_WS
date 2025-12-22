@@ -191,6 +191,9 @@ public:
 		};
 	};
 
+	uint32 FontAtlasBuilderFrameCount = 0;
+	ImFontAtlas DefaultFontAtlas;
+	
 	explicit FImpl(UImGui_WS_Manager& Manager)
 		: Manager(Manager)
 		, ContextManager(*UImGuiUnrealContextManager::GetChecked())
@@ -209,10 +212,14 @@ public:
 #endif
 
 		ImGuiContext* PrevContext = ImGui::GetCurrentContext();
-		Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
+		UnrealImGui::ConfigDefaultFontAtlas(DefaultFontAtlas);
+		Context = ImGui::CreateContext(&DefaultFontAtlas);
 		ImGui::SetCurrentContext(Context);
 		ImGuiIO& IO = Context->IO;
-		IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+		IO.ConfigDpiScaleViewports = true;
+		IO.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+		auto& Style = Context->Style;
+		Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 		ON_SCOPE_EXIT
 		{
 			ImGui::SetCurrentContext(PrevContext);
@@ -314,14 +321,6 @@ public:
 				WS_ThreadUpdate();
 				return true;
 			});
-		}
-
-		// prepare font texture
-		{
-			unsigned char* Pixels;
-			int32 Width, Height;
-			IO.Fonts->GetTexDataAsAlpha8(&Pixels, &Width, &Height);
-			ImGuiWS.SetTexture(0, ImGuiWS::FTexture::Type::Alpha8, Width, Height, Pixels);
 		}
 
 		using namespace UnrealImGui;
@@ -649,6 +648,7 @@ public:
 	    ImGui::SetCurrentContext(Context);
 		ImPlot::SetCurrentContext(PlotContext);
 
+		ImFontAtlasUpdateNewFrame(&DefaultFontAtlas, FontAtlasBuilderFrameCount++, true);
 	    ImGui::NewFrame();
 
 	    // websocket event handling
@@ -894,6 +894,55 @@ public:
 				}));
 		}
 
+		{
+			const ImDrawData* Data = ImGui::GetDrawData();
+			for (auto TexData : *Data->Textures)
+			{
+				if (TexData->Status == ImTextureStatus_OK)
+				{
+					continue;
+				}
+				if (TexData->Status == ImTextureStatus_WantDestroy && TexData->UnusedFrames > 0)
+				{
+					// latest shared font texture data should never be destroyed!
+					check(TexData != DefaultFontAtlas.TexData);
+
+					TexData->SetStatus(ImTextureStatus_Destroyed);
+					TexData->SetTexID(ImTextureID_Invalid);
+				}
+				else if (TexData == DefaultFontAtlas.TexData)
+				{
+					const int32 BytesPerPixel = TexData->BytesPerPixel;
+					check(BytesPerPixel == GPixelFormats[PF_R8G8B8A8].BlockBytes);
+					
+					if (TexData->Status == ImTextureStatus_WantCreate || TexData->Status == ImTextureStatus_WantUpdates)
+					{
+						using ETextureType = ImGuiWS::FTexture::Type;
+						ImGuiWS.SetTexture(UnrealImGui::FontTextId, TexData->Format == ImTextureFormat_RGBA32 ? ETextureType::RGBA32 : ETextureType::Alpha8, TexData->Width, TexData->Height, (uint8*)TexData->GetPixels());
+
+						TexData->SetStatus(ImTextureStatus_OK);
+						TexData->SetTexID(UnrealImGui::FontTextId);
+					}
+					else
+					{
+						check(TexData->Status == ImTextureStatus_OK);
+					}
+				}
+				else
+				{
+					if (TexData->WantDestroyNextFrame)
+					{
+						TexData->SetStatus(ImTextureStatus_OK);
+						TexData->SetTexID(UnrealImGui::FontTextId);
+					}
+					else
+					{
+						unimplemented();
+					}
+				}
+			}
+		}
+		
 	    ImGui::EndFrame();
 
 		if (CloseRecord)

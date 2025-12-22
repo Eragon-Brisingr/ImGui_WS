@@ -56,7 +56,7 @@ void writeCmdListToBuffer(const ImDrawList * cmdList, std::vector<char> & buf) {
         uint32_t nElements = pcmd->ElemCount;
         std::copy((char *)(&nElements), (char *)(&nElements) + sizeof(nElements), std::back_inserter(buf));
 
-        uint32_t textureId = (uint32_t)(intptr_t)pcmd->TextureId;
+        uint32_t textureId = (uint32_t)(intptr_t)pcmd->TexRef.GetTexID();
         std::copy((char *)(&textureId), (char *)(&textureId) + sizeof(textureId), std::back_inserter(buf));
 
         uint32_t offsetVtx = (uint32_t)(intptr_t)pcmd->VtxOffset;

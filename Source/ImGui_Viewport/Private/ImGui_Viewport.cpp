@@ -163,9 +163,9 @@ void SImGuiViewportOverlay::WhenImGuiTick(float DeltaSeconds)
 	}
 	else if (auto Window = Context->ActiveIdWindow ? Context->ActiveIdWindow : Context->HoveredWindow; Window && Window->DrawList && Window->DrawList->_VtxCurrentIdx != 0)
 	{
-		auto g = Context;
-		ImVec2 padding_regular = g->Style.TouchExtraPadding;
-		ImVec2 padding_for_resize = g->IO.ConfigWindowsResizeFromEdges ? g->WindowsHoverPadding : padding_regular;
+		const auto& g = *Context;
+		ImVec2 padding_regular = g.Style.TouchExtraPadding;
+		ImVec2 padding_for_resize = ImMax(g.Style.TouchExtraPadding, ImVec2(g.Style.WindowBorderHoverPadding, g.Style.WindowBorderHoverPadding));
 		ImVec2 hit_padding = (Window->Flags & (ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) ? padding_regular : padding_for_resize;
 		HoverWindowBounds = FBox2f{ FVector2f{ Window->OuterRectClipped.Min - hit_padding }, FVector2f{ Window->OuterRectClipped.Max + hit_padding } };
 	}

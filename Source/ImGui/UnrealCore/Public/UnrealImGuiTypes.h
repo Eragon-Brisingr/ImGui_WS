@@ -302,10 +302,12 @@ enum class EImGuiColorEditFlags : int32
     NoDragDrop      = ImGuiColorEditFlags_NoDragDrop      ,   //              // ColorEdit: disable drag and drop target. ColorButton: disable drag and drop source.
     NoBorder        = ImGuiColorEditFlags_NoBorder        ,  //              // ColorButton: disable border (which is enforced by default)
 
+	AlphaOpaque     = ImGuiColorEditFlags_AlphaOpaque     ,  //              // ColorEdit, ColorPicker, ColorButton: disable alpha in the preview,. Contrary to _NoAlpha it may still be edited when calling ColorEdit4()/ColorPicker4(). For ColorButton() this does the same as _NoAlpha.
+	AlphaNoBg       = ImGuiColorEditFlags_AlphaNoBg       ,  //              // ColorEdit, ColorPicker, ColorButton: disable rendering a checkerboard background behind transparent color.
+	AlphaPreviewHalf= ImGuiColorEditFlags_AlphaPreviewHalf,  //              // ColorEdit, ColorPicker, ColorButton: display half opaque / half transparent preview.
+	
     // User Options (right-click on widget to change some of them).
     AlphaBar         = ImGuiColorEditFlags_AlphaBar        ,  //              // ColorEdit, ColorPicker: show vertical alpha bar/gradient in picker.
-    AlphaPreview     = ImGuiColorEditFlags_AlphaPreview    ,  //              // ColorEdit, ColorPicker, ColorButton: display preview as a transparent color over a checkerboard, instead of opaque.
-    AlphaPreviewHalf = ImGuiColorEditFlags_AlphaPreviewHalf,  //              // ColorEdit, ColorPicker, ColorButton: display half opaque / half checkerboard, instead of opaque.
     HDR              = ImGuiColorEditFlags_HDR             ,  //              // (WIP) ColorEdit: Currently only disable 0.0f..1.0f limits in RGBA edition (note: you probably want to use ImGuiColorEditFlags_Float flag as well).
     DisplayRGB       = ImGuiColorEditFlags_DisplayRGB      ,  // [Display]    // ColorEdit: override _display_ type among RGB/HSV/Hex. ColorPicker: select any combination using one or more of RGB/HSV/Hex.
     DisplayHSV       = ImGuiColorEditFlags_DisplayHSV      ,  // [Display]    // "
@@ -337,7 +339,8 @@ enum class EImGuiTreeNodeFlags : int32
     SpanAvailWidth       = ImGuiTreeNodeFlags_SpanAvailWidth       ,  // Extend hit box to the right-most edge, even if not framed. This is not the default in order to allow adding other items on the same line. In the future we may refactor the hit system to be front-to-back, allowing natural overlaps and then this can become the default.
     SpanFullWidth        = ImGuiTreeNodeFlags_SpanFullWidth        ,  // Extend hit box to the left-most and right-most edges (bypass the indented area).
     SpanAllColumns       = ImGuiTreeNodeFlags_SpanAllColumns       ,  // Frame will span all columns of its container table (text will still fit in current column)
-    NavLeftJumpsBackHere = ImGuiTreeNodeFlags_NavLeftJumpsBackHere ,  // (WIP) Nav: left direction may move to this TreeNode() from any of its child (items submitted between TreeNode and TreePop)
+	LabelSpanAllColumns  = ImGuiTreeNodeFlags_LabelSpanAllColumns  ,  // Label will span all columns of its container table
+	NavLeftJumpsToParent = ImGuiTreeNodeFlags_NavLeftJumpsToParent ,  // Nav: left arrow moves back to parent. This is processed in TreePop() when there's an unfulfilled Left nav request remaining.
     CollapsingHeader     = ImGuiTreeNodeFlags_CollapsingHeader     ,
 };
 ENUM_CLASS_FLAGS(EImGuiTreeNodeFlags);
@@ -467,15 +470,19 @@ ENUM_CLASS_FLAGS(EImGuiTableColumnFlags);
 UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
 enum class EImGuiTabBarFlags : int32
 {
-	None                         = ImGuiTabBarFlags_None                           ,
-	Reorderable                  = ImGuiTabBarFlags_Reorderable                    ,   // Allow manually dragging tabs to re-order them + New tabs are appended at the end of list
-	AutoSelectNewTabs            = ImGuiTabBarFlags_AutoSelectNewTabs              ,   // Automatically select new tabs when they appear
-	TabListPopupButton           = ImGuiTabBarFlags_TabListPopupButton             ,   // Disable buttons to open the tab list popup
-	NoCloseWithMiddleMouseButton = ImGuiTabBarFlags_NoCloseWithMiddleMouseButton   ,   // Disable behavior of closing tabs (that are submitted with p_open != NULL) with middle mouse button. You may handle this behavior manually on user's side with if (IsItemHovered() && IsMouseClicked(2)) *p_open = false.
-	NoTabListScrollingButtons    = ImGuiTabBarFlags_NoTabListScrollingButtons      ,   // Disable scrolling buttons (apply when fitting policy is ImGuiTabBarFlags_FittingPolicyScroll)
-	NoTooltip                    = ImGuiTabBarFlags_NoTooltip                      ,   // Disable tooltips when hovering a tab
-	FittingPolicyResizeDown      = ImGuiTabBarFlags_FittingPolicyResizeDown        ,   // Resize tabs when they don't fit
-	FittingPolicyScroll          = ImGuiTabBarFlags_FittingPolicyScroll            ,   // Add scroll buttons when tabs don't fit
+	None                           = ImGuiTabBarFlags_None                           ,
+	Reorderable                    = ImGuiTabBarFlags_Reorderable                    ,   // Allow manually dragging tabs to re-order them + New tabs are appended at the end of list
+	AutoSelectNewTabs              = ImGuiTabBarFlags_AutoSelectNewTabs              ,   // Automatically select new tabs when they appear
+	TabListPopupButton             = ImGuiTabBarFlags_TabListPopupButton             ,   // Disable buttons to open the tab list popup
+	NoCloseWithMiddleMouseButton   = ImGuiTabBarFlags_NoCloseWithMiddleMouseButton   ,   // Disable behavior of closing tabs (that are submitted with p_open != NULL) with middle mouse button. You may handle this behavior manually on user's side with if (IsItemHovered() && IsMouseClicked(2)) *p_open = false.
+	NoTabListScrollingButtons      = ImGuiTabBarFlags_NoTabListScrollingButtons      ,   // Disable scrolling buttons (apply when fitting policy is ImGuiTabBarFlags_FittingPolicyScroll)
+	NoTooltip                      = ImGuiTabBarFlags_NoTooltip                      ,   // Disable tooltips when hovering a tab
+	DrawSelectedOverline           = ImGuiTabBarFlags_DrawSelectedOverline           ,   // Draw selected overline markers over selected tab
+
+	// Fitting/Resize policy
+	FittingPolicyShrink            = ImGuiTabBarFlags_FittingPolicyMixed             ,   // Shrink down tabs when they don't fit, until width is style.TabMinWidthShrink, then enable scrolling buttons.
+	FittingPolicyScroll            = ImGuiTabBarFlags_FittingPolicyShrink            ,   // Shrink down tabs when they don't fit
+	FittingPolicyMask_             = ImGuiTabBarFlags_FittingPolicyScroll            ,   // Enable scrolling buttons when tabs don't fit
 };
 ENUM_CLASS_FLAGS(EImGuiTabBarFlags);
 

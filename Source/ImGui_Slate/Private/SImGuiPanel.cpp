@@ -19,17 +19,25 @@
 #include "GenericPlatform/ITextInputMethodSystem.h"
 #include "HAL/PlatformApplicationMisc.h"
 
-namespace ImGui
+namespace ImGuiPanel
 {
-FColor ConvertColor(const uint32 Color)
+UTextureRenderTarget2D* FontAtlasTexture = nullptr;
+uint32 FontAtlasBuilderFrameCount = 0;
+ImFontAtlas& GetDefaultFontAtlas()
 {
-	return FColor(
-		(Color >> IM_COL32_R_SHIFT) & 0xFF,
-		(Color >> IM_COL32_G_SHIFT) & 0xFF,
-		(Color >> IM_COL32_B_SHIFT) & 0xFF,
-		(Color >> IM_COL32_A_SHIFT) & 0xFF
-	);
+	static ImFontAtlas DefaultFontAtlas = []
+	{
+		ImFontAtlas FontAtlas;
+		UnrealImGui::ConfigDefaultFontAtlas(FontAtlas);
+		return FontAtlas;
+	}();
+	return DefaultFontAtlas;
 }
+auto OnBeginFrameHandle = FCoreDelegates::OnBeginFrame.AddLambda([]
+{
+	auto& DefaultFontAtlas = GetDefaultFontAtlas();
+	ImFontAtlasUpdateNewFrame(&DefaultFontAtlas, FontAtlasBuilderFrameCount++, true);
+});
 }
 
 FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)
@@ -62,9 +70,12 @@ SImGuiPanel::FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 void SImGuiPanel::Construct(const FArguments& Args)
 {
 	const FScopedContext ScopedContext{ nullptr, nullptr };
-	Context = ImGui::CreateContext(&UnrealImGui::GetDefaultFontAtlas());
+	Context = ImGui::CreateContext(&ImGuiPanel::GetDefaultFontAtlas());
 	ImGuiIO& IO = Context->IO;
-	IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+	IO.ConfigDpiScaleViewports = true;
+	IO.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+	auto& Style = Context->Style;
+	Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 	IO.IniFilename = nullptr;
 	PlotContext = ImPlot::CreateContext();
 	OnImGuiTick = Args._OnImGuiTick;
@@ -88,6 +99,12 @@ SImGuiPanel::~SImGuiPanel()
 
 void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
+	if (ImGuiPanel::FontAtlasBuilderFrameCount == 0)
+	{
+		auto& DefaultFontAtlas = ImGuiPanel::GetDefaultFontAtlas();
+		ImFontAtlasUpdateNewFrame(&DefaultFontAtlas, ImGuiPanel::FontAtlasBuilderFrameCount++, true);
+	}
+
 	const FScopedContext ScopedContext{ ImGuiScopedContext() };
 
 	auto NewFrame = [this](const FVector2D& DisplaySize, float DeltaTime)
@@ -143,6 +160,89 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 	ImGui::Render();
 
 	const ImDrawData* Data = ImGui::GetDrawData();
+
+	auto& DefaultFontAtlas = ImGuiPanel::GetDefaultFontAtlas();
+	for (auto TexData : *Data->Textures)
+	{
+		if (TexData->Status == ImTextureStatus_OK)
+		{
+			continue;
+		}
+		if (TexData->Status == ImTextureStatus_WantDestroy && TexData->UnusedFrames > 0)
+		{
+			// latest shared font texture data should never be destroyed!
+			check(TexData != DefaultFontAtlas.TexData);
+
+			TexData->SetStatus(ImTextureStatus_Destroyed);
+			TexData->SetTexID(ImTextureID_Invalid);
+		}
+		else if (TexData == DefaultFontAtlas.TexData)
+		{
+			const int32 FontAtlasWidth = TexData->Width;
+			const int32 FontAtlasHeight = TexData->Height;
+			const int32 BytesPerPixel = TexData->BytesPerPixel;
+			check(BytesPerPixel == GPixelFormats[PF_R8G8B8A8].BlockBytes);
+			
+			if (TexData->Status == ImTextureStatus_WantCreate || TexData->Status == ImTextureStatus_WantUpdates)
+			{
+				bool bReuploadTexture = (TexData->Status == ImTextureStatus_WantCreate);
+				auto& SharedFontTexture = ImGuiPanel::FontAtlasTexture;
+				
+				if (SharedFontTexture == nullptr)
+				{
+					UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>((UObject*)GetTransientPackage(), TEXT("ImGuiFontAtlas"));
+					check(RT);
+					RT->RenderTargetFormat = RTF_RGBA8;
+					RT->ClearColor = FLinearColor::Black;
+					RT->bAutoGenerateMips = false;
+					RT->InitAutoFormat(FontAtlasWidth, FontAtlasHeight);
+					RT->LODGroup = TEXTUREGROUP_Pixels2D;
+					RT->UpdateResourceImmediate(false);
+
+					RT->AddToRoot();
+					
+					ImGuiPanel::FontAtlasTexture = RT;
+					bReuploadTexture = true;
+				}
+				else if (SharedFontTexture->SizeX != FontAtlasWidth || SharedFontTexture->SizeY != FontAtlasHeight)
+				{
+					SharedFontTexture->ResizeTarget(FontAtlasWidth, FontAtlasHeight);
+					bReuploadTexture = true;
+				}
+
+				const ImTextureRect UpdateRect = bReuploadTexture ? ImTextureRect(0, 0, TexData->Width, TexData->Height) : TexData->UpdateRect;
+				ENQUEUE_RENDER_COMMAND(UpdateFontTexture)(
+					[this,
+					SrcPitch = TexData->GetPitch(),
+					SrcData = (uint8*)TexData->GetPixelsAt(UpdateRect.x, UpdateRect.y),
+					UpdateRegion = FUpdateTextureRegion2D(UpdateRect.x, UpdateRect.y, 0, 0, UpdateRect.w, UpdateRect.h),
+					TexResource = SharedFontTexture->GameThread_GetRenderTargetResource()](FRHICommandListImmediate& RHICmdList)
+					{
+						RHICmdList.UpdateTexture2D(TexResource->GetTexture2DRHI(), 0, UpdateRegion, SrcPitch, SrcData);
+					});
+
+				TexData->SetStatus(ImTextureStatus_OK);
+				TexData->SetTexID(UnrealImGui::FontTextId);
+			}
+			else
+			{
+				check(TexData->Status == ImTextureStatus_OK);
+			}
+		}
+		else
+		{
+			if (TexData->WantDestroyNextFrame)
+			{
+				TexData->SetStatus(ImTextureStatus_OK);
+				TexData->SetTexID(UnrealImGui::FontTextId);
+			}
+			else
+			{
+				unimplemented();
+			}
+		}
+	}
+
 	DrawData = FImGuiDrawData{ Data };
 
 	ImGui::EndFrame();
@@ -169,7 +269,17 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 		for (int32 BufferIdx = 0; BufferIdx < Vertices.Num(); ++BufferIdx)
 		{
 			const ImDrawVert& Vtx = DrawList.VtxBuffer.Data[BufferIdx];
-			Vertices[BufferIdx] = FSlateVertex::Make<ESlateVertexRounding::Disabled>(Transform, FVector2f{ Vtx.pos }, FVector2f{ Vtx.uv }, FVector2f::UnitVector, ImGui::ConvertColor(Vtx.col));
+			
+			auto ConvertColor = [](const uint32 Color)
+			{
+				return FColor(
+					(Color >> IM_COL32_R_SHIFT) & 0xFF,
+					(Color >> IM_COL32_G_SHIFT) & 0xFF,
+					(Color >> IM_COL32_B_SHIFT) & 0xFF,
+					(Color >> IM_COL32_A_SHIFT) & 0xFF
+				);
+			};
+			Vertices[BufferIdx] = FSlateVertex::Make<ESlateVertexRounding::Disabled>(Transform, FVector2f{ Vtx.pos }, FVector2f{ Vtx.uv }, FVector2f::UnitVector, ConvertColor(Vtx.col));
 		}
 
 		TArray<SlateIndex> Indices;
@@ -219,65 +329,7 @@ int32 SImGuiPanel::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeom
 			};
 			if (DrawCmd.GetTexID() == UnrealImGui::FontTextId)
 			{
-				static const UTextureRenderTarget2D* FontAtlasTexture = [this]
-				{
-					uint8* TextureDataRaw;
-					int32 SizeX, SizeY, BytesPerPixel;
-					Context->IO.Fonts->GetTexDataAsAlpha8(&TextureDataRaw, &SizeX, &SizeY, &BytesPerPixel);
-
-					UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>((UObject*)GetTransientPackage(), TEXT("ImGuiFontAtlas"));
-					check(RT);
-					RT->RenderTargetFormat = RTF_RGBA8;
-					RT->ClearColor = FLinearColor::Black;
-					RT->bAutoGenerateMips = false;
-					RT->InitAutoFormat(SizeX, SizeY);
-					RT->LODGroup = TEXTUREGROUP_Pixels2D;
-					RT->UpdateResourceImmediate(false);
-
-					RT->AddToRoot();
-
-					ENQUEUE_RENDER_COMMAND(ImGuiFontAtlas)(
-						[TextureDataRaw = TArray<uint8>{ TextureDataRaw, SizeX * SizeY * BytesPerPixel },
-						RenderTargetPtr = TWeakObjectPtr<UTextureRenderTarget2D>(RT)]
-						(FRHICommandListImmediate& RHICmdList)
-						{
-							UTextureRenderTarget2D* RT = RenderTargetPtr.Get();
-							if (!RT)
-							{
-								return;
-							}
-							const FTextureResource* RenderTargetResource = RT->GetResource();
-							if (RenderTargetResource == nullptr)
-							{
-								return;
-							}
-
-							TArray<uint8> FontAtlasTextureData;
-							FontAtlasTextureData.SetNumUninitialized(TextureDataRaw.Num() * 4);
-							{
-								const uint8* Src = TextureDataRaw.GetData();
-								uint32* Dst = reinterpret_cast<uint32*>(FontAtlasTextureData.GetData());
-								for (int32 Idx = RT->SizeX * RT->SizeY; Idx > 0; --Idx)
-								{
-									*Dst++ = IM_COL32(255, 255, 255, *Src++);
-								}
-							}
-
-							constexpr uint32 SrcBpp = sizeof(uint32);
-							const uint32 SrcPitch = RT->SizeX * SrcBpp;
-							FRHITexture* Texture = RenderTargetResource->GetTexture2DRHI();
-							const FUpdateTextureRegion2D Region{ 0, 0, 0, 0, uint32(RT->SizeX), uint32(RT->SizeY) };
-							RHIUpdateTexture2D(
-								Texture,
-								0,
-								Region,
-								SrcPitch,
-								FontAtlasTextureData.GetData());
-						});
-
-					return RT;
-				}();
-				SetTexture(FontAtlasTexture);
+				SetTexture(ImGuiPanel::FontAtlasTexture);
 			}
 			else
 			{

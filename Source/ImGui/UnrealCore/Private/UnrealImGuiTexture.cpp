@@ -16,8 +16,8 @@ namespace UnrealImGui
 
 	namespace TextureIdManager
 	{
-		// note: font texture use id 0
-		uint32 HandleIdCounter = 0;
+		// note: small number for ImGui render textures
+		uint32 HandleIdCounter = 1024;
 		TMap<TWeakObjectPtr<const UTexture>, uint32> HandleIdMap;
 		TMap<uint32, TWeakObjectPtr<const UTexture>> IdTextureMap;
 	}

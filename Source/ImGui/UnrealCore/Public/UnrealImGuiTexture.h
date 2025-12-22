@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "imgui.h"
 #include "UnrealImGuiTexture.generated.h"
 
 class UTexture2D;
@@ -26,6 +27,10 @@ struct IMGUI_API FImGuiTextureHandle
 		return ImTextureId != 0;
 	}
 	operator uint32() const
+	{
+		return ImTextureId;
+	}
+	operator ImTextureRef() const
 	{
 		return ImTextureId;
 	}

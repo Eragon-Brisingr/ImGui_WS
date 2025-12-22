@@ -309,7 +309,6 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 						{
 							UnrealImGui::ShowStyleSelector();
 
-							auto& IO = ImGui::GetIO();
 							auto Settings = GetMutableDefault<UImGuiPerUserSettings>();
 							ImGui::SetNextItemWidth(ImGui::GetFontSize());
 							float* DPIScaleSettings = Settings->CustomPanelDPIScaleMap.Find(Class);
@@ -319,13 +318,15 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 								if (bOverrideDPIScale)
 								{
 									DPIScaleSettings = &Settings->CustomPanelDPIScaleMap.Add(Class, UnrealImGui::GetGlobalDPIScale());
-									IO.FontGlobalScale = *DPIScaleSettings;
+									auto& Style = ImGui::GetStyle();
+									Style.FontScaleDpi = *DPIScaleSettings;
 								}
 								else
 								{
 									Settings->CustomPanelDPIScaleMap.Remove(Class);
 									DPIScaleSettings = nullptr;
-									IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+									auto& Style = ImGui::GetStyle();
+									Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 								}
 								Settings->SaveConfig();
 							}
@@ -341,7 +342,8 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 							if (ImGui::InputFloat("DPI Scale", &DPIScale, 0.01f))
 							{
 								DPIScale = FMath::Clamp(DPIScale, 0.5f, 3.f);
-								IO.FontGlobalScale = DPIScale;
+								auto& Style = ImGui::GetStyle();
+								Style.FontScaleDpi = DPIScale;
 								Settings->CustomPanelDPIScaleMap.Add(Class, DPIScale);
 								Settings->SaveConfig();
 							}
@@ -405,16 +407,18 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 				});
 			auto Context = ImGuiPanel->GetContext();
 			auto& IO = Context->IO;
-			IO.ConfigFlags = ImGuiConfigFlags_DockingEnable;
+			IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 			auto Settings = GetMutableDefault<UImGuiPerUserSettings>();
 			UnrealImGui::DefaultStyle(&Context->Style);
 			if (auto DPIScale = Settings->CustomPanelDPIScaleMap.Find(Class))
 			{
-				IO.FontGlobalScale = *DPIScale;
+				auto& Style = Context->Style;
+				Style.FontScaleDpi = *DPIScale;
 			}
 			else
 			{
-				IO.FontGlobalScale = UnrealImGui::GetGlobalDPIScale();
+				auto& Style = Context->Style;
+				Style.FontScaleDpi = UnrealImGui::GetGlobalDPIScale();
 			}
 
 			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();

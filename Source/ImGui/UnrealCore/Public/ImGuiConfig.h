@@ -25,6 +25,7 @@ IMGUI_API uint64 ImFileWrite(const void* Data, uint64 Size, uint64 Count, ImFile
 #define ImTextureID uint32_t
 
 #define IM_VEC2_CLASS_EXTRA \
+explicit constexpr ImVec2(const float& V) : x(V), y(V) {} \
 explicit operator FVector2f() const { return FVector2f(x, y); } \
 explicit constexpr ImVec2(const FVector2f& V) : x(V.X), y(V.Y) {} \
 explicit operator FVector2d() const { return FVector2d(x, y); } \

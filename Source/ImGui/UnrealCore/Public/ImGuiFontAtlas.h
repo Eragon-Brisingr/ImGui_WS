@@ -8,8 +8,8 @@ struct ImFontAtlas;
 
 namespace UnrealImGui
 {
-	IMGUI_API ImFontAtlas& GetDefaultFontAtlas();
-	constexpr uint32 FontTextId = 0;
+	IMGUI_API void ConfigDefaultFontAtlas(ImFontAtlas& FontAtlas);
+	constexpr uint32 FontTextId = 1;
 
 	IMGUI_API float GetSystemDPIScale();
 	IMGUI_API float GetGlobalDPIScale();
