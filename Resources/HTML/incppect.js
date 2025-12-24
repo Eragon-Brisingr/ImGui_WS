@@ -28,6 +28,33 @@
     k_auto_reconnect: true,
     k_requests_update_freq_ms: 50,
 
+    // app-layer compression (gzip wrapper): "ICZ1" + uint32 original_size + gzip(payload)
+    k_enable_app_compression: true,
+    k_app_compress_min_bytes: 512,
+    k_app_compress_level: 1,
+    k_app_compression_magic: [73, 67, 90, 49], // 'I','C','Z','1'
+    k_msg_type_compression_hello: 5,
+    app_compression_active: false,
+    app_compression_rx_seen: false,
+    app_compression_tx_used: false,
+    app_compression_tx_saved_bytes: 0,
+    app_compression_rx_saved_bytes: 0,
+    app_compression_tx_orig_bytes: 0,
+    app_compression_tx_comp_bytes: 0,
+    app_compression_rx_orig_bytes: 0,
+    app_compression_rx_comp_bytes: 0,
+
+    // rates (bytes per second)
+    _rate_last_ms: null,
+    _rate_last_client_tx: 0,
+    _rate_last_client_rx: 0,
+    _rate_last_server_tx: 0,
+    _rate_last_server_rx: 0,
+    rate_client_tx_Bps: 0,
+    rate_client_rx_Bps: 0,
+    rate_server_tx_Bps: 0,
+    rate_server_rx_Bps: 0,
+
     // stats
     stats: {
         tx_n: 0,
@@ -64,6 +91,131 @@
         this.t_requests_last_update_ms = this.timestamp() - this.k_requests_update_freq_ms;
 
         window.requestAnimationFrame(this.loop.bind(this));
+    },
+
+    has_streams: function() {
+        return (typeof CompressionStream !== 'undefined') && (typeof DecompressionStream !== 'undefined');
+    },
+
+    update_rates: function(server_tx_total_bytes, server_rx_total_bytes) {
+        const now = this.timestamp();
+        if (this._rate_last_ms == null) {
+            this._rate_last_ms = now;
+            this._rate_last_client_tx = this.stats.tx_bytes || 0;
+            this._rate_last_client_rx = this.stats.rx_bytes || 0;
+            this._rate_last_server_tx = server_tx_total_bytes || 0;
+            this._rate_last_server_rx = server_rx_total_bytes || 0;
+            return;
+        }
+
+        const dt_ms = now - this._rate_last_ms;
+        if (dt_ms < 500) return; // update ~2Hz
+
+        const dt_s = dt_ms / 1000.0;
+
+        const cur_client_tx = this.stats.tx_bytes || 0;
+        const cur_client_rx = this.stats.rx_bytes || 0;
+        const cur_server_tx = server_tx_total_bytes || 0;
+        const cur_server_rx = server_rx_total_bytes || 0;
+
+        this.rate_client_tx_Bps = (cur_client_tx - this._rate_last_client_tx) / dt_s;
+        this.rate_client_rx_Bps = (cur_client_rx - this._rate_last_client_rx) / dt_s;
+        this.rate_server_tx_Bps = (cur_server_tx - this._rate_last_server_tx) / dt_s;
+        this.rate_server_rx_Bps = (cur_server_rx - this._rate_last_server_rx) / dt_s;
+
+        this._rate_last_ms = now;
+        this._rate_last_client_tx = cur_client_tx;
+        this._rate_last_client_rx = cur_client_rx;
+        this._rate_last_server_tx = cur_server_tx;
+        this._rate_last_server_rx = cur_server_rx;
+    },
+
+    u8_from: function(typed) {
+        if (typed instanceof Uint8Array) return typed;
+        return new Uint8Array(typed.buffer, typed.byteOffset || 0, typed.byteLength || typed.length);
+    },
+
+    is_compressed_payload: function(u8) {
+        if (u8.byteLength < 8) return false;
+        const m = this.k_app_compression_magic;
+        return u8[0] === m[0] && u8[1] === m[1] && u8[2] === m[2] && u8[3] === m[3];
+    },
+
+    stream_gzip: async function(u8) {
+        const cs = new CompressionStream('gzip');
+        const ab = await new Response(new Blob([u8]).stream().pipeThrough(cs)).arrayBuffer();
+        return new Uint8Array(ab);
+    },
+
+    stream_ungzip: async function(u8) {
+        const ds = new DecompressionStream('gzip');
+        const ab = await new Response(new Blob([u8]).stream().pipeThrough(ds)).arrayBuffer();
+        return new Uint8Array(ab);
+    },
+
+    decompress_payload: async function(u8) {
+        // u8: [magic(4)][orig_len(4)][gzip_bytes...]
+        const orig_len = (u8[4]) | (u8[5] << 8) | (u8[6] << 16) | (u8[7] << 24);
+        const comp = u8.subarray(8);
+        const dec = await this.stream_ungzip(comp);
+        if (orig_len !== dec.byteLength) {
+            console.warn("[incppect] decompressed size mismatch", orig_len, dec.byteLength);
+        }
+        return dec.buffer.slice(dec.byteOffset, dec.byteOffset + dec.byteLength);
+    },
+
+    maybe_compress_packet: async function(packet_u8) {
+        // packet_u8 includes the 4-byte length prefix; we compress only the payload after it
+        if (!this.k_enable_app_compression || !this.app_compression_active) return packet_u8;
+        if (!this.has_streams()) return packet_u8;
+
+        const payload = packet_u8.subarray(4);
+        if (payload.byteLength < this.k_app_compress_min_bytes) return packet_u8;
+
+        // NOTE: CompressionStream does not expose compression level; keep k_app_compress_level for symmetry only.
+        const comp = await this.stream_gzip(payload);
+        const wrapped_len = 8 + comp.byteLength;
+        if (wrapped_len >= payload.byteLength) return packet_u8;
+
+        const out = new Uint8Array(4 + wrapped_len);
+        // length prefix = wrapped_len
+        const num = wrapped_len;
+        out[0] = num & 0xFF;
+        out[1] = (num >> 8) & 0xFF;
+        out[2] = (num >> 16) & 0xFF;
+        out[3] = (num >> 24) & 0xFF;
+
+        // magic
+        const m = this.k_app_compression_magic;
+        out[4] = m[0]; out[5] = m[1]; out[6] = m[2]; out[7] = m[3];
+        // orig_len
+        const ol = payload.byteLength >>> 0;
+        out[8]  = ol & 0xFF;
+        out[9]  = (ol >> 8) & 0xFF;
+        out[10] = (ol >> 16) & 0xFF;
+        out[11] = (ol >> 24) & 0xFF;
+        // compressed bytes
+        out.set(comp, 12);
+
+        this.app_compression_tx_used = true;
+        this.app_compression_tx_saved_bytes += (payload.byteLength - wrapped_len);
+        this.app_compression_tx_orig_bytes += payload.byteLength;
+        this.app_compression_tx_comp_bytes += wrapped_len;
+        return out;
+    },
+
+    ws_send: function(packet) {
+        // async send queue to keep ordering when compression is enabled
+        if (!this._send_p) this._send_p = Promise.resolve();
+        const u8 = this.u8_from(packet);
+        this._send_p = this._send_p.then(async () => {
+            const wire = await this.maybe_compress_packet(u8);
+            this.ws.send(wire);
+            this.stats.tx_n += 1;
+            this.stats.tx_bytes += wire.byteLength;
+        }).catch((e) => {
+            console.error("[incppect] ws_send failed", e);
+        });
     },
 
     loop: function() {
@@ -226,10 +378,7 @@
         data[4] = 4;
         data.set(enc_msg, 8);
         data[8 + enc_msg.length] = 0;
-        this.ws.send(data);
-
-        this.stats.tx_n += 1;
-        this.stats.tx_bytes += data.length;
+        this.ws_send(data);
     },
 
     send_var_to_id_map: function() {
@@ -251,10 +400,7 @@
         data[4] = 1;
         data.set(enc.encode(msg), 8);
         data[8 + msg.length] = 0;
-        this.ws.send(data);
-
-        this.stats.tx_n += 1;
-        this.stats.tx_bytes += data.length;
+        this.ws_send(data);
     },
 
     send_requests: function() {
@@ -274,23 +420,39 @@
             let data = new Int32Array(2);
             data[0] = 4;
             data[1] = 3;
-            this.ws.send(data);
-
-            this.stats.tx_n += 1;
-            this.stats.tx_bytes += data.length;
+            this.ws_send(data);
         } else {
             let data = new Int32Array(2 + this.requests.length);
             data[0] = data.length * 4 - 4;
             data[1] = 2;
             data.set(new Int32Array(this.requests), 2);
-            this.ws.send(data);
-
-            this.stats.tx_n += 1;
-            this.stats.tx_bytes += data.length;
+            this.ws_send(data);
         }
     },
 
     onopen: function(evt) {
+        // Handshake / negotiation: only enable server->client compression after we tell the server we can decompress.
+        const can = this.k_enable_app_compression && this.has_streams();
+        if (can) {
+            // Send hello uncompressed (uses Int32 protocol used elsewhere):
+            // [len=8][type=5][version=1]
+            const hello = new Int32Array(3);
+            hello[0] = 8;
+            hello[1] = this.k_msg_type_compression_hello;
+            hello[2] = 1;
+            this.ws.send(hello);
+            this.stats.tx_n += 1;
+            this.stats.tx_bytes += hello.byteLength;
+        }
+        this.app_compression_active = can;
+        this.app_compression_rx_seen = false;
+        this.app_compression_tx_used = false;
+        this.app_compression_tx_saved_bytes = 0;
+        this.app_compression_rx_saved_bytes = 0;
+        this.app_compression_tx_orig_bytes = 0;
+        this.app_compression_tx_comp_bytes = 0;
+        this.app_compression_rx_orig_bytes = 0;
+        this.app_compression_rx_comp_bytes = 0;
     },
 
     onclose: function(evt) {
@@ -301,18 +463,46 @@
         this.requests = null;
         this.requests_old = null;
         this.ws = null;
+
+        // reset rates
+        this._rate_last_ms = null;
+        this.rate_client_tx_Bps = 0;
+        this.rate_client_rx_Bps = 0;
+        this.rate_server_tx_Bps = 0;
+        this.rate_server_rx_Bps = 0;
     },
 
-    onmessage: function(evt) {
+    onmessage: async function(evt) {
         this.stats.rx_n += 1;
         this.stats.rx_bytes += evt.data.byteLength;
 
-        const type_all = (new Uint32Array(evt.data))[0];
+        let data_ab = evt.data;
+        // server->client frames may be wrapped with app-layer compression; unwrap before parsing
+        if (this.has_streams()) {
+            try {
+                const u8 = new Uint8Array(data_ab);
+                if (this.is_compressed_payload(u8)) {
+                    this.app_compression_rx_seen = true;
+                    // saved = original_size - received_compressed_size (including ICZ1 header)
+                    const orig_len = (u8[4]) | (u8[5] << 8) | (u8[6] << 16) | (u8[7] << 24);
+                    const saved = (orig_len >>> 0) - (u8.byteLength >>> 0);
+                    if (saved > 0) this.app_compression_rx_saved_bytes += saved;
+                    this.app_compression_rx_orig_bytes += (orig_len >>> 0);
+                    this.app_compression_rx_comp_bytes += (u8.byteLength >>> 0);
+                    data_ab = await this.decompress_payload(u8);
+                }
+            } catch (e) {
+                console.error("[incppect] failed to decompress payload", e);
+                return;
+            }
+        }
+
+        const type_all = (new Uint32Array(data_ab))[0];
 
         if (this.last_data != null && type_all === 1) {
-            const ntotal = evt.data.byteLength / 4 - 1;
+            const ntotal = data_ab.byteLength / 4 - 1;
 
-            const src_view = new Uint32Array(evt.data, 4);
+            const src_view = new Uint32Array(data_ab, 4);
             const dst_view = new Uint32Array(this.last_data, 4);
 
             let k = 0;
@@ -325,7 +515,7 @@
                 }
             }
         } else {
-            this.last_data = evt.data;
+            this.last_data = data_ab;
         }
 
         const int_view = new Uint32Array(this.last_data);

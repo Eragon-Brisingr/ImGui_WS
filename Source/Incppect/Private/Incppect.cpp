@@ -4,15 +4,145 @@
 
 #include "LogIncppect.h"
 #include "WebSocketServer.h"
+#include "zlib.h"
 #include "Stats/Stats.h"
 
-DECLARE_STATS_GROUP (TEXT("Incppect"), STATGROUP_Incppect, STATCAT_Advanced);
+DECLARE_STATS_GROUP(TEXT("Incppect"), STATGROUP_Incppect, STATCAT_Advanced);
 
 namespace
 {
     inline int64 TimeStamp()
     {
         return FPlatformTime::ToMilliseconds64(FPlatformTime::Cycles64());
+    }
+
+    static constexpr uint8 IncppectGzipMagic[4] = { 'I', 'C', 'Z', '1' }; // wrapper magic (kept stable)
+
+    static bool IncppectIsGzipWrapped(const uint8* Data, int32 Size)
+    {
+        return Size >= 8 && FMemory::Memcmp(Data, IncppectGzipMagic, 4) == 0;
+    }
+
+    static bool IncppectTryUnwrapGzip(const uint8* Data, int32 Size, TArray<uint8>& OutUncompressed)
+    {
+        if (!IncppectIsGzipWrapped(Data, Size))
+        {
+            return false;
+        }
+
+        DECLARE_SCOPE_CYCLE_COUNTER(TEXT("Incppect_UnwrapGzip"), STAT_Incppect_UnwrapGzip, STATGROUP_Incppect);
+        
+        uint32 UncompressedSize = 0;
+        FMemory::Memcpy(&UncompressedSize, Data + 4, sizeof(UncompressedSize));
+
+        if (UncompressedSize == 0)
+        {
+            OutUncompressed.Reset();
+            return true;
+        }
+
+        const uint8* CompressedData = Data + 8;
+        const int32 CompressedSize = Size - 8;
+        if (CompressedSize <= 0)
+        {
+            return false;
+        }
+
+        OutUncompressed.SetNumUninitialized((int32)UncompressedSize);
+
+        z_stream Strm;
+        FMemory::Memzero(Strm);
+        Strm.next_in = (Bytef*)CompressedData;
+        Strm.avail_in = (uInt)CompressedSize;
+        Strm.next_out = (Bytef*)OutUncompressed.GetData();
+        Strm.avail_out = (uInt)UncompressedSize;
+
+        // gzip wrapper: windowBits = MAX_WBITS + 16
+        int Res = inflateInit2(&Strm, MAX_WBITS + 16);
+        if (Res != Z_OK)
+        {
+            OutUncompressed.Reset();
+            return false;
+        }
+
+        Res = inflate(&Strm, Z_FINISH);
+        inflateEnd(&Strm);
+
+        if (Res != Z_STREAM_END)
+        {
+            UE_LOG(LogIncppect, Warning, TEXT("IncppectTryUnwrapGzip: inflate failed (%d), compressed=%d"), Res, CompressedSize);
+            OutUncompressed.Reset();
+            return false;
+        }
+
+        const int32 Produced = (int32)Strm.total_out;
+        if (Produced != (int32)UncompressedSize)
+        {
+            // Keep what we got, but size mismatch indicates corruption / mismatched algorithm
+            UE_LOG(LogIncppect, Warning, TEXT("IncppectTryUnwrapGzip: size mismatch expected=%u got=%d"), UncompressedSize, Produced);
+        }
+
+        OutUncompressed.SetNum(Produced);
+        return true;
+    }
+
+    static bool IncppectTryWrapGzip(const uint8* Data, int32 Size, int32 MinBytes, int32 Level, TArray<uint8>& OutWrapped)
+    {
+        if (Size < MinBytes || Size <= 0)
+        {
+            return false;
+        }
+
+        DECLARE_SCOPE_CYCLE_COUNTER(TEXT("Incppect_WrapGzip"), STAT_Incppect_WrapGzip, STATGROUP_Incppect);
+ 
+        Level = FMath::Clamp(Level, 0, 9);
+
+        z_stream Strm;
+        FMemory::Memzero(Strm);
+
+        const uLong Bound = deflateBound(&Strm, (uLong)Size);
+        if (Bound == 0)
+        {
+            return false;
+        }
+
+        TArray<uint8> Compressed;
+        Compressed.SetNumUninitialized((int32)Bound);
+
+        Strm.next_in = (Bytef*)Data;
+        Strm.avail_in = (uInt)Size;
+        Strm.next_out = (Bytef*)Compressed.GetData();
+        Strm.avail_out = (uInt)Compressed.Num();
+
+        // gzip wrapper: windowBits = MAX_WBITS + 16
+        int Res = deflateInit2(&Strm, Level, Z_DEFLATED, MAX_WBITS + 16, 8, Z_DEFAULT_STRATEGY);
+        if (Res != Z_OK)
+        {
+            return false;
+        }
+
+        Res = deflate(&Strm, Z_FINISH);
+        deflateEnd(&Strm);
+        if (Res != Z_STREAM_END)
+        {
+            return false;
+        }
+
+        const int32 CompressedLen = (int32)Strm.total_out;
+        Compressed.SetNum(CompressedLen);
+
+        // Only use compression if it actually helps after wrapper overhead
+        const int32 WrappedSize = 8 + Compressed.Num();
+        if (WrappedSize >= Size)
+        {
+            return false;
+        }
+
+        OutWrapped.Reset();
+        OutWrapped.Append(IncppectGzipMagic, 4);
+        OutWrapped.Append((const uint8*)&Size, sizeof(uint32));
+        OutWrapped.Append(Compressed);
+        return true;
     }
 }
 
@@ -37,6 +167,8 @@ struct FIncppect::FImpl
         int64 ConnectedMs = -1;
 
         FIpAddress IpAddress;
+
+        bool bSupportsAppCompression = false; // set by client hello (type=5)
 
         TArray<int32> LastRequests;
         TMap<int32, FRequest> Requests;
@@ -117,11 +249,25 @@ struct FIncppect::FImpl
             Socket->SetReceiveCallBack(FWebSocketPacketReceivedCallBack::CreateLambda([this, ClientId](void* RawData, int32 Size)
             {
                 const uint8* Data = static_cast<const uint8*>(RawData);
+                TArray<uint8> Uncompressed;
 
                 RxTotalBytes += Size;
                 if (Size < sizeof(int32))
                 {
                     return;
+                }
+
+                // Optional application-level compression wrapper: "ICZ1" + uint32 original_size + gzip(payload)
+                if (IncppectTryUnwrapGzip(Data, Size, Uncompressed))
+                {
+                    Data = Uncompressed.GetData();
+                    Size = Uncompressed.Num();
+                    RawData = (void*)Data;
+
+                    if (Size < sizeof(int32))
+                    {
+                        return;
+                    }
                 }
 
                 int32 Type = -1;
@@ -227,6 +373,13 @@ struct FIncppect::FImpl
                             }
                         }
                         break;
+                        case 5:
+                            {
+                                // Client hello: enables app-level compression for server->client payloads.
+                                DoUpdate = false;
+                                ClientData.bSupportsAppCompression = true;
+                            }
+                            break;
                     default:
                         UE_LOG(LogIncppect, Warning, TEXT("unknown message type: %d"), Type);
                 };
@@ -421,6 +574,9 @@ struct FIncppect::FImpl
             if (CurBuffer.Num() > 4)
             {
                 DECLARE_SCOPE_CYCLE_COUNTER(TEXT("Incppect_Diff"), STAT_Incppect_Diff, STATGROUP_Incppect);
+                const bool bAllowCompression =
+                    Parameters.bEnableAppCompression &&
+                    ClientData.bSupportsAppCompression;
 
                 if (CurBuffer.Num() == PrevBuffer.Num() && CurBuffer.Num() > 256)
                 {
@@ -457,20 +613,44 @@ struct FIncppect::FImpl
                     DiffBuffer.Append(reinterpret_cast<uint8*>(&n), sizeof(n));
                     DiffBuffer.Append(reinterpret_cast<uint8*>(&c), sizeof(c));
 
-                    if (SocketDataMap[ClientId].Socket->Send(DiffBuffer.GetData(), DiffBuffer.Num(), false) == false)
+                    const uint8* SendData = DiffBuffer.GetData();
+                    int32 SendSize = DiffBuffer.Num();
+                    TArray<uint8> Wrapped;
+                    if (bAllowCompression)
+                    {
+                        if (IncppectTryWrapGzip(SendData, SendSize, Parameters.AppCompressionMinBytes, Parameters.AppCompressionLevel, Wrapped))
+                        {
+                            SendData = Wrapped.GetData();
+                            SendSize = Wrapped.Num();
+                        }
+                    }
+
+                    if (SocketDataMap[ClientId].Socket->Send(SendData, SendSize, false) == false)
                     {
                         UE_LOG(LogIncppect, Warning, TEXT("backpressure for client %d increased"), ClientId);
                     }
+                    TxTotalBytes += SendSize;
                 }
                 else
                 {
-                    if (SocketDataMap[ClientId].Socket->Send(CurBuffer.GetData(), CurBuffer.Num(), false) == false)
+                    const uint8* SendData = CurBuffer.GetData();
+                    int32 SendSize = CurBuffer.Num();
+                    TArray<uint8> Wrapped;
+                    if (bAllowCompression)
+                    {
+                        if (IncppectTryWrapGzip(SendData, SendSize, Parameters.AppCompressionMinBytes, Parameters.AppCompressionLevel, Wrapped))
+                        {
+                            SendData = Wrapped.GetData();
+                            SendSize = Wrapped.Num();
+                        }
+                    }
+
+                    if (SocketDataMap[ClientId].Socket->Send(SendData, SendSize, false) == false)
                     {
                         UE_LOG(LogIncppect, Warning, TEXT("backpressure for client %d increased"), ClientId);
                     }
+                    TxTotalBytes += SendSize;
                 }
-
-                TxTotalBytes += CurBuffer.Num();
 
                 PrevBuffer = MoveTemp(CurBuffer);
             }

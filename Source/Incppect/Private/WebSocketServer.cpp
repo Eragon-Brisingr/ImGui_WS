@@ -661,7 +661,6 @@ bool FWebSocketServer::Init(uint32 Port, FWebSocketClientConnectedCallBack CallB
 	struct lws_context_creation_info Info;
 	memset(&Info, 0, sizeof(lws_context_creation_info));
 	// look up libwebsockets.h for details.
-	Info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 	Info.port = Port;
 
 	Info.iface = NULL;

@@ -76,7 +76,7 @@ void ImGuiWS::AddServerEvent(int32 ClientId, int32 EventId, TArray<uint8>&& Payl
     });
 }
 
-bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk)
+bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk, bool bEnableAppCompression)
 {
     // start the http/websocket server
     FIncppect::FParameters Parameters;
@@ -100,6 +100,7 @@ bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDis
 		return false;
 	}
 	Parameters.ListenPort = Socket->GetPortNo();
+    Parameters.bEnableAppCompression = bEnableAppCompression;
 	Socket->Close();
 	SocketSubsystem->DestroySocket(Socket);
 
@@ -331,12 +332,12 @@ bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDis
     return true;
 }
 
-bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk, THandler&& HandlerConnect, THandler&& HandlerDisconnect)
+bool ImGuiWS::Init(int32 PortListen, int32 PortTestNum, const FString& PathOnDisk, bool bEnableAppCompression, THandler&& HandlerConnect, THandler&& HandlerDisconnect)
 {
     Impl->HandlerConnect = MoveTemp(HandlerConnect);
     Impl->HandlerDisconnect = MoveTemp(HandlerDisconnect);
 
-    return Init(PortListen, PortTestNum, PathOnDisk);
+    return Init(PortListen, PortTestNum, PathOnDisk, bEnableAppCompression);
 }
 
 uint32 ImGuiWS::GetPort() const

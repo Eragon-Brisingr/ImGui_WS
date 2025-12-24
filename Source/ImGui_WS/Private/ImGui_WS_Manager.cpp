@@ -293,7 +293,7 @@ public:
 				FFileHelper::SaveArrayToFile(Bin, *FilePath);
 			}
 		}
-		ImGuiWS.Init(Manager.GetConfigPort(), Manager.GetPortTestNum(), HtmlPath);
+		ImGuiWS.Init(Manager.GetConfigPort(), Manager.GetPortTestNum(), HtmlPath, GetDefault<UImGuiSettings>()->bEnableWebCompression);
 		if (FPlatformProcess::SupportsMultithreading())
 		{
 			WS_Thread = FThread{ TEXT("ImGui_WS"), [this, Interval = GetDefault<UImGuiSettings>()->ServerTickInterval]

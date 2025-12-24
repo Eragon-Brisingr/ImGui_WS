@@ -35,6 +35,12 @@ public:
 
         FString HttpRoot = ".";
         FString PathOnDisk;
+
+        // Application-level compression for Incppect protocol payloads.
+        // Useful when libwebsockets is built with LWS_WITHOUT_EXTENSIONS (no permessage-deflate).
+        bool bEnableAppCompression = false;
+        int32 AppCompressionMinBytes = 512; // don't compress tiny payloads
+        int32 AppCompressionLevel = 1;      // zlib level [0..9], 1 is fast
     };
 
     FIncppect();

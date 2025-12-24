@@ -36,6 +36,16 @@
         background-color: transparent;
         color: transparent;
     }
+
+    /* Fixed client-info layout + hover tooltip (avoid per-frame innerHTML rebuild breaking hover/title) */
+    .incppect-chip {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.06);
+        cursor: default;
+        user-select: none;
+    }
 </style>
 
 <html>
@@ -51,23 +61,156 @@
 
 <div class="menu-button">
     Menu
-    <div class="menu-content">
-        <button id="take_control_btn">take control</button>
-        <br>
-        Update freq: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms"
-                            onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;">
-        <output id="update_freq_ms_out">16</output>[ms]<br>
-        <div id="client-info"></div>
+    <div class="menu-content" style="margin-top:6px; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;">
+        <div style="margin:6px 0;">
+            <button id="take_control_btn">take control</button> <br>
+            <span class="incppect-chip">
+                <strong>Update freq</strong>: <input type="range" min="16" max="200" value="16" class="slider" id="update_freq_ms" onChange="incppect.k_requests_update_freq_ms = this.value; update_freq_ms_out.value = this.value;"> <output id="update_freq_ms_out">16</output>[ms]
+            </span>
+        </div>
+        <div style="margin:6px 0;">
+            <span id="incppect_ctx_line" class="incppect-chip">
+                <strong>Client Id</strong>: <span id="incppect_my_id"></span>
+            </span>
+        </div>
+
+        <div style="margin:6px 0;">
+            <span id="incppect_server_line" class="incppect-chip">
+                <strong>Server tx rate</strong>: <span id="incppect_server_tx_rate"></span>
+            </span>
+        </div>
+
+        <div style="margin:6px 0;">
+            <span id="incppect_client_line" class="incppect-chip">
+                <strong>Client rx rate</strong>: <span id="incppect_client_rx_rate"></span>
+            </span>
+        </div>
+
+        <div style="margin:6px 0;">
+            <span id="incppect_compress_line" class="incppect-chip">
+                <strong>Compression rx saved</strong>: <span id="incppect_compress_rx_saved"></span>
+            </span>
+        </div>
+
+        <div id="incppect_error_row" style="display:none; margin:6px 0; padding:6px 8px; border-radius:10px; background:rgba(220, 53, 69, 0.12); color:#b02a37;">
+            <strong>Error</strong>: <span id="incppect_error_msg" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></span>
+        </div>
     </div>
 </div>
 
 <script>
     var pre_control_id = -1;
+    function format_Bps(Bps) {
+        if (!isFinite(Bps) || Bps < 0) Bps = 0;
+        const KB = 1024.0;
+        const MB = 1024.0 * 1024.0;
+        if (Bps >= MB) return (Bps / MB).toFixed(2) + ' MB/s';
+        if (Bps >= KB) return (Bps / KB).toFixed(1) + ' KB/s';
+        return Bps.toFixed(0) + ' B/s';
+    }
+
+     function format_Bytes(bytes) {
+         if (!isFinite(bytes) || bytes < 0) bytes = 0;
+         const KB = 1024.0;
+         const MB = 1024.0 * 1024.0;
+         const GB = 1024.0 * 1024.0 * 1024.0;
+         if (bytes >= GB) return (bytes / GB).toFixed(4) + ' GB';
+         if (bytes >= MB) return (bytes / MB).toFixed(2) + ' MB';
+         if (bytes >= KB) return (bytes / KB).toFixed(1) + ' KB';
+         return bytes.toFixed(0) + ' B';
+     }
+
     function init() {
-        let output = document.getElementById('client-info');
         let canvas_main = document.getElementById('canvas_main');
         let virtual_input = document.getElementById('virtual_input');
         let take_control_btn = document.getElementById('take_control_btn');
+
+        const el_my_id = document.getElementById('incppect_my_id');
+        const el_server_tx_rate = document.getElementById('incppect_server_tx_rate');
+        const el_client_rx_rate = document.getElementById('incppect_client_rx_rate');
+        const el_compress_rx_saved = document.getElementById('incppect_compress_rx_saved');
+        const el_error_row = document.getElementById('incppect_error_row');
+        const el_error_msg = document.getElementById('incppect_error_msg');
+
+        // One global tooltip (position: fixed) so it won't be clipped by .menu-content overflow
+        const adv_tip = document.createElement('div');
+        adv_tip.id = 'incppect_adv_tip';
+        adv_tip.style.position = 'fixed';
+        adv_tip.style.left = '0px';
+        adv_tip.style.top = '0px';
+        adv_tip.style.zIndex = '99999';
+        adv_tip.style.padding = '8px 10px';
+        adv_tip.style.borderRadius = '10px';
+        adv_tip.style.background = 'rgba(20, 20, 20, 0.95)';
+        adv_tip.style.color = '#fff';
+        adv_tip.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+        adv_tip.style.fontSize = '12px';
+        adv_tip.style.lineHeight = '1.35';
+        adv_tip.style.whiteSpace = 'pre';
+        adv_tip.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
+        adv_tip.style.display = 'none';
+        // Don't steal hover from the menu (menu visibility is controlled by .menu-button:hover)
+        adv_tip.style.pointerEvents = 'none';
+        document.body.appendChild(adv_tip);
+
+        let adv_server = '';
+        let adv_client = '';
+        let adv_compress = '';
+        let adv_ctx = '';
+        let adv_active = null; // 'ctx' | 'server' | 'client' | 'compress' | null
+
+        function adv_text() {
+            if (adv_active === 'ctx') return adv_ctx;
+            if (adv_active === 'server') return adv_server;
+            if (adv_active === 'client') return adv_client;
+            if (adv_active === 'compress') return adv_compress;
+            return '';
+        }
+
+        function adv_show(e, which) {
+            adv_active = which;
+            adv_tip.textContent = adv_text();
+            adv_tip.style.display = 'block';
+            adv_move(e);
+        }
+
+        function adv_hide() {
+            adv_active = null;
+            adv_tip.style.display = 'none';
+        }
+
+        function adv_move(e) {
+            if (!adv_active) return;
+            const pad = 12;
+            let x = e.clientX + pad;
+            let y = e.clientY + pad;
+            // keep within viewport
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const rect = adv_tip.getBoundingClientRect();
+            if (x + rect.width + 8 > vw) x = Math.max(8, vw - rect.width - 8);
+            if (y + rect.height + 8 > vh) y = Math.max(8, vh - rect.height - 8);
+            adv_tip.style.left = x + 'px';
+            adv_tip.style.top = y + 'px';
+        }
+
+        const el_server_line = document.getElementById('incppect_server_line');
+        const el_client_line = document.getElementById('incppect_client_line');
+        const el_compress_line = document.getElementById('incppect_compress_line');
+        const el_ctx_line = document.getElementById('incppect_ctx_line');
+
+        el_ctx_line.addEventListener('mouseenter', (e) => adv_show(e, 'ctx'));
+        el_server_line.addEventListener('mouseenter', (e) => adv_show(e, 'server'));
+        el_client_line.addEventListener('mouseenter', (e) => adv_show(e, 'client'));
+        el_compress_line.addEventListener('mouseenter', (e) => adv_show(e, 'compress'));
+        el_ctx_line.addEventListener('mouseleave', adv_hide);
+        el_server_line.addEventListener('mouseleave', adv_hide);
+        el_client_line.addEventListener('mouseleave', adv_hide);
+        el_compress_line.addEventListener('mouseleave', adv_hide);
+        el_ctx_line.addEventListener('mousemove', adv_move);
+        el_server_line.addEventListener('mousemove', adv_move);
+        el_client_line.addEventListener('mousemove', adv_move);
+        el_compress_line.addEventListener('mousemove', adv_move);
 
         // sync control viewport size
         let resizeCanvas = () => {
@@ -131,18 +274,61 @@
                 alert(`lost control!\n\ncurrent control id = ${control_id}\ncurrent control ip = ${intToIp(control_ip)}`);
             }
 
-            output.innerHTML = '<br>';
-            output.innerHTML += `Your client Id: ${my_id}<br>`;
-            output.innerHTML += `Current control Id: ${control_id} | Ip: ${intToIp(control_ip)}<br>`
-            output.innerHTML += 'nclients = ' + nclients + '<br>';
-            output.innerHTML += '<br>';
-            output.innerHTML += 'Server stats:<br>';
-            output.innerHTML += 'tx total = ' + (tx_total / 1024.0 / 1024.0).toFixed(2) + ' MB<br>';
-            output.innerHTML += 'rx total = ' + (rx_total / 1024.0 / 1024.0).toFixed(2) + ' MB<br>';
-            output.innerHTML += '<br>';
-            output.innerHTML += 'Client stats:<br>';
-            output.innerHTML += 'tx client = ' + (this.stats.tx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.tx_n) + ' msgs<br>';
-            output.innerHTML += 'rx client = ' + (this.stats.rx_bytes / 1024.0 / 1024.0).toFixed(2) + ' MB / ' + (this.stats.rx_n) + ' msgs<br>';
+            // Update fixed DOM values
+            el_my_id.textContent = String(my_id);
+
+            // Update rate samples (server totals come from UE vars; client totals from incppect.stats)
+            this.update_rates(tx_total, rx_total);
+
+            const server_tx_total_str = format_Bytes(tx_total);
+            const server_rx_total_str = format_Bytes(rx_total);
+            const client_tx_total_str = format_Bytes(this.stats.tx_bytes);
+            const client_rx_total_str = format_Bytes(this.stats.rx_bytes);
+            const tx_saved_str = format_Bytes(this.app_compression_tx_saved_bytes);
+            const rx_saved_str = format_Bytes(this.app_compression_rx_saved_bytes);
+
+            // Update displayed summary lines
+            el_server_tx_rate.textContent = format_Bps(this.rate_server_tx_Bps);
+            el_client_rx_rate.textContent = format_Bps(this.rate_client_rx_Bps);
+            el_compress_rx_saved.textContent = rx_saved_str;
+
+            // Update tooltip text (used by fixed-position tooltip)
+            adv_ctx =
+                `Current control Id: ${control_id}\n` +
+                `Current control Ip: ${intToIp(control_ip)}\n` +
+                `nclients: ${nclients}`;
+
+            adv_server =
+                `tx total: ${server_tx_total_str}\n` +
+                `tx rate:  ${format_Bps(this.rate_server_tx_Bps)}\n` +
+                `rx total: ${server_rx_total_str}\n` +
+                `rx rate:  ${format_Bps(this.rate_server_rx_Bps)}`;
+
+            adv_client =
+                `tx: ${client_tx_total_str} / ${this.stats.tx_n} msgs\n` +
+                `tx rate: ${format_Bps(this.rate_client_tx_Bps)}\n` +
+                `rx: ${client_rx_total_str} / ${this.stats.rx_n} msgs\n` +
+                `rx rate: ${format_Bps(this.rate_client_rx_Bps)}`;
+
+            adv_compress =
+                `Streams: ${this.has_streams() ? 'YES' : 'NO'}\n` +
+                `hello sent: ${this.app_compression_active ? 'YES' : 'NO'}\n` +
+                `tx compressed: ${this.app_compression_tx_used ? 'YES' : 'NO'}\n` +
+                `rx compressed: ${this.app_compression_rx_seen ? 'YES' : 'NO'}\n` +
+                `tx saved: ${tx_saved_str}\n` +
+                `rx saved: ${rx_saved_str}\n` +
+                (() => {
+                    const orig = (this.app_compression_tx_orig_bytes || 0) + (this.app_compression_rx_orig_bytes || 0);
+                    const comp = (this.app_compression_tx_comp_bytes || 0) + (this.app_compression_rx_comp_bytes || 0);
+                    if (orig <= 0 || comp <= 0) return `ratio: n/a\n`;
+                    const ratio = comp / orig; // compressed/original
+                    const savedPct = (1.0 - ratio) * 100.0;
+                    return `ratio: ${ratio.toFixed(4)} (saved ${savedPct.toFixed(1)}%)`;
+                })();
+
+            if (adv_active) {
+                adv_tip.textContent = adv_text();
+            }
 
             if (my_id === control_id) {
                 let mouse_cursor = this.get_int32('imgui.mouse_cursor', -1) || 0;
@@ -201,12 +387,18 @@
         }
 
         incppect.onerror = function (evt) {
+            let msg = '';
             if (typeof evt === 'object') {
-                output.innerHTML = 'Error: check console for more information';
+                msg = (evt && evt.message) ? String(evt.message) : 'check console for more information';
                 console.error(evt);
             } else {
-                output.innerHTML = evt;
+                msg = String(evt);
             }
+
+            // Keep showing the fixed panel; only update an extra error row (show last error)
+            incppect.last_error_msg = msg;
+            el_error_msg.textContent = msg;
+            el_error_row.style.display = 'block';
         }
 
         incppect.k_requests_update_freq_ms = document.getElementById('update_freq_ms').value;
