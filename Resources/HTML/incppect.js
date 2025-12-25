@@ -472,14 +472,21 @@
         this.rate_server_rx_Bps = 0;
     },
 
-    onmessage: async function(evt) {
-        this.stats.rx_n += 1;
-        this.stats.rx_bytes += evt.data.byteLength;
+    onmessage: function(evt) {
+        // Receive queue to preserve in-order processing even when decompression is async.
+        if (!this._recv_p) this._recv_p = Promise.resolve();
 
-        let data_ab = evt.data;
-        // server->client frames may be wrapped with app-layer compression; unwrap before parsing
-        if (this.has_streams()) {
-            try {
+        // Snapshot payload now (avoid relying on evt after async boundary)
+        const msg_ab = evt.data;
+        const msg_len = msg_ab ? msg_ab.byteLength : 0;
+
+        this._recv_p = this._recv_p.then(async () => {
+            this.stats.rx_n += 1;
+            this.stats.rx_bytes += msg_len;
+
+            let data_ab = msg_ab;
+            // server->client frames may be wrapped with app-layer compression; unwrap before parsing
+            if (this.has_streams()) {
                 const u8 = new Uint8Array(data_ab);
                 if (this.is_compressed_payload(u8)) {
                     this.app_compression_rx_seen = true;
@@ -491,75 +498,74 @@
                     this.app_compression_rx_comp_bytes += (u8.byteLength >>> 0);
                     data_ab = await this.decompress_payload(u8);
                 }
-            } catch (e) {
-                console.error("[incppect] failed to decompress payload", e);
-                return;
             }
-        }
 
-        const type_all = (new Uint32Array(data_ab))[0];
+            const type_all = (new Uint32Array(data_ab))[0];
 
-        if (this.last_data != null && type_all === 1) {
-            const ntotal = data_ab.byteLength / 4 - 1;
+            if (this.last_data != null && type_all === 1) {
+                const ntotal = data_ab.byteLength / 4 - 1;
 
-            const src_view = new Uint32Array(data_ab, 4);
-            const dst_view = new Uint32Array(this.last_data, 4);
-
-            let k = 0;
-            for (let i = 0; i < ntotal/2; ++i) {
-                const n = src_view[2*i + 0];
-                const c = src_view[2*i + 1];
-                for (let j = 0; j < n; ++j) {
-                    dst_view[k] = dst_view[k] ^ c;
-                    ++k;
-                }
-            }
-        } else {
-            this.last_data = data_ab;
-        }
-
-        const int_view = new Uint32Array(this.last_data);
-        let offset = 1;
-        let offset_new = 0;
-        const total_size = this.last_data.byteLength;
-        let id = 0;
-        let type = 0;
-        let len = 0;
-        while (4*offset < total_size) {
-            type = int_view[offset];
-            id = int_view[offset + 1];
-            len = int_view[offset + 2];
-            if ((len / 4) % 1 !== 0)
-            {
-                break;
-            }
-            offset += 3;
-            offset_new = offset + len/4;
-            if (type === 0) {
-                this.vars_map[this.id_to_var[id]] = this.last_data.slice(4*offset, 4*offset_new);
-            }
-            else if (type === 1) {
-                const src_view = new Uint32Array(this.last_data, 4 * offset);
-                const dst_view = new Uint32Array(this.vars_map[this.id_to_var[id]]);
+                const src_view = new Uint32Array(data_ab, 4);
+                const dst_view = new Uint32Array(this.last_data, 4);
 
                 let k = 0;
-                for (let i = 0; i < len/8; ++i) {
-                    const n = src_view[2 * i];
-                    const c = src_view[2 * i + 1];
+                for (let i = 0; i < ntotal/2; ++i) {
+                    const n = src_view[2*i + 0];
+                    const c = src_view[2*i + 1];
                     for (let j = 0; j < n; ++j) {
                         dst_view[k] = dst_view[k] ^ c;
                         ++k;
                     }
                 }
+            } else {
+                this.last_data = data_ab;
             }
-            else if (type === 2) {
-                this.event_handle(id, this.last_data.slice(4*offset, 4*offset_new));
+
+            const int_view = new Uint32Array(this.last_data);
+            let offset = 1;
+            let offset_new = 0;
+            const total_size = this.last_data.byteLength;
+            let id = 0;
+            let type = 0;
+            let len = 0;
+            while (4*offset < total_size) {
+                type = int_view[offset];
+                id = int_view[offset + 1];
+                len = int_view[offset + 2];
+                if ((len / 4) % 1 !== 0)
+                {
+                    break;
+                }
+                offset += 3;
+                offset_new = offset + len/4;
+                if (type === 0) {
+                    this.vars_map[this.id_to_var[id]] = this.last_data.slice(4*offset, 4*offset_new);
+                }
+                else if (type === 1) {
+                    const src_view = new Uint32Array(this.last_data, 4 * offset);
+                    const dst_view = new Uint32Array(this.vars_map[this.id_to_var[id]]);
+
+                    let k = 0;
+                    for (let i = 0; i < len/8; ++i) {
+                        const n = src_view[2 * i];
+                        const c = src_view[2 * i + 1];
+                        for (let j = 0; j < n; ++j) {
+                            dst_view[k] = dst_view[k] ^ c;
+                            ++k;
+                        }
+                    }
+                }
+                else if (type === 2) {
+                    this.event_handle(id, this.last_data.slice(4*offset, 4*offset_new));
+                }
+                else {
+                    console.assert(false);
+                }
+                offset = offset_new;
             }
-            else {
-                console.assert(false);
-            }
-            offset = offset_new;
-        }
+        }).catch((e) => {
+            console.error("[incppect] onmessage failed", e);
+        });
     },
 
     onerror: function(evt) {
