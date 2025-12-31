@@ -27,9 +27,12 @@
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
+#include "Layout/Clipping.h"
+#include "Rendering/DrawElements.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
+#include "Widgets/SPanel.h"
 #include "Widgets/Text/STextBlock.h"
 
 #define LOCTEXT_NAMESPACE "ImGui_WS"
@@ -94,9 +97,22 @@ const auto& GetTextBlockStyles()
 	return Styles;
 }
 
-class SDragResizeContainer : public SCompoundWidget
+class SDragResizeContainer : public SPanel
 {
 public:
+	struct FSlot : public TSlotBase<FSlot>
+	{
+		FVector2f RelativePosition{ 0.f, 0.f };
+		FVector2f RelativeSize{ 0.5f, 0.5f };
+		bool bAutoSize = false;
+		int32 ZOrder = 0;
+	};
+
+	SDragResizeContainer()
+		: Children(this)
+	{
+	}
+
 	class SDragResizeBox : public SCompoundWidget
 	{
 		using Super = SCompoundWidget;
@@ -157,11 +173,7 @@ public:
 				{
 					if (Owner->OnDragged.IsBound())
 					{
-						const TSharedPtr<SConstraintCanvas>& OwnerCanvas = Owner->Owner->Canvas;
-						const FGeometry& CanvasGeometry = OwnerCanvas->GetTickSpaceGeometry();
-						const FVector2f CanvasSize = CanvasGeometry.GetLocalSize();
-						const FVector2f Position = CanvasGeometry.AbsoluteToLocal(MyGeometry.GetAbsolutePosition());
-						Owner->OnDragged.Execute(Position / CanvasSize);
+						Owner->OnDragged.Execute(Owner->Slot ? Owner->Slot->RelativePosition : FVector2f::ZeroVector);
 					}
 					bIsDragging = false;
 				}
@@ -176,14 +188,23 @@ public:
 				if (bBeingDragged)
 				{
 					bIsDragging = true;
-					const TSharedPtr<SConstraintCanvas>& OwnerCanvas = Owner->Owner->Canvas;
-					const FGeometry& CanvasGeometry = OwnerCanvas->GetTickSpaceGeometry();
-					const FVector2f PanelSize = Owner->GetTickSpaceGeometry().GetLocalSize();
-					FVector2f Position = CanvasGeometry.AbsoluteToLocal(MouseEvent.GetScreenSpacePosition()) - DragOffset;
-					Position.X = FMath::Clamp(Position.X, 0.f, CanvasGeometry.GetLocalSize().X - PanelSize.X);
-					Position.Y = FMath::Clamp(Position.Y, 0.f, CanvasGeometry.GetLocalSize().Y - PanelSize.Y);
-					const FVector2f Offset = CanvasGeometry.Position + CanvasGeometry.GetLocalSize() - (Position + PanelSize);
-					Owner->Slot->SetOffset(FMargin{ Position.X, Position.Y, Offset.X, Offset.Y });
+					if (Owner->Owner == nullptr || Owner->Slot == nullptr || Owner->bIsMaximize)
+					{
+						return FReply::Handled();
+					}
+
+					const FVector2f CanvasSize = Owner->Owner->GetCachedGeometry().GetLocalSize();
+					const FVector2f PanelSize = Owner->GetCachedGeometry().GetLocalSize();
+					if (CanvasSize.X <= 1.f || CanvasSize.Y <= 1.f)
+					{
+						return FReply::Handled();
+					}
+
+					FVector2f Position = Owner->Owner->GetCachedGeometry().AbsoluteToLocal(MouseEvent.GetScreenSpacePosition()) - DragOffset;
+					Position.X = FMath::Clamp(Position.X, 0.f, CanvasSize.X - PanelSize.X);
+					Position.Y = FMath::Clamp(Position.Y, 0.f, CanvasSize.Y - PanelSize.Y);
+					Owner->Slot->RelativePosition = Position / CanvasSize;
+					Owner->Owner->Invalidate(EInvalidateWidgetReason::Layout);
 				}
 				return FReply::Handled();
 			}
@@ -230,11 +251,7 @@ public:
 				bBeingResized = false;
 				if (bIsResizing && Owner->OnResized.IsBound())
 				{
-					const TSharedPtr<SConstraintCanvas>& OwnerCanvas = Owner->Owner->Canvas;
-					const FGeometry& CanvasGeometry = OwnerCanvas->GetTickSpaceGeometry();
-					const FVector2f CanvasSize = CanvasGeometry.GetLocalSize();
-					const FVector2f Size = CanvasGeometry.GetAccumulatedRenderTransform().Inverse().TransformVector(Owner->GetTickSpaceGeometry().GetAbsoluteSize());
-					Owner->OnResized.Execute(Size / CanvasSize);
+					Owner->OnResized.Execute(Owner->Slot ? Owner->Slot->RelativeSize : FVector2f::ZeroVector);
 				}
 				bIsResizing = false;
 				return FReply::Handled().ReleaseMouseCapture();
@@ -244,15 +261,26 @@ public:
 				if (bBeingResized)
 				{
 					bIsResizing = true;
-					const TSharedPtr<SConstraintCanvas>& OwnerCanvas = Owner->Owner->Canvas;
-					const FGeometry& CanvasGeometry = OwnerCanvas->GetTickSpaceGeometry();
-					const FVector2f Position = Owner->GetTickSpaceGeometry().Position;
-					const FVector2f MaxSize = CanvasGeometry.GetLocalSize() - Position;
-					FVector2f PanelSize = (CanvasGeometry.AbsoluteToLocal(MouseEvent.GetScreenSpacePosition()) - ResizedOffset) - Position;
+					if (Owner->Owner == nullptr || Owner->Slot == nullptr || Owner->bIsMaximize)
+					{
+						return FReply::Handled();
+					}
+
+					const FVector2f CanvasSize = Owner->Owner->GetCachedGeometry().GetLocalSize();
+					if (CanvasSize.X <= 1.f || CanvasSize.Y <= 1.f)
+					{
+						return FReply::Handled();
+					}
+
+					const FVector2f Position = CanvasSize * Owner->Slot->RelativePosition;
+					const FVector2f MaxSize = CanvasSize - Position;
+
+					FVector2f PanelSize = (Owner->Owner->GetCachedGeometry().AbsoluteToLocal(MouseEvent.GetScreenSpacePosition()) - ResizedOffset) - Position;
 					PanelSize.X = FMath::Clamp(PanelSize.X, 200.f, MaxSize.X);
 					PanelSize.Y = FMath::Clamp(PanelSize.Y, 100.f, MaxSize.Y);
-					const FVector2f Offset = CanvasGeometry.Position + CanvasGeometry.GetLocalSize() - (Position + PanelSize);
-					Owner->Slot->SetOffset(FMargin{ Position.X, Position.Y, Offset.X, Offset.Y });
+
+					Owner->Slot->RelativeSize = PanelSize / CanvasSize;
+					Owner->Owner->Invalidate(EInvalidateWidgetReason::Layout);
 				}
 				return FReply::Handled();
 			}
@@ -326,29 +354,16 @@ public:
 				]
 			];
 		}
-		void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override
-		{
-			Super::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
-
-			if (RequirePositionScale)
-			{
-				const FVector4f& V = *RequirePositionScale;
-				SetPositionAndSize(FVector2f{ V.X, V.Y }, FVector2f{ V.Z, V.W });
-
-				RequirePositionScale.Reset();
-			}
-		}
 		void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath, const FFocusEvent& InFocusEvent) override
 		{
 			Super::OnFocusChanging(PreviousFocusPath, NewWidgetPath, InFocusEvent);
 
 			if (NewWidgetPath.ContainsWidget(this))
 			{
-				Slot->SetZOrder(1);
-			}
-			else
-			{
-				Slot->SetZOrder(0);
+				if (Owner)
+				{
+					Owner->BringToFront(SharedThis(this));
+				}
 			}
 		}
 		void SetMaximize(bool bMaximize)
@@ -358,46 +373,41 @@ public:
 				return;
 			}
 			bIsMaximize = bMaximize;
+			if (Owner == nullptr || Slot == nullptr)
+			{
+				return;
+			}
 			if (bIsMaximize)
 			{
-				if (RequirePositionScale)
-				{
-					MaximizeBeforePositionSize = *RequirePositionScale;
-					RequirePositionScale.Reset();
-				}
-				else
-				{
-					auto Offset = Slot->GetOffset();
-					const FGeometry& CanvasGeometry = Owner->Canvas->GetTickSpaceGeometry();
-					const FVector2f CanvasSize = CanvasGeometry.GetLocalSize();
-					const FVector2f Min = FVector2f{ Offset.Left, Offset.Top } / CanvasSize;
-					const FVector2f Size = (FVector2f::One() - FVector2f{ Offset.Right, Offset.Bottom } / CanvasSize) - Min;
-					MaximizeBeforePositionSize = FVector4f{ Min.X, Min.Y, Size.X, Size.Y };
-				}
-				Slot->SetOffset(FMargin{ 0.f });
+				MaximizeBeforePositionSize = FVector4f{ Slot->RelativePosition.X, Slot->RelativePosition.Y, Slot->RelativeSize.X, Slot->RelativeSize.Y };
+				Slot->RelativePosition = FVector2f::ZeroVector;
+				Slot->RelativeSize = FVector2f::One();
+				Slot->bAutoSize = false;
 			}
 			else
 			{
-				SetPositionAndSize(FVector2f{ MaximizeBeforePositionSize.X, MaximizeBeforePositionSize.Y }, FVector2f{ MaximizeBeforePositionSize.Z, MaximizeBeforePositionSize.W });
+				Slot->RelativePosition = FVector2f{ MaximizeBeforePositionSize.X, MaximizeBeforePositionSize.Y };
+				Slot->RelativeSize = FVector2f{ MaximizeBeforePositionSize.Z, MaximizeBeforePositionSize.W };
 			}
+			Owner->Invalidate(EInvalidateWidgetReason::Layout);
 			OnMaximizeChanged.ExecuteIfBound(bIsMaximize);
 		}
 		void SetPositionAndSize(const FVector2f& RelativePosition, const FVector2f& RelativeSize)
 		{
-			const FGeometry& CanvasGeometry = Owner->Canvas->GetTickSpaceGeometry();
-			const FVector2f CanvasSize = CanvasGeometry.GetLocalSize();
-			const FVector2f Position = CanvasSize * RelativePosition;
-			const FVector2f Size = CanvasSize * RelativeSize;
-			const FVector2f Offset = CanvasSize - (Position + Size);
-			Slot->SetOffset(FMargin{ Position.X, Position.Y, Offset.X, Offset.Y });
+			if (Owner == nullptr || Slot == nullptr)
+			{
+				return;
+			}
+			Slot->RelativePosition = RelativePosition;
+			Slot->RelativeSize = RelativeSize;
+			Owner->Invalidate(EInvalidateWidgetReason::Layout);
 		}
 		virtual FReply OnDragAreaMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) { return FReply::Handled(); }
 
 		SDragResizeContainer* Owner = nullptr;
-		SConstraintCanvas::FSlot* Slot = nullptr;
+		FSlot* Slot = nullptr;
 		bool bIsMaximize = false;
 		FVector4f MaximizeBeforePositionSize;
-		TOptional<FVector4f> RequirePositionScale;
 		FOnDragged OnDragged;
 		FOnResized OnResized;
 		FOnMaximizeChanged OnMaximizeChanged;
@@ -410,38 +420,130 @@ public:
 	void Construct(const FArguments& Args)
 	{
 		SetVisibility(EVisibility::SelfHitTestInvisible);
-		ChildSlot
-		[
-			SAssignNew(Canvas, SConstraintCanvas)
-		];
 	}
 
 	void AddChild(const TSharedRef<SDragResizeBox>& DragResizeBox, const FVector2f& RelativePosition, const FVector2f& RelativeSize, bool bMaximize)
 	{
-		SConstraintCanvas::FSlot* Slot;
-		Canvas->AddSlot()
-		.Expose(Slot)
-		.Anchors(FAnchors{ 0.f, 0.f, 1.f, 1.f })
-		.Alignment(FVector2D::ZeroVector)
-		.Offset(FMargin{ 0.f, 0.f, 100000.f, 100000.f })
-		[
-			DragResizeBox
-		];
+		TUniquePtr<FSlot> NewSlot = MakeUnique<FSlot>();
+		NewSlot->AttachWidget(DragResizeBox);
+		NewSlot->RelativePosition = RelativePosition;
+		NewSlot->RelativeSize = RelativeSize;
+		NewSlot->ZOrder = ++ZOrderCounter;
+
 		DragResizeBox->Owner = this;
-		DragResizeBox->Slot = Slot;
-		DragResizeBox->RequirePositionScale = FVector4f{ RelativePosition.X, RelativePosition.Y, RelativeSize.X, RelativeSize.Y };
+		DragResizeBox->Slot = NewSlot.Get();
+
+		Children.AddSlot(FSlot::FSlotArguments(MoveTemp(NewSlot)));
+
 		if (bMaximize)
 		{
 			DragResizeBox->SetMaximize(true);
 		}
+		Invalidate(EInvalidateWidgetReason::Layout);
 	}
 
 	void RemoveChild(const TSharedRef<SDragResizeBox>& DragResizeBox)
 	{
-		Canvas->RemoveSlot(DragResizeBox);
+		if (Children.Remove(DragResizeBox) > 0)
+		{
+			Invalidate(EInvalidateWidgetReason::Layout);
+		}
 	}
+
+	void BringToFront(const TSharedRef<SDragResizeBox>& DragResizeBox)
+	{
+		for (int32 Idx = 0; Idx < Children.Num(); ++Idx)
+		{
+			if (Children[Idx].GetWidget() == DragResizeBox)
+			{
+				auto& Slot = Children[Idx];
+				Slot.ZOrder = ++ZOrderCounter;
+				Invalidate(EInvalidateWidgetReason::Layout);
+				break;
+			}
+		}
+	}
+
+	FVector2D ComputeDesiredSize(float) const override
+	{
+		return FVector2D::ZeroVector;
+	}
+
+	void OnArrangeChildren(const FGeometry& AllottedGeometry, FArrangedChildren& ArrangedChildren) const override
+	{
+		const FVector2f CanvasSize = AllottedGeometry.GetLocalSize();
+		if (CanvasSize.X <= 0.f || CanvasSize.Y <= 0.f)
+		{
+			return;
+		}
+
+		TArray<int32, TInlineAllocator<16>> Indices;
+		Indices.Reserve(Children.Num());
+		for (int32 Idx = 0; Idx < Children.Num(); ++Idx)
+		{
+			Indices.Add(Idx);
+		}
+		Indices.Sort([this](int32 A, int32 B)
+		{
+			return Children[A].ZOrder < Children[B].ZOrder;
+		});
+
+		for (const int32 Idx : Indices)
+		{
+			const FSlot& Child = Children[Idx];
+			const TSharedRef<SWidget>& Widget = Child.GetWidget();
+			if (!ArrangedChildren.Accepts(Widget->GetVisibility()))
+			{
+				continue;
+			}
+
+			const FVector2f Pos = CanvasSize * Child.RelativePosition;
+			const FVector2f Size = Child.bAutoSize
+				? FVector2f{ (float)Widget->GetDesiredSize().X, (float)Widget->GetDesiredSize().Y }
+				: (CanvasSize * Child.RelativeSize);
+
+			ArrangedChildren.AddWidget(
+				AllottedGeometry.MakeChild(
+					Widget,
+					FVector2D{ Pos.X, Pos.Y },
+					FVector2D{ Size.X, Size.Y }
+				)
+			);
+		}
+	}
+	
+	int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+	{
+		FArrangedChildren ArrangedChildren(EVisibility::All);
+		ArrangeChildren(AllottedGeometry, ArrangedChildren);
+
+		const bool bEnabled = ShouldBeEnabled(bParentEnabled);
+		int32 MaxLayerId = LayerId;
+
+		for (int32 ChildIndex = 0; ChildIndex < ArrangedChildren.Num(); ++ChildIndex)
+		{
+			const FArrangedWidget& ArrangedWidget = ArrangedChildren[ChildIndex];
+
+			const FSlateRect ChildClipRect = ArrangedWidget.Geometry.GetLayoutBoundingRect();
+			const FSlateRect ChildCullingRect = MyCullingRect.IntersectionWith(ChildClipRect);
+			if (!ChildCullingRect.IsValid())
+			{
+				continue;
+			}
+
+			OutDrawElements.PushClip(FSlateClippingZone(ChildClipRect));
+			const int32 ChildPaintLayer = ArrangedWidget.Widget->Paint(Args.WithNewParent(this), ArrangedWidget.Geometry, ChildCullingRect, OutDrawElements, MaxLayerId + 1, InWidgetStyle, bEnabled);
+			MaxLayerId = FMath::Max(MaxLayerId, ChildPaintLayer);
+			OutDrawElements.PopClip();
+		}
+
+		return MaxLayerId;
+	}
+
+	FChildren* GetChildren() override { return &Children; }
 private:
-	TSharedPtr<SConstraintCanvas> Canvas;
+	TPanelChildren<FSlot> Children;
+	int32 ZOrderCounter = 0;
 };
 
 TWeakPtr<SWindow> WindowPtr;
@@ -1301,10 +1403,12 @@ public:
 		}
 		Overlay->Config->bManagerCollapsed = false;
 		Overlay->Config->SaveSettings();
-		Slot->SetAnchors(FAnchors{ 0.f, 0.f, 1.f, 1.f });
-		Slot->SetAutoSize(false);
+		if (Slot)
+		{
+			Slot->bAutoSize = false;
+		}
 		WidgetSwitcher->SetActiveWidgetIndex(0);
-		RequirePositionScale = FVector4f{ CachedPos.X, CachedPos.Y, CachedSize.X, CachedSize.Y };
+		SetPositionAndSize(CachedPos, CachedSize);
 	}
 	void Minimize()
 	{
@@ -1318,8 +1422,10 @@ public:
 	}
 	void ForceMinimize()
 	{
-		Slot->SetAnchors(FAnchors{ 0.f, 0.f, 0.f, 0.f });
-		Slot->SetAutoSize(true);
+		if (Slot)
+		{
+			Slot->bAutoSize = true;
+		}
 		WidgetSwitcher->SetActiveWidgetIndex(1);
 	}
 	FVector2f CachedSize;
