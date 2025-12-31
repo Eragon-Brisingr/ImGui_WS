@@ -105,6 +105,8 @@ public:
 		FVector2f RelativePosition{ 0.f, 0.f };
 		FVector2f RelativeSize{ 0.5f, 0.5f };
 		bool bAutoSize = false;
+		bool bMinimized = false;
+		int32 MinimizedOrder = 0;
 		int32 ZOrder = 0;
 	};
 
@@ -147,6 +149,10 @@ public:
 			bool SupportsKeyboardFocus() const override { return true; }
 			FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
 			{
+				if (Owner->bIsMinimized)
+				{
+					return FReply::Handled();
+				}
 				if (Owner->bIsMaximize)
 				{
 					return FReply::Handled();
@@ -188,7 +194,7 @@ public:
 				if (bBeingDragged)
 				{
 					bIsDragging = true;
-					if (Owner->Owner == nullptr || Owner->Slot == nullptr || Owner->bIsMaximize)
+					if (Owner->Owner == nullptr || Owner->Slot == nullptr || Owner->bIsMaximize || Owner->bIsMinimized)
 					{
 						return FReply::Handled();
 					}
@@ -231,6 +237,10 @@ public:
 			bool SupportsKeyboardFocus() const override { return true; }
 			FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
 			{
+				if (Owner->bIsMinimized)
+				{
+					return FReply::Handled();
+				}
 				if (MouseEvent.IsPointerEvent())
 				{
 					if (MouseEvent.GetEffectingButton() != EKeys::LeftMouseButton)
@@ -261,7 +271,7 @@ public:
 				if (bBeingResized)
 				{
 					bIsResizing = true;
-					if (Owner->Owner == nullptr || Owner->Slot == nullptr || Owner->bIsMaximize)
+					if (Owner->Owner == nullptr || Owner->Slot == nullptr || Owner->bIsMaximize || Owner->bIsMinimized)
 					{
 						return FReply::Handled();
 					}
@@ -320,7 +330,10 @@ public:
 				+ SVerticalBox::Slot()
 				[
 					SNew(SOverlay)
-					.Visibility(AccessWidgetVisibilityAttribute(Content))
+					.Visibility_Lambda([this, Content]
+					{
+						return bIsMinimized ? EVisibility::Collapsed : Content->GetVisibility();
+					})
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Fill)
 					.VAlign(VAlign_Fill)
@@ -337,7 +350,7 @@ public:
 						.Padding(0.f)
 						.Visibility_Lambda([this]
 						{
-							return bIsMaximize ? EVisibility::Collapsed : EVisibility::SelfHitTestInvisible;
+							return (bIsMaximize || bIsMinimized) ? EVisibility::Collapsed : EVisibility::SelfHitTestInvisible;
 						})
 						[
 							SNew(SBox)
@@ -368,6 +381,10 @@ public:
 		}
 		void SetMaximize(bool bMaximize)
 		{
+			if (bIsMinimized)
+			{
+				return;
+			}
 			if (bIsMaximize == bMaximize)
 			{
 				return;
@@ -402,12 +419,46 @@ public:
 			Slot->RelativeSize = RelativeSize;
 			Owner->Invalidate(EInvalidateWidgetReason::Layout);
 		}
+		void SetMinimized(bool bMinimize)
+		{
+			if (bIsMinimized == bMinimize)
+			{
+				return;
+			}
+			if (Owner == nullptr || Slot == nullptr)
+			{
+				bIsMinimized = bMinimize;
+				return;
+			}
+			if (bMinimize)
+			{
+				MinimizeBeforePositionSize = FVector4f{ Slot->RelativePosition.X, Slot->RelativePosition.Y, Slot->RelativeSize.X, Slot->RelativeSize.Y };
+				MinimizeBeforeMaximize = bIsMaximize;
+				Slot->bMinimized = true;
+				Slot->MinimizedOrder = Owner->AllocateMinimizedOrder();
+				bIsMinimized = true;
+			}
+			else
+			{
+				Slot->bMinimized = false;
+				bIsMinimized = false;
+				Slot->RelativePosition = FVector2f{ MinimizeBeforePositionSize.X, MinimizeBeforePositionSize.Y };
+				Slot->RelativeSize = FVector2f{ MinimizeBeforePositionSize.Z, MinimizeBeforePositionSize.W };
+				// Restore maximize state by leaving bIsMaximize as-is (and keeping MaximizeBeforePositionSize intact).
+				// If it was maximized at the moment of minimizing, the saved pos/size is already (0,0,1,1).
+				bIsMaximize = MinimizeBeforeMaximize;
+			}
+			Owner->Invalidate(EInvalidateWidgetReason::Layout);
+		}
 		virtual FReply OnDragAreaMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) { return FReply::Handled(); }
 
 		SDragResizeContainer* Owner = nullptr;
 		FSlot* Slot = nullptr;
 		bool bIsMaximize = false;
+		bool bIsMinimized = false;
 		FVector4f MaximizeBeforePositionSize;
+		FVector4f MinimizeBeforePositionSize;
+		bool MinimizeBeforeMaximize = false;
 		FOnDragged OnDragged;
 		FOnResized OnResized;
 		FOnMaximizeChanged OnMaximizeChanged;
@@ -464,6 +515,11 @@ public:
 		}
 	}
 
+	int32 AllocateMinimizedOrder()
+	{
+		return ++MinimizedOrderCounter;
+	}
+
 	FVector2D ComputeDesiredSize(float) const override
 	{
 		return FVector2D::ZeroVector;
@@ -477,36 +533,98 @@ public:
 			return;
 		}
 
-		TArray<int32, TInlineAllocator<16>> Indices;
-		Indices.Reserve(Children.Num());
+		TArray<int32, TInlineAllocator<32>> Normal;
+		TArray<int32, TInlineAllocator<32>> Minimized;
+		Normal.Reserve(Children.Num());
+		Minimized.Reserve(Children.Num());
+
 		for (int32 Idx = 0; Idx < Children.Num(); ++Idx)
 		{
-			Indices.Add(Idx);
+			if (Children[Idx].bMinimized)
+			{
+				Minimized.Add(Idx);
+			}
+			else
+			{
+				Normal.Add(Idx);
+			}
 		}
-		Indices.Sort([this](int32 A, int32 B)
+
+		Normal.Sort([this](int32 A, int32 B)
 		{
 			return Children[A].ZOrder < Children[B].ZOrder;
 		});
+		Minimized.Sort([this](int32 A, int32 B)
+		{
+			const int32 AO = Children[A].MinimizedOrder;
+			const int32 BO = Children[B].MinimizedOrder;
+			if (AO != BO)
+			{
+				return AO < BO;
+			}
+			return Children[A].ZOrder < Children[B].ZOrder;
+		});
 
-		for (const int32 Idx : Indices)
+		for (int32 Idx : Normal)
 		{
 			const FSlot& Child = Children[Idx];
 			const TSharedRef<SWidget>& Widget = Child.GetWidget();
 			if (!ArrangedChildren.Accepts(Widget->GetVisibility()))
 			{
-				continue;
+				return;
 			}
 
 			const FVector2f Pos = CanvasSize * Child.RelativePosition;
 			const FVector2f Size = Child.bAutoSize
 				? FVector2f{ (float)Widget->GetDesiredSize().X, (float)Widget->GetDesiredSize().Y }
-				: (CanvasSize * Child.RelativeSize);
+			: (CanvasSize * Child.RelativeSize);
 
 			ArrangedChildren.AddWidget(
 				AllottedGeometry.MakeChild(
 					Widget,
 					FVector2D{ Pos.X, Pos.Y },
 					FVector2D{ Size.X, Size.Y }
+				)
+			);
+		}
+
+		// Minimized windows: stack to the right edge, vertically. Wrap to left columns if overflow.
+		static constexpr float MinimizedWidth = 300.f;
+		static constexpr float MinimizedHeight = 30.f;
+		static constexpr float MinimizedSpacing = 4.f;
+		static constexpr float MinimizedRight = 6.f;
+
+		constexpr float ItemStride = MinimizedHeight + MinimizedSpacing;
+ 
+ 		// Use only the middle part of the right edge (avoid sticking to top/bottom).
+ 		static constexpr float MinimizedRegionHeightRatio = 0.6f; // middle 60%
+ 		static constexpr float MinimizedRegionMinMargin = 30.f;   // at least 30px from top/bottom
+ 		const float RegionHeight = FMath::Max(CanvasSize.Y * MinimizedRegionHeightRatio, MinimizedHeight);
+ 		const float RegionTop = FMath::Clamp((CanvasSize.Y - RegionHeight) * 0.5f, MinimizedRegionMinMargin, FMath::Max(MinimizedRegionMinMargin, CanvasSize.Y - MinimizedRegionMinMargin - RegionHeight));
+ 
+ 		const int32 ItemsPerColumn = FMath::Max(1, FMath::FloorToInt((RegionHeight) / ItemStride));
+
+		for (int32 MinIdx = 0; MinIdx < Minimized.Num(); ++MinIdx)
+		{
+			const int32 ChildIdx = Minimized[MinIdx];
+			const FSlot& Child = Children[ChildIdx];
+			const TSharedRef<SWidget>& Widget = Child.GetWidget();
+			if (!ArrangedChildren.Accepts(Widget->GetVisibility()))
+			{
+				continue;
+			}
+
+			const int32 Column = MinIdx / ItemsPerColumn;
+			const int32 Row = MinIdx % ItemsPerColumn;
+			float X = CanvasSize.X - MinimizedRight - MinimizedWidth - Column * (MinimizedWidth + MinimizedSpacing);
+			X = FMath::Max(0.f, X);
+			const float Y = RegionTop + Row * ItemStride;
+
+			ArrangedChildren.AddWidget(
+				AllottedGeometry.MakeChild(
+					Widget,
+					FVector2D{ X, Y },
+					FVector2D{ MinimizedWidth, MinimizedHeight }
 				)
 			);
 		}
@@ -544,6 +662,7 @@ public:
 private:
 	TPanelChildren<FSlot> Children;
 	int32 ZOrderCounter = 0;
+	int32 MinimizedOrderCounter = 0;
 };
 
 TWeakPtr<SWindow> WindowPtr;
@@ -670,7 +789,10 @@ public:
 			}
 			FReply OnDragAreaMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
 			{
-				SetMaximize(!bIsMaximize);
+				if (bIsMinimized == false)
+				{
+					SetMaximize(!bIsMaximize);
+				}
 				return FReply::Handled();
 			}
 			~SImGuiPanelBox() override
@@ -742,6 +864,7 @@ public:
 			SNew(STextBlock)
 			.TextStyle(&GetTextBlockStyles().Large)
 			.Text(FText::FromName(Panel->Title))
+			.ToolTipText(FText::FromName(Panel->Title))
 		];
 		TitleContent->AddSlot()
 		.AutoWidth()
@@ -750,18 +873,48 @@ public:
 			SNew(SButton)
 			.ToolTipText_Lambda([DragResizeBox = &DragResizeBox.Get()]
 			{
-				return DragResizeBox->bIsMaximize ? LOCTEXT("MinimizeBoxTooltip", "Minimize") : LOCTEXT("MaximizeBoxTooltip", "Maximize");
+				return DragResizeBox->bIsMaximize ? LOCTEXT("MaximizeBoxRestoreTooltip", "Restore") : LOCTEXT("MaximizeBoxTooltip", "Maximize");
 			})
 			.OnClicked_Lambda([DragResizeBox = &DragResizeBox.Get()]
 			{
 				DragResizeBox->SetMaximize(!DragResizeBox->bIsMaximize);
 				return FReply::Handled();
 			})
+			.Visibility_Lambda([DragResizeBox = &DragResizeBox.Get()]
+			{
+				return DragResizeBox->bIsMinimized ? EVisibility::Collapsed : EVisibility::Visible;
+			})
 			[
 				SNew(SImage)
 				.Image_Lambda([DragResizeBox = &DragResizeBox.Get()]
 				{
 					return DragResizeBox->bIsMaximize ? FAppStyle::GetBrush("Icons.Minus") : FAppStyle::GetBrush("Icons.Plus");
+				})
+			]
+		];
+		TitleContent->AddSlot()
+		.AutoWidth()
+		.Padding(2.f)
+		[
+			SNew(SButton)
+			.ToolTipText_Lambda([DragResizeBox = &DragResizeBox.Get()]
+			{
+				return DragResizeBox->bIsMinimized ? LOCTEXT("RestoreBoxTooltip", "Restore") : LOCTEXT("MinimizeToEdgeBoxTooltip", "Minimize");
+			})
+			.OnClicked_Lambda([DragResizeBox = &DragResizeBox.Get()]
+			{
+				DragResizeBox->SetMinimized(!DragResizeBox->bIsMinimized);
+				return FReply::Handled();
+			})
+			[
+				SNew(SImage)
+				.Image(FAppStyle::GetBrush("TreeArrow_Expanded"))
+				.RenderTransformPivot(FVector2D{ 0.5f })
+				.RenderTransform_Lambda([DragResizeBox = &DragResizeBox.Get()]
+				{
+					// Right (minimize) / Left (restore)
+					const float AngleDeg = DragResizeBox->bIsMinimized ? 90.f : -90.f;
+					return FSlateRenderTransform{ FQuat2D(FMath::DegreesToRadians(AngleDeg)) };
 				})
 			]
 		];
@@ -852,6 +1005,7 @@ public:
 			});
 
 		UnrealImGui::DefaultStyle(&ImGuiContent->GetContext()->Style);
+		const auto TitleText = LocalPanelManagerWidget.IsValid() ? FText::FromString(LocalPanelManagerWidget->Title) : LOCTEXT("ImGuiPanelManagerTitle", "ImGui Panel Manager");
 		
 		Super::FArguments SuperArgs;
 		SuperArgs.TitleContent()
@@ -864,7 +1018,8 @@ public:
 			[
 				SNew(STextBlock)
 				.TextStyle(&GetTextBlockStyles().Large)
-				.Text(LocalPanelManagerWidget.IsValid() ? FText::FromString(LocalPanelManagerWidget->Title) : LOCTEXT("ImGuiPanelManagerTitle", "ImGui Panel Manager"))
+				.Text(TitleText)
+				.ToolTipText(TitleText)
 			]
 			+ SHorizontalBox::Slot()
 			.Padding(10.f, 2.f, 2.f, 4.f)
@@ -1303,7 +1458,10 @@ public:
 			public:
 				FReply OnDragAreaMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
 				{
-					SetMaximize(!bIsMaximize);
+					if (bIsMinimized == false)
+					{
+						SetMaximize(!bIsMaximize);
+					}
 					return FReply::Handled();
 				}
 			};
@@ -1332,6 +1490,7 @@ public:
 					Overlay->Config->ViewportConfig.bMaximize = bMaximize;	
 				});
 
+			const auto TitleText = LOCTEXT("ImGuiFullViewportTitle", "ImGui Full Viewport");
 			TitleContent->AddSlot()
 			.FillWidth(1.f)
 			.Padding(20.f, 2.f, 2.f, 2.f)
@@ -1340,6 +1499,7 @@ public:
 				SNew(STextBlock)
 				.TextStyle(&GetTextBlockStyles().Large)
 				.Text(LOCTEXT("ImGuiFullViewportTitle", "ImGui Full Viewport"))
+				.ToolTipText(TitleText)
 			];
 			TitleContent->AddSlot()
 			.AutoWidth()
@@ -1348,18 +1508,47 @@ public:
 				SNew(SButton)
 				.ToolTipText_Lambda([DragResizeBox = &DragResizeBox.Get()]
 				{
-					return DragResizeBox->bIsMaximize ? LOCTEXT("MinimizeBoxTooltip", "Minimize") : LOCTEXT("MaximizeBoxTooltip", "Maximize");
+					return DragResizeBox->bIsMaximize ? LOCTEXT("MaximizeBoxRestoreTooltip", "Restore") : LOCTEXT("MaximizeBoxTooltip", "Maximize");
 				})
 				.OnClicked_Lambda([DragResizeBox = &DragResizeBox.Get()]
 				{
 					DragResizeBox->SetMaximize(!DragResizeBox->bIsMaximize);
 					return FReply::Handled();
 				})
+				.Visibility_Lambda([DragResizeBox = &DragResizeBox.Get()]
+				{
+					return DragResizeBox->bIsMinimized ? EVisibility::Collapsed : EVisibility::Visible;
+				})
 				[
 					SNew(SImage)
 					.Image_Lambda([DragResizeBox = &DragResizeBox.Get()]
 					{
 						return DragResizeBox->bIsMaximize ? FAppStyle::GetBrush("Icons.Minus") : FAppStyle::GetBrush("Icons.Plus");
+					})
+				]
+			];
+			TitleContent->AddSlot()
+			.AutoWidth()
+			.Padding(2.f)
+			[
+				SNew(SButton)
+				.ToolTipText_Lambda([DragResizeBox = &DragResizeBox.Get()]
+				{
+					return DragResizeBox->bIsMinimized ? LOCTEXT("RestoreBoxTooltip", "Restore") : LOCTEXT("MinimizeToEdgeBoxTooltip", "Minimize");
+				})
+				.OnClicked_Lambda([DragResizeBox = &DragResizeBox.Get()]
+				{
+					DragResizeBox->SetMinimized(!DragResizeBox->bIsMinimized);
+					return FReply::Handled();
+				})
+				[
+					SNew(SImage)
+					.Image(FAppStyle::GetBrush("TreeArrow_Expanded"))
+					.RenderTransformPivot(FVector2D{ 0.5f })
+					.RenderTransform_Lambda([DragResizeBox = &DragResizeBox.Get()]
+					{
+						const float AngleDeg = DragResizeBox->bIsMinimized ? 90.f : -90.f;
+						return FSlateRenderTransform{ FQuat2D(FMath::DegreesToRadians(AngleDeg)) };
 					})
 				]
 			];
