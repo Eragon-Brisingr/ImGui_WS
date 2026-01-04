@@ -192,7 +192,7 @@ void SImGuiPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrent
 					RT->ClearColor = FLinearColor::Black;
 					RT->bAutoGenerateMips = false;
 					RT->InitAutoFormat(FontAtlasWidth, FontAtlasHeight);
-					RT->LODGroup = TEXTUREGROUP_Pixels2D;
+					RT->LODGroup = TEXTUREGROUP_RenderTarget;
 					RT->UpdateResourceImmediate(false);
 
 					RT->AddToRoot();
