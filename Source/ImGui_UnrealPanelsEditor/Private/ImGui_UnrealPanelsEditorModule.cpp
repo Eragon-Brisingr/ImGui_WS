@@ -380,7 +380,7 @@ void FImGui_UnrealPanelsEditorModule::RefreshGroupMenu()
 						}
 						for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
 						{
-							if (UUnrealImGuiPanelBase* TestPanel = PanelBuilder->GetPanelsMap().FindRef(Class))
+							if (UUnrealImGuiPanelBase* TestPanel = PanelBuilder->FindPanel(Class, true))
 							{
 								Panel = TestPanel;
 								Panel->LocalPanelOpened();

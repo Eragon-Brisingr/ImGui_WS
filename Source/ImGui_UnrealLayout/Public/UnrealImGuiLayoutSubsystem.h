@@ -20,9 +20,11 @@ struct IMGUI_UNREALLAYOUT_API FUnrealImGuiLayoutManager
 	
 	static FUnrealImGuiLayoutManager* Get(const UObject* WorldContextObject);
 
-	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const;
+	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType, bool IncludeClosed = false) const;
 	template<typename T>
-	T* FindPanel() const { return (T*)FindPanel(T::StaticClass()); }
+	T* FindPanel(bool IncludeClosed = false) const { return (T*)FindPanel(T::StaticClass(), IncludeClosed); }
+	
+	UUnrealImGuiPanelBase* FindPanel(const FName& PanelName, bool IncludeClosed = false, UUnrealImGuiPanelBuilder** OutBuilder = nullptr) const;
 };
 
 UCLASS()

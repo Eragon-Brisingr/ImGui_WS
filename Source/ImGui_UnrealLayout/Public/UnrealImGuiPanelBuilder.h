@@ -34,13 +34,15 @@ public:
 #endif
 
 	UFUNCTION(BlueprintCallable, Category = ImGui, meta = (DeterminesOutputType = PanelType))
-	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const;
+	UUnrealImGuiPanelBase* FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType, bool IncludeClosed = false) const;
 	template<typename T>
 	T* FindPanel() const
 	{
 		static_assert(TIsDerivedFrom<T, UUnrealImGuiPanelBase>::Value);
 		return (T*)FindPanel(T::StaticClass());
 	}
+
+	UUnrealImGuiPanelBase* FindPanel(const FName& PanelName, bool IncludeClosed = false, UUnrealImGuiPanelBuilder** OutBuilder = nullptr);
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UUnrealImGuiLayoutBase>> Layouts;
@@ -62,10 +64,9 @@ public:
 		TMap<FName, TUniquePtr<FCategoryPanels>> Children;
 	};
 	FCategoryPanels CategoryPanels{ NAME_None };
-
-	const auto& GetPanelsMap() const { return PanelsMap; }
 private:
 	TSharedPtr<FStreamableHandle> StreamableHandle;
 
-	TMap<const UClass*, UUnrealImGuiPanelBase*> PanelsMap;
+	UPROPERTY(Transient)
+	TMap<TSubclassOf<UUnrealImGuiPanelBase>, UUnrealImGuiPanelBase*> PanelsMap;
 };

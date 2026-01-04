@@ -127,7 +127,7 @@ void UUnrealImGuiPanelBuilder::ConstructPanels(UObject* Owner)
 		TArray<UClass*> PanelClasses;
 		GetDerivedClasses(UUnrealImGuiPanelBase::StaticClass(), PanelClasses);
 		RemoveNotLeafClass(PanelClasses);
-		for (const UClass* Class : PanelClasses)
+		for (TSubclassOf<UUnrealImGuiPanelBase> Class : PanelClasses)
 		{
 			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists))
 			{
@@ -196,7 +196,7 @@ void UUnrealImGuiPanelBuilder::ConstructPanels(UObject* Owner)
 				}
 				RemoveNotLeafClass(Classes);
 				int32 Idx = Panels.Num();
-				for (const UClass* Class : Classes)
+				for (TSubclassOf<UUnrealImGuiPanelBase> Class : Classes)
 				{
 					if (PanelsMap.Contains(Class))
 					{
@@ -271,9 +271,16 @@ void UUnrealImGuiPanelBuilder::LoadDefaultLayout(UObject* Owner)
 	Layout->LoadDefaultLayout(Owner, *this);
 }
 
+namespace UnrealImGui
+{
+	UUnrealImGuiPanelBuilder* GCurrentDrawBuilder = nullptr;
+}
+
 void UUnrealImGuiPanelBuilder::DrawPanels(UObject* Owner, float DeltaSeconds)
 {
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UnrealImGuiPanelBuilder_DrawPanels"), STAT_UnrealImGuiPanelBuilder_DrawPanels, STATGROUP_ImGui);
+	
+	const TGuardValue CurrentDrawBuilderGuard{ UnrealImGui::GCurrentDrawBuilder, this };
 	
 	UUnrealImGuiLayoutBase* Layout = Layouts[ActiveLayoutIndex];
 	Layout->CreateDockSpace(Owner, *this);
@@ -419,11 +426,30 @@ void UUnrealImGuiPanelBuilder::ReconstructPanels_Editor(UObject* Owner)
 }
 #endif
 
-UUnrealImGuiPanelBase* UUnrealImGuiPanelBuilder::FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType) const
+UUnrealImGuiPanelBase* UUnrealImGuiPanelBuilder::FindPanel(const TSubclassOf<UUnrealImGuiPanelBase>& PanelType, bool IncludeClosed) const
 {
 	if (UUnrealImGuiPanelBase* Panel = PanelsMap.FindRef(PanelType))
 	{
-		return Panel->IsOpened() ? Panel : nullptr;
+		return IncludeClosed || Panel->IsOpened() ? Panel : nullptr;
+	}
+	return nullptr;
+}
+
+UUnrealImGuiPanelBase* UUnrealImGuiPanelBuilder::FindPanel(const FName& PanelName, bool IncludeClosed, UUnrealImGuiPanelBuilder** OutBuilder)
+{
+	for (auto Panel : Panels)
+	{
+		if (Panel->GetClass()->GetFName() == PanelName || Panel->Title == PanelName)
+		{
+			if (IncludeClosed || Panel->IsOpened())
+			{
+				if (OutBuilder)
+				{
+					*OutBuilder = this;
+				}
+				return Panel;
+			}
+		}
 	}
 	return nullptr;
 }

@@ -18,7 +18,7 @@ enum class EImGuiLocalPanelMode : uint8
 	DockWindow = 2,
 };
 
-namespace ImGui_WS::LocalPanel
+namespace UnrealImGui::LocalPanel
 {
 	IMGUI_UNREALLAYOUT_API bool IsLocalWindowOpened(const UWorld* World);
 	IMGUI_UNREALLAYOUT_API bool IsLocalWindowOpened(const UWorld* World, EImGuiLocalPanelMode PanelMode);
@@ -26,6 +26,9 @@ namespace ImGui_WS::LocalPanel
 	IMGUI_UNREALLAYOUT_API void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode);
 	IMGUI_UNREALLAYOUT_API void CloseLocalWindow(UWorld* World);
 	IMGUI_UNREALLAYOUT_API void CloseLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode);
+	IMGUI_UNREALLAYOUT_API bool IsLocalPanelOpened(UWorld* World, EImGuiLocalPanelMode PanelMode, FName PanelClassName);
+	IMGUI_UNREALLAYOUT_API void OpenLocalPanel(UWorld* World, EImGuiLocalPanelMode PanelMode, FName PanelClassName);
+	IMGUI_UNREALLAYOUT_API void CloseLocalPanel(UWorld* World, EImGuiLocalPanelMode PanelMode, FName PanelClassName);
 }
 
 USTRUCT()
@@ -86,7 +89,7 @@ public:
 	static bool IsLocalWindowOpened(const UObject* WorldContextObject, EImGuiLocalPanelMode PanelMode)
 	{
 #if !UE_BUILD_SHIPPING
-		return ImGui_WS::LocalPanel::IsLocalWindowOpened(WorldContextObject->GetWorld(), PanelMode);
+		return UnrealImGui::LocalPanel::IsLocalWindowOpened(WorldContextObject->GetWorld(), PanelMode);
 #else
 		return false;
 #endif
@@ -96,7 +99,7 @@ public:
 	static void OpenLocalWindow(const UObject* WorldContextObject, EImGuiLocalPanelMode Mode)
 	{
 #if !UE_BUILD_SHIPPING
-		ImGui_WS::LocalPanel::OpenLocalWindow(WorldContextObject->GetWorld(), Mode);
+		UnrealImGui::LocalPanel::OpenLocalWindow(WorldContextObject->GetWorld(), Mode);
 #endif
 	}
 
@@ -104,7 +107,7 @@ public:
 	static void CloseLocalWindow(const UObject* WorldContextObject, EImGuiLocalPanelMode Mode)
 	{
 #if !UE_BUILD_SHIPPING
-		ImGui_WS::LocalPanel::CloseLocalWindow(WorldContextObject->GetWorld(), Mode);
+		UnrealImGui::LocalPanel::CloseLocalWindow(WorldContextObject->GetWorld(), Mode);
 #endif
 	}
 };

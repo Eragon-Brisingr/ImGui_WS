@@ -42,7 +42,7 @@ void UImGuiLocalPanelManagerConfig::SaveSettings()
 	SaveConfig(CPF_Config, nullptr, GConfig, false);
 }
 
-namespace ImGui_WS::LocalPanel
+namespace UnrealImGui::LocalPanel
 {
 TAutoConsoleVariable<int32> CVarLocalPanelMode
 {
@@ -58,22 +58,44 @@ TAutoConsoleVariable<int32> CVarLocalPanelMode
 	TEXT("1: open as single window (desktop platform only)\n")
 	TEXT("2: open as dockable window (editor only)")
 };
+
+EImGuiLocalPanelMode GetCurrentLocalPanelMode()
+{
+	const EImGuiLocalPanelMode PanelMode{ static_cast<uint8>(CVarLocalPanelMode.GetValueOnAnyThread()) };
+	return PanelMode;
+}
+
+TOptional<EImGuiLocalPanelMode> GCurrentLocalPanelMode;
+
 FAutoConsoleCommand OpenImGuiWindowCommand
 {
 	TEXT("ImGui.WS.OpenPanel"),
-	TEXT("Open ImGui WS local panel"),
-	FConsoleCommandWithWorldDelegate::CreateLambda([](UWorld* World)
+	TEXT("Open ImGui WS local panel, optional arg PanelName will open same class/title name panel"),
+	FConsoleCommandWithWorldArgsAndOutputDeviceDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World, FOutputDevice&)
 	{
-		OpenLocalWindow(World);
+		auto LocalPanelMode = GetCurrentLocalPanelMode();
+		OpenLocalWindow(World, LocalPanelMode);
+		if (Args.Num() == 1)
+		{
+			OpenLocalPanel(World, LocalPanelMode, *Args[0]);
+		}
 	})
 };
 FAutoConsoleCommand CloseImGuiWindowCommand
 {
 	TEXT("ImGui.WS.ClosePanel"),
-	TEXT("Close ImGui WS local panel"),
-	FConsoleCommandWithWorldDelegate::CreateLambda([](UWorld* World)
+	TEXT("Close ImGui WS local panel, optional arg PanelName will close same class/title name panel"),
+	FConsoleCommandWithWorldArgsAndOutputDeviceDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World, FOutputDevice&)
 	{
-		CloseLocalWindow(World);
+		auto LocalPanelMode = GetCurrentLocalPanelMode();
+		if (Args.Num() == 0)
+		{
+			CloseLocalWindow(World, LocalPanelMode);
+		}
+		else if (Args.Num() == 1)
+		{
+			CloseLocalPanel(World, LocalPanelMode, *Args[0]);
+		}
 	})
 };
 
@@ -100,7 +122,7 @@ const auto& GetTextBlockStyles()
 class SDragResizeContainer : public SPanel
 {
 public:
-	struct FSlot : public TSlotBase<FSlot>
+	struct FSlot : TSlotBase<FSlot>
 	{
 		FVector2f RelativePosition{ 0.f, 0.f };
 		FVector2f RelativeSize{ 0.5f, 0.5f };
@@ -665,15 +687,16 @@ private:
 	int32 MinimizedOrderCounter = 0;
 };
 
+class SImGuiLocalPanelOverlay;
 TWeakPtr<SWindow> WindowPtr;
 struct FViewportPanel
 {
-	TWeakPtr<SWidget> Overlay;
+	TWeakPtr<SImGuiLocalPanelOverlay> Overlay;
 	TSharedRef<int32> ContextIndex = MakeShared<int32>();
 };
 TMap<TWeakObjectPtr<UGameViewportClient>, FViewportPanel> ViewportPanelMap;
 
-const FName WindowTabId = TEXT("ImGui_WS_Window");
+const FName WindowTabId = TEXT("UnrealImGui_Window");
 bool IsLocalWindowOpened(const UWorld* World)
 {
 	if (WindowPtr.IsValid())
@@ -708,7 +731,17 @@ bool IsLocalWindowOpened(const UWorld* World, EImGuiLocalPanelMode PanelMode)
 	return false;
 }
 
-TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
+UUnrealImGuiPanelBase* FindPanelInstance(const UWorld* World, const FName& PanelName, UUnrealImGuiPanelBuilder** OutBuilder = nullptr)
+{
+	FUnrealImGuiLayoutManager* LayoutManager = FUnrealImGuiLayoutManager::Get(World);
+	if (LayoutManager == nullptr)
+	{
+		return nullptr;
+	}
+	return LayoutManager->FindPanel(PanelName, true, OutBuilder);
+}
+
+TSharedPtr<SImGuiPanel> CreateFullPanel(int32& ContextIndex, EImGuiLocalPanelMode LocalPanelMode)
 {
 	UImGuiUnrealContextManager* Manager = GEngine->GetEngineSubsystem<UImGuiUnrealContextManager>();
 	if (Manager == nullptr)
@@ -717,11 +750,12 @@ TSharedPtr<SImGuiPanel> CreatePanel(int32& ContextIndex)
 	}
 
 	const TSharedRef<SImGuiPanel> Panel = SNew(SImGuiPanel)
-		.OnImGuiTick_Lambda([ManagerPtr = TWeakObjectPtr<UImGuiUnrealContextManager>(Manager), &ContextIndex](float DeltaSeconds)
+		.OnImGuiTick_Lambda([ManagerPtr = TWeakObjectPtr<UImGuiUnrealContextManager>(Manager), &ContextIndex, LocalPanelMode](float DeltaSeconds)
 		{
 			if (UImGuiUnrealContextManager* Manager = ManagerPtr.Get())
 			{
 				DECLARE_SCOPE_CYCLE_COUNTER(TEXT("ImGuiSinglePanel_Tick"), STAT_ImGuiSinglePanel_Tick, STATGROUP_ImGui);
+				const TGuardValue<TOptional<EImGuiLocalPanelMode>> GCurrentLocalPanelModeGuard{ GCurrentLocalPanelMode, LocalPanelMode };
 				Manager->DrawViewport(ContextIndex, DeltaSeconds);
 			}
 		});
@@ -949,6 +983,45 @@ public:
 		RemoveChild(PanelBoxMap.FindAndRemoveChecked(Panel));
 	}
 
+	bool IsPanelOpened(const FName& PanelName) const
+	{
+		for (auto& [PanelPtr, _] : PanelBoxMap)
+		{
+			if (auto Panel = PanelPtr.Get())
+			{
+				if (Panel->GetClass()->GetFName() == PanelName || Panel->Title == PanelName)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	void OpenPanel(UWorld* World, const FName& PanelName)
+	{
+		UUnrealImGuiPanelBuilder* Builder = nullptr;
+		auto Panel = FindPanelInstance(World, PanelName, &Builder);
+		if (Panel == nullptr)
+		{
+			return;
+		}
+		OpenPanel(World, Builder, Panel);
+	}
+	void ClosePanel(const UWorld* World, const FName& PanelName)
+	{
+		for (auto& [PanelPtr, _] : PanelBoxMap)
+		{
+			if (auto Panel = PanelPtr.Get())
+			{
+				if (Panel->GetClass()->GetFName() == PanelName || Panel->Title == PanelName)
+				{
+					ClosePanel(Panel);
+					return;
+				}
+			}
+		}
+	}
+
 	void AddReferencedObjects(FReferenceCollector& Collector) override
 	{
 		Collector.AddReferencedObject(Config);
@@ -1152,6 +1225,8 @@ public:
 		{
 			return;
 		}
+		const TGuardValue<TOptional<EImGuiLocalPanelMode>> GCurrentLocalPanelModeGuard{ GCurrentLocalPanelMode, EImGuiLocalPanelMode::GameViewport };
+
 		auto& Style = ImGui::GetStyle();
 		Style.FontScaleDpi = FontScaleDpi;
 
@@ -1277,7 +1352,7 @@ public:
 					UUnrealImGuiPanelBase* Panel = nullptr;
 					for (UUnrealImGuiPanelBuilder* PanelBuilder : LayoutManager->PanelBuilders)
 					{
-						Panel = PanelBuilder->GetPanelsMap().FindRef(PanelClass.Get());
+						Panel = PanelBuilder->FindPanel(PanelClass.Get(), true);
 						if (Panel != nullptr)
 						{
 							Builder = PanelBuilder;
@@ -1450,7 +1525,7 @@ public:
 	void OpenFullViewportPanel(const TSharedRef<int32>& ContextIndex)
 	{
 		ensure(Overlay->ViewportPtr.IsValid() == false);
-		if (const TSharedPtr<SImGuiPanel> Panel = CreatePanel(*ContextIndex))
+		if (const TSharedPtr<SImGuiPanel> Panel = CreateFullPanel(*ContextIndex, EImGuiLocalPanelMode::GameViewport))
 		{
 			class SImGuiFullViewportPanelBox : public SDragResizeBox
 			{
@@ -1625,8 +1700,7 @@ private:
 
 void OpenLocalWindow(UWorld* World)
 {
-	const EImGuiLocalPanelMode PanelMode{ static_cast<uint8>(CVarLocalPanelMode.GetValueOnAnyThread()) };
-	OpenLocalWindow(World, PanelMode);
+	OpenLocalWindow(World, GetCurrentLocalPanelMode());
 }
 
 void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
@@ -1636,9 +1710,9 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 		return;
 	}
 
-	class SImGuiPanelLifetime : public SCompoundWidget
+	class SImGuiPanelGuard : public SCompoundWidget
 	{
-		SLATE_BEGIN_ARGS(SImGuiPanelLifetime)
+		SLATE_BEGIN_ARGS(SImGuiPanelGuard)
 		{}
 		SLATE_DEFAULT_SLOT(FArguments, Content)
 		SLATE_END_ARGS()
@@ -1652,7 +1726,7 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 				Args._Content.Widget
 			];
 		}
-		~SImGuiPanelLifetime() override
+		~SImGuiPanelGuard() override
 		{
 			FImGuiDelegates::OnImGuiLocalPanelDisable.Broadcast();
 		}
@@ -1665,16 +1739,16 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 			FGlobalTabmanager::Get()->RegisterNomadTabSpawner(WindowTabId, FOnSpawnTab::CreateLambda([](const FSpawnTabArgs& Args)
 			{
 				static int32 ContextIndex = 0;
-				TSharedPtr<SWidget> Panel = CreatePanel(ContextIndex);
+				TSharedPtr<SWidget> Panel = CreateFullPanel(ContextIndex, EImGuiLocalPanelMode::DockWindow);
 				if (Panel == nullptr)
 				{
 					Panel = SNullWidget::NullWidget;
 				}
 				TSharedRef<SDockTab> NewTab = SNew(SDockTab)
 				.TabRole(NomadTab)
-				.Label(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
+				.Label(LOCTEXT("UnrealImGui_WindowTitle", "ImGui WS"))
 				[
-					SNew(SImGuiPanelLifetime)
+					SNew(SImGuiPanelGuard)
 					[
 						Panel.ToSharedRef()
 					]
@@ -1693,17 +1767,17 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 			return;
 		}
 		static int32 ContextIndex = 0;
-		const TSharedPtr<SImGuiPanel> Panel = CreatePanel(ContextIndex);
+		const TSharedPtr<SImGuiPanel> Panel = CreateFullPanel(ContextIndex, EImGuiLocalPanelMode::SingleWindow);
 		if (Panel == nullptr)
 		{
 			return;
 		}
 		const TSharedRef<SWindow> Window =
 			SNew(SWindow)
-			.Title(LOCTEXT("ImGui_WS_WindowTitle", "ImGui WS"))
+			.Title(LOCTEXT("UnrealImGui_WindowTitle", "ImGui WS"))
 			.ClientSize(FVector2f(1000.f, 800.f))
 			[
-				SNew(SImGuiPanelLifetime)
+				SNew(SImGuiPanelGuard)
 				[
 					Panel.ToSharedRef()
 				]
@@ -1711,7 +1785,7 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 		WindowPtr = Window;
 		FSlateApplication::Get().AddWindow(Window);
 	}
-	else
+	else if (PanelMode == EImGuiLocalPanelMode::GameViewport)
 	{
 		for (auto It = ViewportPanelMap.CreateIterator(); It; ++It)
 		{
@@ -1758,8 +1832,7 @@ void OpenLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 
 void CloseLocalWindow(UWorld* World)
 {
-	const EImGuiLocalPanelMode PanelMode{ static_cast<uint8>(CVarLocalPanelMode.GetValueOnAnyThread()) };
-	CloseLocalWindow(World, PanelMode);
+	CloseLocalWindow(World, GetCurrentLocalPanelMode());
 }
 void CloseLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 {
@@ -1777,7 +1850,7 @@ void CloseLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 			WindowPtr.Pin()->RequestDestroyWindow();
 		}
 	}
-	else
+	else if (PanelMode == EImGuiLocalPanelMode::GameViewport)
 	{
 		UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr;
 		if (GameViewport == nullptr)
@@ -1789,6 +1862,87 @@ void CloseLocalWindow(UWorld* World, EImGuiLocalPanelMode PanelMode)
 		{
 			GameViewport->RemoveViewportWidgetContent(ViewportPanel->Overlay.Pin().ToSharedRef());
 			ViewportPanelMap.Remove(GameViewport);
+		}
+	}
+}
+
+bool IsLocalPanelOpened(UWorld* World, EImGuiLocalPanelMode PanelMode, FName PanelName)
+{
+	if (PanelMode == EImGuiLocalPanelMode::GameViewport)
+	{
+		UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr;
+		if (GameViewport == nullptr)
+		{
+			return false;
+		}
+		const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(GameViewport);
+		if (ViewportPanel == nullptr || ViewportPanel->Overlay.IsValid() == false)
+		{
+			return false;
+		}
+		auto ImGuiLocalPanelOverlay = ViewportPanel->Overlay.Pin();
+		return ImGuiLocalPanelOverlay->IsPanelOpened(PanelName);
+	}
+	else
+	{
+		auto Panel = FindPanelInstance(World, PanelName);
+		return Panel && Panel->IsOpened();
+	}
+	return false;
+}
+
+void OpenLocalPanel(UWorld* World, EImGuiLocalPanelMode PanelMode, FName PanelName)
+{
+	if (IsLocalWindowOpened(World, PanelMode) == false)
+	{
+		OpenLocalWindow(World, PanelMode);
+	}
+	if (PanelMode == EImGuiLocalPanelMode::GameViewport)
+	{
+		UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr;
+		if (GameViewport == nullptr)
+		{
+			return;
+		}
+		const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(GameViewport);
+		if (ViewportPanel == nullptr || ViewportPanel->Overlay.IsValid() == false)
+		{
+			return;
+		}
+		auto ImGuiLocalPanelOverlay = ViewportPanel->Overlay.Pin();
+		ImGuiLocalPanelOverlay->OpenPanel(World, PanelName);
+	}
+	else
+	{
+		if (auto Panel = FindPanelInstance(World, PanelName))
+		{
+			Panel->SetOpenState(true);
+		}
+	}
+}
+
+void CloseLocalPanel(UWorld* World, EImGuiLocalPanelMode PanelMode, FName PanelName)
+{
+	if (PanelMode == EImGuiLocalPanelMode::GameViewport)
+	{
+		UGameViewportClient* GameViewport = World ? World->GetGameViewport() : nullptr;
+		if (GameViewport == nullptr)
+		{
+			return;
+		}
+		const FViewportPanel* ViewportPanel = ViewportPanelMap.Find(GameViewport);
+		if (ViewportPanel == nullptr || ViewportPanel->Overlay.IsValid() == false)
+		{
+			return;
+		}
+		auto ImGuiLocalPanelOverlay = ViewportPanel->Overlay.Pin();
+		ImGuiLocalPanelOverlay->ClosePanel(World, PanelName);
+	}
+	else
+	{
+		if (auto Panel = FindPanelInstance(World, PanelName))
+		{
+			Panel->SetOpenState(false);
 		}
 	}
 }
