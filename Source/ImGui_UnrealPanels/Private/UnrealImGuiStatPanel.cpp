@@ -4,6 +4,7 @@
 #include "UnrealImGuiStatPanel.h"
 
 #include "imgui.h"
+#include "ImGuiEx.h"
 #include "UnrealImGuiStat.h"
 #include "Engine/Engine.h"
 #include "Stats/StatsData.h"
@@ -25,8 +26,10 @@ void UUnrealImGuiStatPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Build
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UnrealImGuiStatDevice_Draw"), STAT_UnrealImGuiStatDevice_Draw, STATGROUP_ImGui);
 	if (ImGui::BeginMenuBar())
 	{
+		static FString FilterString;
 		if (ImGui::BeginMenu("Stat Group"))
 		{
+			ImGui::InputTextWithHint("##Filter", "Filter", FilterString);
 			if (ImGui::MenuItem("Deactivate All"))
 			{
 				if (ViewData)
@@ -35,36 +38,52 @@ void UUnrealImGuiStatPanel::Draw(UObject* Owner, UUnrealImGuiPanelBuilder* Build
 					{
 						UWorld* World = Owner->GetWorld();
 						const FString StatName = GroupName.ToString().RightChop(sizeof("STATGROUP_") - 1);
-						GEngine->Exec(World, *FString::Printf(TEXT("Stat %s"), *StatName));
+						GEngine->Exec(World, *FString::Printf(TEXT("Stat %s -nodisplay"), *StatName));
+					}
+				}
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::Separator();
+			if (ImGui::BeginChild("StatContent", ImVec2{ 0, 400 }))
+			{
+				if (FilterString.IsEmpty() || FStringView{ TEXT("Slow") }.Contains(FilterString))
+				{
+					bool bIsActivated = ViewData && ViewData->GroupNames.Contains(TEXT("STATGROUP_Slow"));
+					if (ImGui::Checkbox("Slow", &bIsActivated))
+					{
+						UWorld* World = Owner->GetWorld();
+						GEngine->Exec(World, TEXT("Stat Slow -nodisplay"));
+						ImGui::CloseCurrentPopup();
+					}
+				}
+				const TSet<FName>& StatGroupNames = FStatGroupGameThreadNotifier::Get().StatGroupNames;
+				for (const FName& StatGroupName : StatGroupNames)
+				{
+					if (FilterString.IsEmpty() == false && StatGroupName.ToString().Contains(FilterString) == false)
+					{
+						continue;
+					}
+					bool bIsActivated = ViewData && ViewData->GroupNames.Contains(StatGroupName);
+					const FString StatName = StatGroupName.ToString().RightChop(sizeof("STATGROUP_") - 1);
+					if (ImGui::Checkbox(TCHAR_TO_UTF8(*StatName), &bIsActivated))
+					{
+						UWorld* World = Owner->GetWorld();
+						GEngine->Exec(World, *FString::Printf(TEXT("Stat %s -nodisplay"), *StatName));
+						ImGui::CloseCurrentPopup();
 					}
 				}
 			}
-			ImGui::Separator();
-			{
-				bool bIsActivated = ViewData && ViewData->GroupNames.Contains(TEXT("STATGROUP_Slow"));
-				if (ImGui::Checkbox("Slow", &bIsActivated))
-				{
-					UWorld* World = Owner->GetWorld();
-					GEngine->Exec(World, TEXT("Stat Slow"));
-				}
-			}
-			const TSet<FName>& StatGroupNames = FStatGroupGameThreadNotifier::Get().StatGroupNames;
-			for (const FName& StatGroupName : StatGroupNames)
-			{
-				bool bIsActivated = ViewData && ViewData->GroupNames.Contains(StatGroupName);
-				const FString StatName = StatGroupName.ToString().RightChop(sizeof("STATGROUP_") - 1);
-				if (ImGui::Checkbox(TCHAR_TO_UTF8(*StatName), &bIsActivated))
-				{
-					UWorld* World = Owner->GetWorld();
-					GEngine->Exec(World, *FString::Printf(TEXT("Stat %s"), *StatName));
-				}
-			}
+			ImGui::EndChild();
 			ImGui::EndMenu();
+		}
+		else
+		{
+			FilterString.Reset();
 		}
 		ImGui::EndMenuBar();
 	}
 	
-	if (!ViewData || !ViewData->bRenderStats)
+	if (!ViewData)
 	{
 		return;
 	}
