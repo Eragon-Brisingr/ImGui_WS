@@ -10,11 +10,6 @@
 
 enum class EImGuiTextureFormat : uint8;
 
-namespace UnrealImGui
-{
-	enum class ETextureFormat : uint8;
-}
-
 class UUnrealImGuiViewportBase;
 class UImGuiWorldDebuggerDetailsPanel;
 
