@@ -666,7 +666,7 @@ UnrealImGui::FDetailTableContextGuard::~FDetailTableContextGuard() {}
 
 DECLARE_CYCLE_STAT(TEXT("ImGui_DrawDetailTable"), STAT_ImGui_DrawDetailTable, STATGROUP_ImGui);
 
-void UnrealImGui::DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter, int32 TableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged)
+void UnrealImGui::DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter, ImGuiTableFlags TableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged)
 {
 	SCOPE_CYCLE_COUNTER(STAT_ImGui_DrawDetailTable);
 	if (ImGui::BeginTable(str_id, 2, TableFlags))
@@ -693,7 +693,7 @@ void UnrealImGui::DrawDetailTable(const char* str_id, const UStruct* TopStruct, 
 	}
 }
 
-void UnrealImGui::DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter, int32 TableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged)
+void UnrealImGui::DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter, ImGuiTableFlags TableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged)
 {
 	SCOPE_CYCLE_COUNTER(STAT_ImGui_DrawDetailTable);
 	if (ImGui::BeginTable(str_id, 2, TableFlags))

@@ -262,9 +262,9 @@ namespace UnrealImGui
 		TGuardValue<TMap<InnerValue::FFilterCacheKey, bool>> GFilterCacheMapGuard;
 	};
 
-	constexpr int32 DefaultDetailTableFlags = ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
-	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, int32 TableFlags = DefaultDetailTableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
-	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, int32 TableFlags = DefaultDetailTableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+	constexpr ImGuiTableFlags DefaultDetailTableFlags = ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
+	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UStruct* TopStruct, const FPtrArray& Instances, const FDetailsFilter* Filter = nullptr, ImGuiTableFlags TableFlags = DefaultDetailTableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
+	IMGUI_WIDGETS_API void DrawDetailTable(const char* str_id, const UClass* TopClass, const FObjectArray& Instances, const FDetailsFilter* Filter = nullptr, ImGuiTableFlags TableFlags = DefaultDetailTableFlags, const FPostPropertyValueChanged& PostPropertyValueChanged = {});
 
 	IMGUI_WIDGETS_API UClass* GetTopClass(const FObjectArray& Objects, const UClass* StopClass = UObject::StaticClass());
 	IMGUI_WIDGETS_API const UStruct* GetTopStruct(const TArrayView<const UStruct*> Structs, const UStruct* StopStruct = nullptr);
