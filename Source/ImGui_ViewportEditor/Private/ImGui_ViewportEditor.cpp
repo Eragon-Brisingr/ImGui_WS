@@ -24,31 +24,6 @@ void FImGui_ViewportEditorModule::ShutdownModule()
 	}
 }
 
-namespace PrivateAccess
-{
-    template<typename Tag, typename Tag::type M>
-    struct Rob
-    { 
-       FORCEINLINE friend typename Tag::type Access(Tag)
-       {
-          return M;
-       }
-    };
-
-#define ROB_MEMBER(Class, Member, MemberType) \
-struct Class##Member##Rob \
-{ \
-typedef MemberType Class::*type; \
-friend type Access(Class##Member##Rob); \
-};\
-template struct Rob<Class##Member##Rob, &Class::Member>; \
-FORCEINLINE MemberType& Class##_##Member(Class& Inst) { return Inst.*Access(Class##Member##Rob()); }
-
-    ROB_MEMBER(SLevelViewport, GameLayerManager, TSharedPtr<SGameLayerManager>);
-
-#undef ROB_MEMBER
-}
-
 class SImGuiEditorViewportOverlay : public SImGuiViewportOverlay
 {
 	using Super = SImGuiViewportOverlay;
@@ -93,11 +68,6 @@ void FImGui_ViewportEditorModule::WhenLevelEditorCreated(TSharedPtr<ILevelEditor
 	{
 		return;
 	}
-	auto GameLayerManager = PrivateAccess::SLevelViewport_GameLayerManager(*ActiveViewport);
-	if (!GameLayerManager)
-	{
-		return;
-	}
 
 	auto Content = SNew(SImGuiEditorViewportOverlay, LevelEditor.ToSharedRef())
 		.Visibility_Lambda([]
@@ -119,7 +89,7 @@ void FImGui_ViewportEditorModule::WhenLevelEditorCreated(TSharedPtr<ILevelEditor
 			}
 		});
 
-	GameLayerManager->AddGameLayer(Content, 1);
+	ActiveViewport->AddOverlayWidget(Content, 1);
 	FImGui_ViewportModule::EditorViewport = Content;
 }
 
