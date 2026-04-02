@@ -46,6 +46,43 @@ namespace ImGui
 
 namespace ImGui
 {
+	template<typename T>
+	bool SetDragDropPayload(const char* type, const T& data, ImGuiCond cond = 0)
+	{
+		extern bool SetDragDropPayloadForUE(const char*, TSharedPtr<void>&&, ImGuiCond);
+		return SetDragDropPayloadForUE(type, MakeShared<T>(data), cond);
+	}
+	template<typename T>
+	bool SetDragDropPayload(const char* type, T&& data, ImGuiCond cond = 0)
+	{
+		extern bool SetDragDropPayloadForUE(const char*, TSharedPtr<void>&&, ImGuiCond);
+		return SetDragDropPayloadForUE(type, MakeShared<T>(MoveTemp(data)), cond);
+	}
+	template<typename T>
+	struct TImGuiPayload : ImGuiPayload
+	{
+		T& GetData() const
+		{
+			check(sizeof(void*) == DataSize);
+			return **(T**)Data;
+		}
+	private:
+		using ImGuiPayload::Data;
+	};
+	template<typename T>
+	const TImGuiPayload<T>* AcceptDragDropPayload(const char* type, ImGuiDragDropFlags flags = 0)
+	{
+		return (TImGuiPayload<T>*)AcceptDragDropPayload(type, flags);
+	}
+	template<typename T>
+	const TImGuiPayload<T>* GetDragDropPayload()
+	{
+		return (TImGuiPayload<T>*)GetDragDropPayload();
+	}
+}
+
+namespace ImGui
+{
 	struct FWindow : FNoncopyable
 	{
 		[[nodiscard]]
@@ -337,5 +374,25 @@ namespace ImGui
 		[[nodiscard]]
 		FORCEINLINE FClipRect(const ImVec2& clip_rect_min, const ImVec2& clip_rect_max, bool intersect_with_current_clip_rect = false) { ImGui::PushClipRect(clip_rect_min, clip_rect_max, intersect_with_current_clip_rect); }
 		FORCEINLINE ~FClipRect() { ImGui::PopClipRect(); }
+	};
+	
+	struct FDragDropSource : FNoncopyable
+	{
+		[[nodiscard]]
+		FORCEINLINE FDragDropSource(ImGuiDragDropFlags flags = 0) : State{ ImGui::BeginDragDropSource(flags) } { }
+		FORCEINLINE ~FDragDropSource() { if (State) { ImGui::EndDragDropSource(); } }
+		explicit operator bool() const noexcept { return State; }
+	private:
+		bool State;
+	};
+	
+	struct FDragDropTarget : FNoncopyable
+	{
+		[[nodiscard]]
+		FORCEINLINE FDragDropTarget() : State{ ImGui::BeginDragDropTarget() } {}
+		FORCEINLINE ~FDragDropTarget() { if (State) { ImGui::EndDragDropTarget(); } }
+		explicit operator bool() const noexcept { return State; }
+	private:
+		bool State;
 	};
 }

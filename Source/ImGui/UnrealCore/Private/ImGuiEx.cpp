@@ -61,3 +61,14 @@ namespace ImGui
 	    return ImGui::InputTextWithHint(label, hint, (char*)*str, str.GetCharArray().Max(), flags, InputTextCallback, &cb_user_data);
 	}
 }
+
+namespace ImGui
+{
+	TSharedPtr<void> DragData;
+	IMGUI_API bool SetDragDropPayloadForUE(const char* type, TSharedPtr<void>&& data, ImGuiCond cond = 0)
+	{
+		DragData = MoveTemp(data);
+		auto DataPtr = DragData.Get();
+		return SetDragDropPayload(type, &DataPtr, sizeof(void*), cond);
+	}
+}

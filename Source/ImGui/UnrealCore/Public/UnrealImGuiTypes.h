@@ -546,6 +546,28 @@ enum class EImGuiMouseCursor : uint8
 	NotAllowed = ImGuiMouseCursor_NotAllowed,        // When hovering something with disallowed interaction. Usually a crossed circle.
 };
 
+UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
+enum class EImGuiDragDropFlags
+{
+	None                         = ImGuiDragDropFlags_None,
+    // BeginDragDropSource() flags
+    SourceNoPreviewTooltip       = ImGuiDragDropFlags_SourceNoPreviewTooltip,   // Disable preview tooltip. By default, a successful call to BeginDragDropSource opens a tooltip so you can display a preview or description of the source contents. This flag disables this behavior.
+    SourceNoDisableHover         = ImGuiDragDropFlags_SourceNoDisableHover,   // By default, when dragging we clear data so that IsItemHovered() will return false, to avoid subsequent user code submitting tooltips. This flag disables this behavior so you can still call IsItemHovered() on the source item.
+    SourceNoHoldToOpenOthers     = ImGuiDragDropFlags_SourceNoHoldToOpenOthers,   // Disable the behavior that allows to open tree nodes and collapsing header by holding over them while dragging a source item.
+    SourceAllowNullID            = ImGuiDragDropFlags_SourceAllowNullID,   // Allow items such as Text(), Image() that have no unique identifier to be used as drag source, by manufacturing a temporary identifier based on their window-relative position. This is extremely unusual within the dear imgui ecosystem and so we made it explicit.
+    SourceExtern                 = ImGuiDragDropFlags_SourceExtern,   // External source (from outside of dear imgui), won't attempt to read current item/window info. Will always return true. Only one Extern source can be active simultaneously.
+    PayloadAutoExpire            = ImGuiDragDropFlags_PayloadAutoExpire,   // Automatically expire the payload if the source cease to be submitted (otherwise payloads are persisting while being dragged)
+    PayloadNoCrossContext        = ImGuiDragDropFlags_PayloadNoCrossContext,   // Hint to specify that the payload may not be copied outside current dear imgui context.
+    PayloadNoCrossProcess        = ImGuiDragDropFlags_PayloadNoCrossProcess,   // Hint to specify that the payload may not be copied outside current process.
+    // AcceptDragDropPayload() flags
+    AcceptBeforeDelivery         = ImGuiDragDropFlags_AcceptBeforeDelivery,  // AcceptDragDropPayload() will returns true even before the mouse button is released. You can then call IsDelivery() to test if the payload needs to be delivered.
+    AcceptNoDrawDefaultRect      = ImGuiDragDropFlags_AcceptNoDrawDefaultRect,  // Do not draw the default highlight rectangle when hovering over target.
+    AcceptNoPreviewTooltip       = ImGuiDragDropFlags_AcceptNoPreviewTooltip,  // Request hiding the BeginDragDropSource tooltip from the BeginDragDropTarget site.
+    AcceptDrawAsHovered          = ImGuiDragDropFlags_AcceptDrawAsHovered,  // Accepting item will render as if hovered. Useful for e.g. a Button() used as a drop target.
+    AcceptPeekOnly               = ImGuiDragDropFlags_AcceptPeekOnly, // For peeking ahead and inspecting the payload before delivery.
+};
+ENUM_CLASS_FLAGS(EImGuiDragDropFlags);
+
 USTRUCT(BlueprintType)
 struct FImGuiId
 {

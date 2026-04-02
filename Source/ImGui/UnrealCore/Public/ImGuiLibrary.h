@@ -11,9 +11,23 @@
 #include "UnrealImGuiKeyUtils.h"
 #include "UnrealImGuiTexture.h"
 #include "UnrealImGuiTypes.h"
+#include "StructUtils/InstancedStruct.h"
 #include "ImGuiLibrary.generated.h"
 
 static_assert(std::is_same_v<FVector2D::FReal, double>);
+
+USTRUCT(BlueprintType)
+struct FImGuiPayload
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "ImGui")
+	FInstancedStruct Data;
+	UPROPERTY(BlueprintReadOnly, Category = "ImGui")
+	bool bPreview;
+	UPROPERTY(BlueprintReadOnly, Category = "ImGui")
+	bool bDelivery;
+};
 
 UCLASS()
 class IMGUI_API UImGuiLibrary : public UImGuiLibraryBase
@@ -1318,19 +1332,19 @@ public:
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::CloseCurrentPopup();
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "PopupContextItem"), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "Popup Context Item"), BlueprintInternalUseOnly)
 	static bool BeginPopupContextItem(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginPopupContextItem(Name == NAME_None ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "PopupContextWindow"), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "Popup Context Window"), BlueprintInternalUseOnly)
 	static bool BeginPopupContextWindow(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginPopupContextWindow(Name == NAME_None ? nullptr : TCHAR_TO_UTF8(*Name.ToString()), Flags);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "PopupContextVoid"), BlueprintInternalUseOnly)
+	UFUNCTION(BlueprintCallable, Category="ImGui|Popups", meta = (ImGuiScopeExit = EndPopup, AdvancedDisplay = 0, DisplayName = "Popup Context Void"), BlueprintInternalUseOnly)
 	static bool BeginPopupContextVoid(FName Name, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiPopupFlags"))int32 Flags = 1)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
@@ -1837,6 +1851,57 @@ public:
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
 		ImGui::SetClipboardText(TCHAR_TO_UTF8(*Text));
+	}
+
+	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta=(ImGuiScopeExit = EndDragDropSource, DisplayName = "Drag Drop Source"), BlueprintInternalUseOnly)
+	bool BeginDragDropSource(UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiDragDropFlags"))int32 Flags = 0)
+	{
+		if (!CheckImGuiContextThrowError()) { return false; }
+		return ImGui::BeginDragDropSource(Flags);
+	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", BlueprintInternalUseOnly)
+	void EndDragDropSource()
+	{
+		if (!ImGui::GetCurrentContext()) { return; }
+		ImGui::EndDragDropSource();
+	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	bool SetDragDropPayload(FName Name, const FInstancedStruct& Data, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
+	{
+		return ImGui::SetDragDropPayload(TCHAR_TO_UTF8(*Name.ToString()), Data, Cond);
+	}
+
+	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta=(ImGuiScopeExit = EndDragDropTarget, DisplayName = "Drag Drop Target"), BlueprintInternalUseOnly)
+	bool BeginDragDropTarget()
+	{
+		if (!CheckImGuiContextThrowError()) { return false; }
+		return ImGui::BeginDragDropTarget();
+	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", BlueprintInternalUseOnly)
+	void EndDragDropTarget()
+	{
+		if (!ImGui::GetCurrentContext()) { return; }
+		ImGui::EndDragDropTarget();
+	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	bool AcceptDragDropPayload(FName Name, FImGuiPayload& Payload, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiDragDropFlags"))int32 Flags = 0)
+	{
+		if (auto Data = ImGui::AcceptDragDropPayload<FInstancedStruct>(TCHAR_TO_UTF8(*Name.ToString()), Flags))
+		{
+			Payload = { Data->GetData(), Data->IsPreview(), Data->IsDelivery() };
+			return true;
+		}
+		return false;
+	}
+	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta = (ImGuiFunction), BlueprintInternalUseOnly)
+	bool GetDragDropPayload(FImGuiPayload& Payload)
+	{
+		if (auto Data = ImGui::GetDragDropPayload<FInstancedStruct>())
+		{
+			Payload = { Data->GetData(), Data->IsPreview(), Data->IsDelivery() };
+			return true;
+		}
+		return false;
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|File", meta = (ImGuiFunction), BlueprintInternalUseOnly)
