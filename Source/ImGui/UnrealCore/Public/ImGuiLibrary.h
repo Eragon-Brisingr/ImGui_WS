@@ -1854,37 +1854,37 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta=(ImGuiScopeExit = EndDragDropSource, DisplayName = "Drag Drop Source"), BlueprintInternalUseOnly)
-	bool BeginDragDropSource(UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiDragDropFlags"))int32 Flags = 0)
+	static bool BeginDragDropSource(UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiDragDropFlags"))int32 Flags = 0)
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginDragDropSource(Flags);
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", BlueprintInternalUseOnly)
-	void EndDragDropSource()
+	static void EndDragDropSource()
 	{
 		if (!ImGui::GetCurrentContext()) { return; }
 		ImGui::EndDragDropSource();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	bool SetDragDropPayload(FName Name, const FInstancedStruct& Data, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
+	static bool SetDragDropPayload(FName Name, const FInstancedStruct& Data, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiCond"))int32 Cond = 0)
 	{
 		return ImGui::SetDragDropPayload(TCHAR_TO_UTF8(*Name.ToString()), Data, Cond);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta=(ImGuiScopeExit = EndDragDropTarget, DisplayName = "Drag Drop Target"), BlueprintInternalUseOnly)
-	bool BeginDragDropTarget()
+	static bool BeginDragDropTarget()
 	{
 		if (!CheckImGuiContextThrowError()) { return false; }
 		return ImGui::BeginDragDropTarget();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", BlueprintInternalUseOnly)
-	void EndDragDropTarget()
+	static void EndDragDropTarget()
 	{
 		if (!ImGui::GetCurrentContext()) { return; }
 		ImGui::EndDragDropTarget();
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	bool AcceptDragDropPayload(FName Name, FImGuiPayload& Payload, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiDragDropFlags"))int32 Flags = 0)
+	static bool AcceptDragDropPayload(FName Name, FImGuiPayload& Payload, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImGuiDragDropFlags"))int32 Flags = 0)
 	{
 		if (auto Data = ImGui::AcceptDragDropPayload<FInstancedStruct>(TCHAR_TO_UTF8(*Name.ToString()), Flags))
 		{
@@ -1894,7 +1894,7 @@ public:
 		return false;
 	}
 	UFUNCTION(BlueprintCallable, Category="ImGui|DragDrop", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	bool GetDragDropPayload(FImGuiPayload& Payload)
+	static bool GetDragDropPayload(FImGuiPayload& Payload)
 	{
 		if (auto Data = ImGui::GetDragDropPayload<FInstancedStruct>())
 		{
@@ -1905,7 +1905,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImGui|File", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	void DownloadFile(const FString& FileName, const TArray<uint8>& Data)
+	static void DownloadFile(const FString& FileName, const TArray<uint8>& Data)
 	{
 		UnrealImGui::DownloadFile(*FileName, Data);
 	}
