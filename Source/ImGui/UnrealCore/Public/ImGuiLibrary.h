@@ -24,9 +24,9 @@ struct FImGuiPayload
 	UPROPERTY(BlueprintReadOnly, Category = "ImGui")
 	FInstancedStruct Data;
 	UPROPERTY(BlueprintReadOnly, Category = "ImGui")
-	bool bPreview;
+	bool bPreview = false;
 	UPROPERTY(BlueprintReadOnly, Category = "ImGui")
-	bool bDelivery;
+	bool bDelivery = false;
 };
 
 UCLASS()
