@@ -23,14 +23,24 @@ void FUnrealImGuiViewportContext::DrawLine(const FVector2D& Start, const FVector
 
 void FUnrealImGuiViewportContext::DrawDashedLine(const FVector2D& Start, const FVector2D& End, const FColor& Color, float DashSize, float Thickness) const
 {
+	if (DashSize <= KINDA_SMALL_NUMBER)
+	{
+		DrawLine(Start, End, Color, Thickness);
+		return;
+	}
+
 	if (!ViewBounds.Intersect(FBox2D(TArray<FVector2D>{Start, End})))
 	{
 		return;
 	}
 
 	FVector2D LineDir = End - Start;
-	double LineLeft = (End - Start).Size();
-	if (LineLeft)
+	double LineLeft = LineDir.Size();
+	if (LineLeft <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+	if (LineLeft > 0.0)
 	{
 		LineDir /= LineLeft;
 	}
@@ -41,14 +51,23 @@ void FUnrealImGuiViewportContext::DrawDashedLine(const FVector2D& Start, const F
 	{
 		const FVector2D DrawEnd = DrawStart + Dash;
 
-		DrawList->AddLine(ImVec2{ WorldToScreenLocation(Start) }, ImVec2{ WorldToScreenLocation(End) }, FColorToU32(Color), Thickness);
+		DrawList->AddLine(
+			ImVec2{ WorldToScreenLocation(DrawStart) },
+			ImVec2{ WorldToScreenLocation(DrawEnd) },
+			FColorToU32(Color),
+			Thickness);
 
 		LineLeft -= 2*DashSize;
 		DrawStart = DrawEnd + Dash;
 	}
-	if (LineLeft > 0.0f)
+	if (LineLeft > 0.0)
 	{
-		DrawList->AddLine(ImVec2{ WorldToScreenLocation(Start) }, ImVec2{ WorldToScreenLocation(End) }, FColorToU32(Color), Thickness);
+		const FVector2D DrawEnd = DrawStart + LineDir * LineLeft;
+		DrawList->AddLine(
+			ImVec2{ WorldToScreenLocation(DrawStart) },
+			ImVec2{ WorldToScreenLocation(DrawEnd) },
+			FColorToU32(Color),
+			Thickness);
 	}
 }
 
