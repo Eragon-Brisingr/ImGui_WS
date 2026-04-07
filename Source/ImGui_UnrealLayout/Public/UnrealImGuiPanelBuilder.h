@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Templates/SubclassOf.h"
 #include "UnrealImGuiPanelBuilder.generated.h"
 
 struct FStreamableHandle;

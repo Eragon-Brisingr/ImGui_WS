@@ -8,7 +8,7 @@
 #include "UnrealImGuiPropertyCustomization.h"
 #include "UnrealImGuiStat.h"
 #include "UObject/EnumProperty.h"
-#include "UObject/Package.h"
+#include "UObject/StrProperty.h"
 #include "UObject/TextProperty.h"
 
 namespace UnrealImGui

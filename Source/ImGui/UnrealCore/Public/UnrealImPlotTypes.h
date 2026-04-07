@@ -285,60 +285,48 @@ FORCEINLINE constexpr ImPlotCond_ operator*(EImPlotCond Cond) { return (ImPlotCo
 UENUM()
 enum class EImPlotCol : uint8
 {
-	Line = ImPlotCol_Line,          // plot line/outline color (defaults to next unused color in current colormap)
-	Fill = ImPlotCol_Fill,          // plot fill color for bars (defaults to the current line color)
-	MarkerOutline = ImPlotCol_MarkerOutline, // marker outline color (defaults to the current line color)
-	MarkerFill = ImPlotCol_MarkerFill,    // marker fill color (defaults to the current line color)
-	ErrorBar = ImPlotCol_ErrorBar,      // error bar color (defaults to ImGuiCol_Text)
-	FrameBg = ImPlotCol_FrameBg,       // plot frame background color (defaults to ImGuiCol_FrameBg)
-	PlotBg = ImPlotCol_PlotBg,        // plot area background color (defaults to ImGuiCol_WindowBg)
-	PlotBorder = ImPlotCol_PlotBorder,    // plot area border color (defaults to ImGuiCol_Border)
-	LegendBg = ImPlotCol_LegendBg,      // legend background color (defaults to ImGuiCol_PopupBg)
+	FrameBg      = ImPlotCol_FrameBg,       // plot frame background color (defaults to ImGuiCol_FrameBg)
+	PlotBg       = ImPlotCol_PlotBg,        // plot area background color (defaults to ImGuiCol_WindowBg)
+	PlotBorder   = ImPlotCol_PlotBorder,    // plot area border color (defaults to ImGuiCol_Border)
+	LegendBg     = ImPlotCol_LegendBg,      // legend background color (defaults to ImGuiCol_PopupBg)
 	LegendBorder = ImPlotCol_LegendBorder,  // legend border color (defaults to ImPlotCol_PlotBorder)
-	LegendText = ImPlotCol_LegendText,    // legend text color (defaults to ImPlotCol_InlayText)
-	TitleText = ImPlotCol_TitleText,     // plot title text color (defaults to ImGuiCol_Text)
-	InlayText = ImPlotCol_InlayText,     // color of text appearing inside of plots (defaults to ImGuiCol_Text)
-	AxisText = ImPlotCol_AxisText,      // axis label and tick lables color (defaults to ImGuiCol_Text)
-	AxisGrid = ImPlotCol_AxisGrid,      // axis grid color (defaults to 25% ImPlotCol_AxisText)
-	AxisTick = ImPlotCol_AxisTick,      // axis tick color (defaults to AxisGrid)
-	AxisBg = ImPlotCol_AxisBg,        // background color of axis hover region (defaults to transparent)
-	AxisBgHovered = ImPlotCol_AxisBgHovered, // axis hover color (defaults to ImGuiCol_ButtonHovered)
+	LegendText   = ImPlotCol_LegendText,    // legend text color (defaults to ImPlotCol_InlayText)
+	TitleText    = ImPlotCol_TitleText,     // plot title text color (defaults to ImGuiCol_Text)
+	InlayText    = ImPlotCol_InlayText,     // color of text appearing inside of plots (defaults to ImGuiCol_Text)
+	AxisText     = ImPlotCol_AxisText,      // axis label and tick labels color (defaults to ImGuiCol_Text)
+	AxisGrid     = ImPlotCol_AxisGrid,      // axis grid color (defaults to 25% ImPlotCol_AxisText)
+	AxisTick     = ImPlotCol_AxisTick,      // axis tick color (defaults to AxisGrid)
+	AxisBg       = ImPlotCol_AxisBg,        // background color of axis hover region (defaults to transparent)
+	AxisBgHovered= ImPlotCol_AxisBgHovered, // axis hover color (defaults to ImGuiCol_ButtonHovered)
 	AxisBgActive = ImPlotCol_AxisBgActive,  // axis active color (defaults to ImGuiCol_ButtonActive)
-	Selection = ImPlotCol_Selection,     // box-selection color (defaults to yellow)
-	Crosshairs = ImPlotCol_Crosshairs,    // crosshairs color (defaults to ImPlotCol_PlotBorder)
+	Selection    = ImPlotCol_Selection,     // box-selection color (defaults to yellow)
+	Crosshairs   = ImPlotCol_Crosshairs,    // crosshairs color (defaults to ImPlotCol_PlotBorder)
 };
 FORCEINLINE constexpr ImPlotCol_ operator*(EImPlotCol PlotCol) { return (ImPlotCol_)PlotCol; }
 
 UENUM()
 enum class EImPlotStyleVar : uint8
 {
-    LineWeight = ImPlotStyleVar_LineWeight,         // float,  plot item line weight in pixels
-    Marker = ImPlotStyleVar_Marker,             // int,    marker specification
-    MarkerSize = ImPlotStyleVar_MarkerSize,         // float,  marker size in pixels (roughly the marker's "radius")
-    MarkerWeight = ImPlotStyleVar_MarkerWeight,       // float,  plot outline weight of markers in pixels
-    FillAlpha = ImPlotStyleVar_FillAlpha,          // float,  alpha modifier applied to all plot item fills
-    ErrorBarSize = ImPlotStyleVar_ErrorBarSize,       // float,  error bar whisker width in pixels
-    ErrorBarWeight = ImPlotStyleVar_ErrorBarWeight,     // float,  error bar whisker weight in pixels
-    DigitalBitHeight = ImPlotStyleVar_DigitalBitHeight,   // float,  digital channels bit height (at 1) in pixels
-    DigitalBitGap = ImPlotStyleVar_DigitalBitGap,      // float,  digital channels bit padding gap in pixels
-    PlotBorderSize = ImPlotStyleVar_PlotBorderSize,     // float,  thickness of border around plot area
-    MinorAlpha = ImPlotStyleVar_MinorAlpha,         // float,  alpha multiplier applied to minor axis grid lines
-    MajorTickLen = ImPlotStyleVar_MajorTickLen,       // ImVec2, major tick lengths for X and Y axes
-    MinorTickLen = ImPlotStyleVar_MinorTickLen,       // ImVec2, minor tick lengths for X and Y axes
-    MajorTickSize = ImPlotStyleVar_MajorTickSize,      // ImVec2, line thickness of major ticks
-    MinorTickSize = ImPlotStyleVar_MinorTickSize,      // ImVec2, line thickness of minor ticks
-    MajorGridSize = ImPlotStyleVar_MajorGridSize,      // ImVec2, line thickness of major grid lines
-    MinorGridSize = ImPlotStyleVar_MinorGridSize,      // ImVec2, line thickness of minor grid lines
-    PlotPadding = ImPlotStyleVar_PlotPadding,        // ImVec2, padding between widget frame and plot area, labels, or outside legends (i.e. main padding)
-    LabelPadding = ImPlotStyleVar_LabelPadding,       // ImVec2, padding between axes labels, tick labels, and plot edge
-    LegendPadding = ImPlotStyleVar_LegendPadding,      // ImVec2, legend padding from plot edges
-    LegendInnerPadding = ImPlotStyleVar_LegendInnerPadding, // ImVec2, legend inner padding from legend edges
-    LegendSpacing = ImPlotStyleVar_LegendSpacing,      // ImVec2, spacing between legend entries
-    MousePosPadding = ImPlotStyleVar_MousePosPadding,    // ImVec2, padding between plot edge and interior info text
-    AnnotationPadding = ImPlotStyleVar_AnnotationPadding,  // ImVec2, text padding around annotation labels
-    FitPadding = ImPlotStyleVar_FitPadding,         // ImVec2, additional fit padding as a percentage of the fit extents (e.g. ImVec2(0.1f,0.1f) adds 10% to the fit extents of X and Y)
-    PlotDefaultSize = ImPlotStyleVar_PlotDefaultSize,    // ImVec2, default size used when ImVec2(0,0) is passed to BeginPlot
-    PlotMinSize = ImPlotStyleVar_PlotMinSize,        // ImVec2, minimum size plot frame can be when shrunk
+	PlotDefaultSize    = ImPlotStyleVar_PlotDefaultSize,    // ImVec2, default size used when ImVec2(0,0) is passed to BeginPlot
+	PlotMinSize        = ImPlotStyleVar_PlotMinSize,        // ImVec2, minimum size plot frame can be when shrunk
+	PlotBorderSize     = ImPlotStyleVar_PlotBorderSize,     // float,  thickness of border around plot area
+	MinorAlpha         = ImPlotStyleVar_MinorAlpha,         // float,  alpha multiplier applied to minor axis grid lines
+	MajorTickLen       = ImPlotStyleVar_MajorTickLen,       // ImVec2, major tick lengths for X and Y axes
+	MinorTickLen       = ImPlotStyleVar_MinorTickLen,       // ImVec2, minor tick lengths for X and Y axes
+	MajorTickSize      = ImPlotStyleVar_MajorTickSize,      // ImVec2, line thickness of major ticks
+	MinorTickSize      = ImPlotStyleVar_MinorTickSize,      // ImVec2, line thickness of minor ticks
+	MajorGridSize      = ImPlotStyleVar_MajorGridSize,      // ImVec2, line thickness of major grid lines
+	MinorGridSize      = ImPlotStyleVar_MinorGridSize,      // ImVec2, line thickness of minor grid lines
+	PlotPadding        = ImPlotStyleVar_PlotPadding,        // ImVec2, padding between widget frame and plot area, labels, or outside legends (i.e. main padding)
+	LabelPadding       = ImPlotStyleVar_LabelPadding,       // ImVec2, padding between axes labels, tick labels, and plot edge
+	LegendPadding      = ImPlotStyleVar_LegendPadding,      // ImVec2, legend padding from plot edges
+	LegendInnerPadding = ImPlotStyleVar_LegendInnerPadding, // ImVec2, legend inner padding from legend edges
+	LegendSpacing      = ImPlotStyleVar_LegendSpacing,      // ImVec2, spacing between legend entries
+	MousePosPadding    = ImPlotStyleVar_MousePosPadding,    // ImVec2, padding between plot edge and interior info text
+	AnnotationPadding  = ImPlotStyleVar_AnnotationPadding,  // ImVec2, text padding around annotation labels
+	FitPadding         = ImPlotStyleVar_FitPadding,         // ImVec2, additional fit padding as a percentage of the fit extents (e.g. ImVec2(0.1f,0.1f) adds 10% to the fit extents of X and Y)
+	DigitalPadding     = ImPlotStyleVar_DigitalPadding,     // float,  digital plot padding from bottom in pixels
+	DigitalSpacing     = ImPlotStyleVar_DigitalSpacing,     // float,  digital plot spacing gap in pixels
 };
 FORCEINLINE constexpr ImPlotStyleVar_ operator*(EImPlotStyleVar PlotCol) { return (ImPlotStyleVar_)PlotCol; }
 
@@ -354,6 +342,7 @@ enum class EImPlotScale : uint8
 UENUM()
 enum class EImPlotMarker : uint8
 {
+	Auto = (uint8)ImPlotMarker_Auto, // use the next unused marker
 	None = (uint8)ImPlotMarker_None, // no marker
 	Circle = ImPlotMarker_Circle,    // a circle marker (default)
 	Square = ImPlotMarker_Square,    // a square maker
@@ -414,3 +403,250 @@ enum class EImPlotBin : uint8
 	Scott   = -ImPlotBin_Scott, // w = 3.49 * sigma / cbrt(n)
 };
 FORCEINLINE constexpr ImPlotBin_ operator*(EImPlotBin Bin) { return (ImPlotBin_)-static_cast<int32>(Bin); }
+
+UENUM()
+enum class EImPlotProp : uint8
+{
+	LineColor = ImPlotProp_LineColor,
+	LineColors = ImPlotProp_LineColors,
+	LineWeight = ImPlotProp_LineWeight,
+	FillColor = ImPlotProp_FillColor,
+	FillColors = ImPlotProp_FillColors,
+	FillAlpha = ImPlotProp_FillAlpha,
+	Marker = ImPlotProp_Marker,
+	MarkerSize = ImPlotProp_MarkerSize,
+	MarkerSizes = ImPlotProp_MarkerSizes,
+	MarkerLineColor = ImPlotProp_MarkerLineColor,
+	MarkerLineColors = ImPlotProp_MarkerLineColors,
+	MarkerFillColor = ImPlotProp_MarkerFillColor,
+	MarkerFillColors = ImPlotProp_MarkerFillColors,
+	Size = ImPlotProp_Size,
+	Offset = ImPlotProp_Offset,
+	Stride = ImPlotProp_Stride,
+	Flags = ImPlotProp_Flags
+};
+FORCEINLINE constexpr ImPlotProp_ operator*(EImPlotProp Prop) { return (ImPlotProp_)Prop; }
+
+USTRUCT(BlueprintType)
+struct FImPlotSpec
+{
+	GENERATED_BODY()
+	
+	static constexpr FLinearColor AUTO_COL{ 0, 0, 0, -1 };
+
+	// line color (applies to lines, bar edges); AUTO_COL will use next Colormap color or current item color
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	FLinearColor LineColor = AUTO_COL;
+	
+	// line weight in pixels (applies to lines, bar edges, marker edges)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	float LineWeight      = 1.0f;
+
+	// array of colors for each line; if empty, use LineColor for all lines
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	TArray<FLinearColor> LineColors;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	FLinearColor FillColor = AUTO_COL;
+
+	// array of colors for each fill; if empty, use FillColor for all fills
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	TArray<FLinearColor> FillColors;
+	
+	// alpha multiplier (applies to FillColor, FillColors, MarkerFillColor, and MarkerFillColors)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	float FillAlpha = 1.0f;
+	
+	// marker type; specify ImPlotMarker_Auto to use the next unused marker
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	EImPlotMarker Marker = EImPlotMarker::None;
+	
+	// size of markers (radius) *in pixels*
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	float MarkerSize = 4;
+
+	// array of sizes for each marker; if empty, use MarkerSize for all markers
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	TArray<float> MarkerSizes;
+	
+	// marker edge color; IMPLOT_AUTO_COL will use LineColor
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	FLinearColor MarkerLineColor = AUTO_COL;
+
+	// array of colors for each marker edge; if empty, use MarkerLineColor for all markers
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	TArray<FLinearColor> MarkerLineColors;
+	
+	// marker face color; IMPLOT_AUTO_COL will use LineColor
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	FLinearColor MarkerFillColor = AUTO_COL;
+
+	// array of colors for each marker face; if empty, use MarkerFillColor for all markers
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	TArray<FLinearColor> MarkerFillColors;
+	
+	// size of error bar whiskers (width or height), and digital bars (height) *in pixels*
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	float Size = 4;
+	
+	// data index offset
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	int32 Offset = 0;
+	
+	// data stride in bytes; IMPLOT_AUTO will result in sizeof(T) where T is the type passed to PlotX
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ImPlot)
+	int32 Stride = IMPLOT_AUTO;
+	
+	// optional item flags; can be composed from common ImPlotItemFlags and/or specialized ImPlotXFlags
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotItemFlags"), Category = ImPlot)
+	int32 Flags = ImPlotItemFlags_None;
+
+	bool SetProp(EImPlotProp Prop, double Value)
+	{
+		switch (*Prop)
+		{
+		case ImPlotProp_LineColor:
+			LineColor = FLinearColor{ ImGui::ColorConvertU32ToFloat4((ImU32)Value) };
+			return true;
+		case ImPlotProp_LineWeight:
+			LineWeight = (float)Value;
+			return true;
+		case ImPlotProp_FillColor:
+			FillColor = FLinearColor{ ImGui::ColorConvertU32ToFloat4((ImU32)Value) };
+			return true;
+		case ImPlotProp_FillAlpha:
+			FillAlpha = (float)Value;
+			return true;
+		case ImPlotProp_Marker:
+			Marker = (EImPlotMarker)(uint8)(int8)FMath::RoundToInt(Value);
+			return true;
+		case ImPlotProp_MarkerSize:
+			MarkerSize = (float)Value;
+			return true;
+		case ImPlotProp_MarkerLineColor:
+			MarkerLineColor = FLinearColor{ ImGui::ColorConvertU32ToFloat4((ImU32)Value) };
+			return true;
+		case ImPlotProp_MarkerFillColor:
+			MarkerFillColor = FLinearColor{ ImGui::ColorConvertU32ToFloat4((ImU32)Value) };
+			return true;
+		case ImPlotProp_Size:
+			Size = (float)Value;
+			return true;
+		case ImPlotProp_Offset:
+			Offset = (int32)FMath::RoundToInt(Value);
+			return true;
+		case ImPlotProp_Stride:
+			Stride = (int32)FMath::RoundToInt(Value);
+			return true;
+		case ImPlotProp_Flags:
+			Flags = (int32)FMath::RoundToInt(Value);
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool SetProp(EImPlotProp Prop, const FLinearColor& Value)
+	{
+		switch (*Prop)
+		{
+		case ImPlotProp_LineColor:
+			LineColor = Value;
+			return true;
+		case ImPlotProp_FillColor:
+			FillColor = Value;
+			return true;
+		case ImPlotProp_MarkerLineColor:
+			MarkerLineColor = Value;
+			return true;
+		case ImPlotProp_MarkerFillColor:
+			MarkerFillColor = Value;
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool SetProp(EImPlotProp Prop, const TArray<FLinearColor>& Values)
+	{
+		switch (*Prop)
+		{
+		case ImPlotProp_LineColors:
+			LineColors = Values;
+			return true;
+		case ImPlotProp_FillColors:
+			FillColors = Values;
+			return true;
+		case ImPlotProp_MarkerLineColors:
+			MarkerLineColors = Values;
+			return true;
+		case ImPlotProp_MarkerFillColors:
+			MarkerFillColors = Values;
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool SetProp(EImPlotProp Prop, const TArray<float>& Values)
+	{
+		switch (*Prop)
+		{
+		case ImPlotProp_MarkerSizes:
+			MarkerSizes = Values;
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	operator ImPlotSpec() const
+	{
+		ImPlotSpec Spec;
+		Spec.LineColor = ImVec4{ LineColor };
+		Spec.LineColors = BuildColorBuffer(LineColors, CachedLineColors);
+		Spec.LineWeight = LineWeight;
+		Spec.FillColor = ImVec4{ FillColor };
+		Spec.FillColors = BuildColorBuffer(FillColors, CachedFillColors);
+		Spec.FillAlpha = FillAlpha;
+		Spec.Marker = (ImPlotMarker)Marker;
+		Spec.MarkerSize = MarkerSize;
+		Spec.MarkerSizes = MarkerSizes.Num() == 0 ? nullptr : const_cast<float*>(MarkerSizes.GetData());
+		Spec.MarkerLineColor = ImVec4{ MarkerLineColor };
+		Spec.MarkerLineColors = BuildColorBuffer(MarkerLineColors, CachedMarkerLineColors);
+		Spec.MarkerFillColor = ImVec4{ MarkerFillColor };
+		Spec.MarkerFillColors = BuildColorBuffer(MarkerFillColors, CachedMarkerFillColors);
+		Spec.Size = Size;
+		Spec.Offset = Offset;
+		Spec.Stride = Stride;
+		Spec.Flags = Flags;
+
+		return Spec;
+	}
+
+private:
+	static ImU32 ToImU32(const FLinearColor& Color)
+	{
+		return ImGui::ColorConvertFloat4ToU32(ImVec4{ Color });
+	}
+
+	static ImU32* BuildColorBuffer(const TArray<FLinearColor>& Source, TArray<ImU32>& Buffer)
+	{
+		if (Source.Num() == 0)
+		{
+			return nullptr;
+		}
+		Buffer.Reset(Source.Num());
+		Buffer.Reserve(Source.Num());
+		for (const FLinearColor& Color : Source)
+		{
+			Buffer.Add(ToImU32(Color));
+		}
+		return Buffer.GetData();
+	}
+
+	mutable TArray<ImU32> CachedLineColors;
+	mutable TArray<ImU32> CachedFillColors;
+	mutable TArray<ImU32> CachedMarkerLineColors;
+	mutable TArray<ImU32> CachedMarkerFillColors;
+};

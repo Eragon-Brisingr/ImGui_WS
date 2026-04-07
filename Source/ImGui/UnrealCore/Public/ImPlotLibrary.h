@@ -37,6 +37,7 @@ class IMGUI_API UImPlotLibrary : public UImGuiLibraryBase
 		}
 		const char* const* GetData() const { return RawLabels.Num() > 0 ? RawLabels.GetData() : nullptr; }
 	};
+
 public:
 	UFUNCTION(BlueprintCallable, Category="ImPlot", meta = (ImGuiScopeExit = EndPlot, DisplayName = Plot, Name = "Untitle"), BlueprintInternalUseOnly)
 	static bool BeginPlot(FName Title, FVector2D Size = FVector2D(-1, 0), UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotFlags"))int32 Flags = 0)
@@ -182,115 +183,133 @@ public:
 		ImPlot::SetNextAxesToFit();
 	}
 
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotLine(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotLineFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotLine(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotLine(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotLine(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotScatter(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotScatterFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotScatter(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotScatter(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotScatter(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotStairs(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotStairsFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotStairs(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotStairs(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotStairs(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotShaded(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotShadedFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotShaded(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, double YRef, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotShaded(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotShaded(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), YRef, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, DisplayName = "PlotShaded (Y2)", ScriptName = PlotShaded), BlueprintInternalUseOnly)
-	static void PlotShadedEx(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const TArray<float>& ValuesY2, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotShadedFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, DisplayName = "PlotShaded (Y2)", ScriptName = PlotShaded, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotShadedEx(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const TArray<float>& ValuesY2, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotShaded(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesY2.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotShaded(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesY2.GetData(), ValuesX.Num(), NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotBars(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, double BarSize, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotBarsFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotBars(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, double BarSize, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotBars(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), BarSize, Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotBars(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), BarSize, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotBarGroups(const TArray<FName>& Labels, const TArray<float>& Values, int32 GroupCount, double GroupSize = 0.67, double Shift = 0, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotBarGroupsFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotBarGroups(const TArray<FName>& Labels, const TArray<float>& Values, int32 GroupCount, double GroupSize = 0.67, double Shift = 0, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
+		const ImPlotSpec NativeSpec = Spec;
 		const FUtf8Labels Utf8Labels{ Labels };
-		ImPlot::PlotBarGroups(Utf8Labels.GetData(), Values.GetData(), Values.Num(), GroupCount, GroupSize, Shift, Flags);
+		ImPlot::PlotBarGroups(Utf8Labels.GetData(), Values.GetData(), Values.Num(), GroupCount, GroupSize, Shift, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotErrorBars(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const TArray<float>& Errors, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotErrorBarsFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotErrorBars(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const TArray<float>& Errors, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotErrorBars(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), Errors.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotErrorBars(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), Errors.GetData(), ValuesX.Num(), NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, DisplayName = "PlotErrorBars (Neg & Pos)", ScriptName = PlotErrorBars), BlueprintInternalUseOnly)
-	static void PlotErrorBarsEx(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const TArray<float>& Neg, const TArray<float>& Pos, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotErrorBarsFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, DisplayName = "PlotErrorBars (Neg & Pos)", ScriptName = PlotErrorBars, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotErrorBarsEx(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const TArray<float>& Neg, const TArray<float>& Pos, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotErrorBars(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), Neg.GetData(), Pos.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotErrorBars(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), Neg.GetData(), Pos.GetData(), ValuesX.Num(), NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotStems(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, double Ref = 0, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotStemsFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotStems(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, double Ref = 0, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotStems(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), Ref, Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotStems(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), Ref, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotInfLines(FName Label, const TArray<float>& Values, int32 Count, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotInfLinesFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotInfLines(FName Label, const TArray<float>& Values, int32 Count, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotInfLines(TCHAR_TO_UTF8(*Label.ToString()), Values.GetData(), Count, Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotInfLines(TCHAR_TO_UTF8(*Label.ToString()), Values.GetData(), Count, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotPieChart(const TArray<FName>& Labels, const TArray<float>& Values, double X, double Y, double Radius, const FString& Fmt = TEXT("%.1f"), double Angle0 = 90, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotPieChartFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotPieChart(const TArray<FName>& Labels, const TArray<float>& Values, double X, double Y, double Radius, const FString& Fmt = TEXT("%.1f"), double Angle0 = 90, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
+		const ImPlotSpec NativeSpec = Spec;
 		const FUtf8Labels Utf8Labels{ Labels };
-		ImPlot::PlotPieChart(Utf8Labels.GetData(), Values.GetData(), Values.Num(), X, Y, Radius, TCHAR_TO_UTF8(*Fmt), Angle0, Flags);
+		ImPlot::PlotPieChart(Utf8Labels.GetData(), Values.GetData(), Values.Num(), X, Y, Radius, TCHAR_TO_UTF8(*Fmt), Angle0, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotHistogram(FName Label, const TArray<float>& Values, EImPlotBin Bins = EImPlotBin::Sturges, double BarScale = 1.0, FVector2D Range = FVector2D::ZeroVector, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotHistogramFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotHistogram(FName Label, const TArray<float>& Values, EImPlotBin Bins = EImPlotBin::Sturges, double BarScale = 1.0, FVector2D Range = FVector2D::ZeroVector, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotHistogram(TCHAR_TO_UTF8(*Label.ToString()), Values.GetData(), Values.Num(), *Bins, BarScale, ImPlotRange{ Range.X, Range.Y }, Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotHistogram(TCHAR_TO_UTF8(*Label.ToString()), Values.GetData(), Values.Num(), *Bins, BarScale, ImPlotRange{ Range.X, Range.Y }, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotHistogram2D(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, EImPlotBin BinsX = EImPlotBin::Sturges, EImPlotBin BinsY = EImPlotBin::Sturges, FVector2D RectMin = FVector2D::ZeroVector, FVector2D RectMax = FVector2D::ZeroVector, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotHistogramFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotHistogram2D(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, EImPlotBin BinsX = EImPlotBin::Sturges, EImPlotBin BinsY = EImPlotBin::Sturges, FVector2D RectMin = FVector2D::ZeroVector, FVector2D RectMax = FVector2D::ZeroVector, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotHistogram2D(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), *BinsX, *BinsY, ImPlotRect{ RectMin.X, RectMax.X, RectMin.Y, RectMax.Y }, Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotHistogram2D(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), *BinsX, *BinsY, ImPlotRect{ RectMin.X, RectMax.X, RectMin.Y, RectMax.Y }, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotDigital(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotStemsFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotDigital(FName Label, const TArray<float>& ValuesX, const TArray<float>& ValuesY, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotDigital(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotDigital(TCHAR_TO_UTF8(*Label.ToString()), ValuesX.GetData(), ValuesY.GetData(), ValuesX.Num(), NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotImage(FName Label, const FImGuiTextureHandle& TextureHandle, const FVector2D& BoundsMin, const FVector2D& BoundsMax, const FVector2D& UV0 = FVector2D::ZeroVector, const FVector2D& UV1 = FVector2D::UnitVector, const FLinearColor& TintColor = FLinearColor::White, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotImageFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotImage(FName Label, const FImGuiTextureHandle& TextureHandle, const FVector2D& BoundsMin, const FVector2D& BoundsMax, const FVector2D& UV0 = FVector2D::ZeroVector, const FVector2D& UV1 = FVector2D::UnitVector, const FLinearColor& TintColor = FLinearColor::White, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotImage(TCHAR_TO_UTF8(*Label.ToString()), TextureHandle, ImPlotPoint{ BoundsMin.X, BoundsMin.Y }, ImPlotPoint{ BoundsMax.X, BoundsMax.Y }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotImage(TCHAR_TO_UTF8(*Label.ToString()), TextureHandle, ImPlotPoint{ BoundsMin.X, BoundsMin.Y }, ImPlotPoint{ BoundsMax.X, BoundsMax.Y }, ImVec2{ UV0 }, ImVec2{ UV1 }, ImVec4{ TintColor }, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotText(const FString& Text, double X, double Y, const FVector2D& PixOffset = FVector2D::ZeroVector, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotTextFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotText(const FString& Text, double X, double Y, const FVector2D& PixOffset = FVector2D::ZeroVector, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotText(TCHAR_TO_UTF8(*Text), X, Y, ImVec2{ PixOffset }, Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotText(TCHAR_TO_UTF8(*Text), X, Y, ImVec2{ PixOffset }, NativeSpec);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void PlotDummy(FName Label, UPARAM(meta = (Bitmask, BitmaskEnum = "/Script/ImGui.EImPlotDummyFlags"))int32 Flags = 0)
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Items", meta = (ImGuiFunction, AutoCreateRefTerm = Spec), BlueprintInternalUseOnly)
+	static void PlotDummy(FName Label, const FImPlotSpec& Spec = FImPlotSpec())
 	{
 		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::PlotDummy(TCHAR_TO_UTF8(*Label.ToString()), Flags);
+		const ImPlotSpec NativeSpec = Spec;
+		ImPlot::PlotDummy(TCHAR_TO_UTF8(*Label.ToString()), NativeSpec);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="ImPlot|Tools", meta = (ImGuiFunction), BlueprintInternalUseOnly)
@@ -475,30 +494,6 @@ public:
 		if (!ImGui::GetCurrentContext()) { return; }
 		ImPlot::PopStyleVar(Count);
 	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Styling", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetNextLineStyle(const FLinearColor Color = FLinearColor(0, 0, 0, -1), float Weight = -1.f)
-	{
-		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::SetNextLineStyle(ImVec4{ Color }, Weight);
-	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Styling", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetNextFillStyle(const FLinearColor Color = FLinearColor(0, 0, 0, -1), float AlphaMod = -1.f)
-	{
-		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::SetNextFillStyle(ImVec4{ Color }, AlphaMod);
-	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Styling", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetNextMarkerStyle(EImPlotMarker Marker = EImPlotMarker::None, float Size = -1.f, const FLinearColor& Fill = FLinearColor(0, 0, 0, -1), float Weight = -1.f, const FLinearColor& Outline = FLinearColor(0, 0, 0, -1))
-	{
-		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::SetNextMarkerStyle(*Marker, Size, ImVec4{ Fill }, Weight, ImVec4{ Outline });
-	}
-	UFUNCTION(BlueprintCallable, Category="ImPlot|Styling", meta = (ImGuiFunction), BlueprintInternalUseOnly)
-	static void SetNextErrorBarStyle(const FLinearColor Color = FLinearColor(0, 0, 0, -1), float Size = -1.f, float Weight = -1.f)
-	{
-		if (!CheckImGuiContextThrowError()) { return; }
-		ImPlot::SetNextErrorBarStyle(ImVec4{ Color }, Size, Weight);
-	}
 	UFUNCTION(BlueprintPure, Category="ImPlot|Styling", meta = (ImGuiFunction), BlueprintInternalUseOnly)
 	static FLinearColor GetLastItemColor()
 	{
@@ -545,5 +540,35 @@ public:
 	{
 		if (!CheckImGuiContextThrowError()) { return {}; }
 		return FLinearColor{ ImPlot::NextColormapColor() };
+	}
+};
+
+UCLASS(meta = (ScriptMixin = FImPlotSpec))
+class IMGUI_API UImPlotSpecLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+public:
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Spec")
+	static bool SetPropScalar(UPARAM(ref) FImPlotSpec& Spec, EImPlotProp Prop, double Value)
+	{
+		return Spec.SetProp(Prop, Value);
+	}
+
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Spec")
+	static bool SetPropColor(UPARAM(ref) FImPlotSpec& Spec, EImPlotProp Prop, const FLinearColor& Value)
+	{
+		return Spec.SetProp(Prop, Value);
+	}
+
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Spec")
+	static bool SetPropColorArray(UPARAM(ref) FImPlotSpec& Spec, EImPlotProp Prop, const TArray<FLinearColor>& Values)
+	{
+		return Spec.SetProp(Prop, Values);
+	}
+
+	UFUNCTION(BlueprintCallable, Category="ImPlot|Spec")
+	static bool SetPropFloatArray(UPARAM(ref) FImPlotSpec& Spec, EImPlotProp Prop, const TArray<float>& Values)
+	{
+		return Spec.SetProp(Prop, Values);
 	}
 };
