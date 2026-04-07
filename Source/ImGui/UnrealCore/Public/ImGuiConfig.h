@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 
 #define IM_ASSERT(_EXPR) do { ensure(_EXPR); } while (0)
-#define IM_ASSERT_USER_ERROR(_EXP,_MSG) ensureMsgf(_EXP, TEXT(_MSG))
 
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #define IMGUI_DISABLE_DEFAULT_ALLOCATORS

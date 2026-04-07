@@ -361,16 +361,14 @@ UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = true))
 enum class EImGuiPopupFlags : int32
 {
 	None                    = ImGuiPopupFlags_None                    ,
-	MouseButtonLeft         = ImGuiPopupFlags_MouseButtonLeft         ,        // For BeginPopupContext*(): open on Left Mouse release. Guaranteed to always be == 0 (same as ImGuiMouseButton_Left)
-	MouseButtonRight        = ImGuiPopupFlags_MouseButtonRight        ,        // For BeginPopupContext*(): open on Right Mouse release. Guaranteed to always be == 1 (same as ImGuiMouseButton_Right)
-	MouseButtonMiddle       = ImGuiPopupFlags_MouseButtonMiddle       ,        // For BeginPopupContext*(): open on Middle Mouse release. Guaranteed to always be == 2 (same as ImGuiMouseButton_Middle)
-	MouseButtonMask_        = ImGuiPopupFlags_MouseButtonMask_        ,
-	MouseButtonDefault_     = ImGuiPopupFlags_MouseButtonDefault_     ,
+	MouseButtonLeft         = ImGuiPopupFlags_MouseButtonLeft         ,   // For BeginPopupContext*(): open on Left Mouse release. Guaranteed to always be == 0 (same as ImGuiMouseButton_Left)
+	MouseButtonRight        = ImGuiPopupFlags_MouseButtonRight        ,   // For BeginPopupContext*(): open on Right Mouse release. Guaranteed to always be == 1 (same as ImGuiMouseButton_Right)
+	MouseButtonMiddle       = ImGuiPopupFlags_MouseButtonMiddle       ,   // For BeginPopupContext*(): open on Middle Mouse release. Guaranteed to always be == 2 (same as ImGuiMouseButton_Middle)
 	NoReopen                = ImGuiPopupFlags_NoReopen                ,   // For OpenPopup*(), BeginPopupContext*(): don't reopen same popup if already open (won't reposition, won't reinitialize navigation)
 	NoOpenOverExistingPopup = ImGuiPopupFlags_NoOpenOverExistingPopup ,   // For OpenPopup*(), BeginPopupContext*(): don't open if there's already a popup at the same level of the popup stack
 	NoOpenOverItems         = ImGuiPopupFlags_NoOpenOverItems         ,   // For BeginPopupContextWindow(): don't return true when hovering items, only when hovering empty space
-	AnyPopupId              = ImGuiPopupFlags_AnyPopupId              ,  // For IsPopupOpen(): ignore the ImGuiID parameter and test for any popup.
-	AnyPopupLevel           = ImGuiPopupFlags_AnyPopupLevel           ,  // For IsPopupOpen(): search/test at any level of the popup stack (default test in the current level)
+	AnyPopupId              = ImGuiPopupFlags_AnyPopupId              ,   // For IsPopupOpen(): ignore the ImGuiID parameter and test for any popup.
+	AnyPopupLevel           = ImGuiPopupFlags_AnyPopupLevel           ,   // For IsPopupOpen(): search/test at any level of the popup stack (default test in the current level)
 	AnyPopup                = ImGuiPopupFlags_AnyPopup                ,
 };
 ENUM_CLASS_FLAGS(EImGuiPopupFlags);
